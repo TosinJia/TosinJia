@@ -35,6 +35,17 @@ E:\iEnviroment\development\projects\ideaProjects\VueDemo\TosinJia>npm install --
 #### Github Pages
 - deploy.sh
 
+##### 运行2
+1. 添加环境变量
+  - Path D:\tools\portable\PortableGit\bin 
+2. 项目目录对应的文件资源管理器中的目录位置输入 bash/sh 回车
+3. 新打开的窗口中
+```
+$ yarn deploy
+或者
+$ npm run deploy
+```
+##### 运行1
 - D:\tools\portable\PortableGit\git-bash.exe
 ```
 User@WIN10-0009 MINGW64 /
@@ -281,4 +292,10 @@ E:\iEnviroment\development\projects\ideaProjects\VueDemo\TosinJia>type package.j
     "vuepress": "^1.9.7"
   }
 }
+```
+- yarn
+```
+E:\iEnviroment\development\projects\ideaProjects\VueDemo\TosinJia>yarn instal
+E:\iEnviroment\development\projects\ideaProjects\VueDemo\TosinJia>yarn docs:dev 
+E:\iEnviroment\development\projects\ideaProjects\VueDemo\TosinJia>yarn docs:build
 ```
