@@ -11,6 +11,12 @@ module.exports = {
             {text:"bing", link:"https://www.bing.com/"},
         ],
         sidebar: 'auto',
-        sideBarDepth: 3,
-    }
+        sideBarDepth: 6,
+    },
+    plugins: [
+        [
+            'fulltext-search',
+          ],
+
+    ],
 }

@@ -1,13 +1,121 @@
 
+
 # Hello TosinJia!
 
 ## 搭建
 - https://www.cnblogs.com/softidea/p/10084946.html
 
+- [二丫讲梵](https://wiki.eryajf.net/)
+### 搜索
+#### vuepress-plugin-fulltext-search
+1. 安装全文搜索插件
+```
+E:\iEnviroment\development\projects\ideaProjects\VueDemo\TosinJia>npm install --save vuepress-plugin-fulltext-search
+```
+1. docs\.vuepress\config.js
+```
+    plugins: ['fulltext-search'],
+```
+1. docs\.vuepress\styles\index.styl
+```
 
+// 命中文字高亮红色
+.search-box .suggestion a .suggestion-row .suggestion-content .highlight
+    color: red;
+
+// 命中文字高亮蓝色，背景色纳瓦白
+// .search-box .suggestion a .suggestion-row .suggestion-content .highlight
+//    color: blue;
+//    background-color: NavajoWhite;
+```
+
+- https://zhuanlan.zhihu.com/p/369923082
+- https://wiki.eryajf.net/pages/8aafb1/
 ### 部署
 #### Github Pages
 - deploy.sh
+
+- D:\tools\portable\PortableGit\git-bash.exe
+```
+User@WIN10-0009 MINGW64 /
+$ cd E:/iEnviroment/development/projects/ideaProjects/VueDemo/TosinJia
+
+User@WIN10-0009 MINGW64 /e/iEnviroment/development/projects/ideaProjects/VueDemo/TosinJia (main)
+$ npm run deploy
+
+> TosinJia@1.0.0 deploy E:\iEnviroment\development\projects\ideaProjects\VueDemo\TosinJia
+> bash deploy.sh
+
+
+> TosinJia@1.0.0 docs:build E:\iEnviroment\development\projects\ideaProjects\VueDemo\TosinJia
+> vuepress build docs
+
+wait Extracting site metadata...
+tip Apply theme @vuepress/theme-default ...
+tip Apply plugin container (i.e. "vuepress-plugin-container") ...
+tip Apply plugin @vuepress/register-components (i.e. "@vuepress/plugin-register-components") ...
+tip Apply plugin @vuepress/active-header-links (i.e. "@vuepress/plugin-active-header-links") ...
+tip Apply plugin @vuepress/search (i.e. "@vuepress/plugin-search") ...
+tip Apply plugin @vuepress/nprogress (i.e. "@vuepress/plugin-nprogress") ...
+i Compiling Client
+i Compiling Server
+√ Server: Compiled successfully in 9.55s
+√ Client: Compiled successfully in 15.66s
+wait Rendering static HTML...
+success Generated static files in docs\.vuepress\dist.
+
+hint: Using 'master' as the name for the initial branch. This default branch name
+hint: is subject to change. To configure the initial branch name to use in all
+hint: of your new repositories, which will suppress this warning, call:
+hint:
+hint:   git config --global init.defaultBranch <name>
+hint:
+hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+hint: 'development'. The just-created branch can be renamed via this command:
+hint:
+hint:   git branch -m <name>
+Initialized empty Git repository in E:/iEnviroment/development/projects/ideaProjects/VueDemo/TosinJia/docs/.vuepress/dist/.git/
+warning: LF will be replaced by CRLF in 404.html.
+The file will have its original line endings in your working directory
+warning: LF will be replaced by CRLF in assets/img/search.83621669.svg.
+The file will have its original line endings in your working directory
+warning: LF will be replaced by CRLF in assets/js/app.c63c6ca0.js.
+The file will have its original line endings in your working directory
+warning: LF will be replaced by CRLF in build/README1.html.
+The file will have its original line endings in your working directory
+warning: LF will be replaced by CRLF in build/index.html.
+The file will have its original line endings in your working directory
+warning: LF will be replaced by CRLF in index.html.
+The file will have its original line endings in your working directory
+[master (root-commit) a80c5fd] deploy
+ 15 files changed, 298 insertions(+)
+ create mode 100644 404.html
+ create mode 100644 assets/css/0.styles.e4d8b86b.css
+ create mode 100644 assets/img/search.83621669.svg
+ create mode 100644 assets/js/2.703b2056.js
+ create mode 100644 assets/js/3.1e97dab3.js
+ create mode 100644 assets/js/4.b7d0708f.js
+ create mode 100644 assets/js/5.9e2f4ca7.js
+ create mode 100644 assets/js/6.c7b54f12.js
+ create mode 100644 assets/js/7.486b01f5.js
+ create mode 100644 assets/js/8.f8315380.js
+ create mode 100644 assets/js/9.a4f21c4b.js
+ create mode 100644 assets/js/app.c63c6ca0.js
+ create mode 100644 build/README1.html
+ create mode 100644 build/index.html
+ create mode 100644 index.html
+Enumerating objects: 22, done.
+Counting objects: 100% (22/22), done.
+Delta compression using up to 4 threads
+Compressing objects: 100% (20/20), done.
+Writing objects: 100% (22/22), 95.26 KiB | 355.00 KiB/s, done.
+Total 22 (delta 4), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (4/4), done.
+To github.com:TosinJia/TosinJia.github.io.git
+ + dd02e9a...a80c5fd master -> master (forced update)
+/e/iEnviroment/development/projects/ideaProjects/VueDemo/TosinJia
+```
+- [https://tosinjia.github.io/](https://tosinjia.github.io/)
 
 
 #### 本地部署
