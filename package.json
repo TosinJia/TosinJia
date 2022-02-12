@@ -1,19 +1,13 @@
 {
-  "name": "TosinJia",
+  "name": "vuepress-starter",
   "version": "1.0.0",
-  "description": "",
   "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "docs:dev": "vuepress dev docs",
-    "docs:build": "vuepress build docs",
-    "deploy": "bash deploy.sh"
+  "license": "MIT",
+  "devDependencies": {
+    "vuepress": "^1.9.7"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "vuepress": "^1.9.7",
-    "vuepress-plugin-fulltext-search": "^2.2.1"
+  "scripts": {
+    "docs:dev": "vuepress dev docs",
+    "docs:build": "vuepress build docs"
   }
 }
