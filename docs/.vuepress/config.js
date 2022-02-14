@@ -3,7 +3,7 @@ module.exports = {
     description: "TosinJia个人网站",
     themeConfig:{
         nav: [
-            { text: 'Home', link: '/' },
+            { text: '首页', link: '/' },
             {text: '搭建', items:[
                 {text: '搭建', link:'/build/'},         // 以'/'结束，默认读取 README.md
                 {text: '三方Markdown', link:'/build/thirdPartyMd'},
@@ -21,6 +21,10 @@ module.exports = {
     markdown:{
         toc:{includeLevel: [1,2,3,4,5,6]}
     },
+    head: [
+        // 引入自定义js
+        ["script", {"language": "javascript", "type": "text/javascript", "src": "/js/pgmanor-self.js"}]
+    ],
     plugins: [
         [
             'fulltext-search',

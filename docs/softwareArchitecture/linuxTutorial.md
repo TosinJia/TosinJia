@@ -9705,6 +9705,169 @@ tcp        0      0 192.168.1.72:51507      61.163.8.210:80         TIME_WAIT   
 
 [root@redis-1 ~]# telnet 192.168.1.72 2206
 ```
+
+## 连接工具
+### SecureCRT
+- http://www.portablesoft.org/securecrt-securefx-integrated/
+- https://www.cnblogs.com/qlgj/p/13960699.html
+- https://www.cnblogs.com/qlgj/p/13960699.html
+
+#### 连接Linux
+1. 管理员身份运行文本编辑器修改 C:\Windows\System32\drivers\etc\hosts，加入ip主机名对应关系
+2. 连接主机名输入对应主机名或ip
+3. 解决中文乱码
+    1. 会话选项
+        1. 仿真 终端：Linux，使用颜色方案
+        2. 外观 
+            1. 字体（中文字体[新宋体]、中文字符集[GB2312]）
+            2. 字符编码 UTF-8 [Default]
+            3. 选择当前颜色方案
+
+```
+[root@SycCdhTest ~]# rm /tmp/txjis-backstage-service-check.log 
+rmͨ "/tmp/txjis-backstage-service-check.log"
+[root@SycCdhTest ~]#
+
+3. 解决中文乱码
+    1. 会话选项
+        1. 仿真 终端：Linux
+```
+
+4. 右键黏贴 
+    1. 全局选型
+        1. 终端
+            3. 选中复制
+            4. 黏贴用右键
+
+#### 同时操作多个终端
+- Chat Window
+
+#### 文件传输 SFTP
+- Alt+p 打开
+- [secureCRT sftp 使用](https://blog.csdn.net/leehsiao/article/details/49978843) 
+##### 常用操作
+###### help
+```
+sftp> help
+Available commands:
+ascii                          Set transfer mode to ASCII
+binary                         Set transfer mode to binary
+cd path                        Change remote directory to 'path'
+lcd path                       Change local directory to 'path'
+detail remote-path             Display system information about remote
+                                 file or folder
+ldetail local-path             Display system information about local
+                                 file or folder
+chgrp group path               Change group of file 'path' to 'group'
+chmod mode path                Change permissions of file 'path' to 'mode'
+chown owner path               Change owner of file 'path' to 'owner'
+exit                           Quit sftp
+help                           Display this help text
+include filename               Include commands from 'filename'
+                                 Alternate: < filename
+get [-r][-a | -b] remote-path  Download file
+                                 -r downloads directory recursively
+                                 force ascii (-a) or binary (-b) mode
+ln [-s] existingpath linkpath  Hardlink / symlink remote file
+ls [options] [path]            Display remote directory listing
+lls [options] [path]           Display local directory listing
+mkdir path                     Create remote directory
+lmkdir path                    Create local directory
+mv oldpath newpath             Move remote file
+lmv oldpath newpath            Move local file
+open [user@]host[:port]        Connect to remote host
+put [-r][-a | -b] local-path   Upload file
+                                 -r uploads directory recursively
+                                 force ascii (-a) or binary (-b) mode
+pwd                            Display remote working directory
+lpwd                           Print local working directory
+quit                           Quit sftp
+rename oldname newname         Rename remote file
+lrename oldname newname        Rename local file
+rmdir path                     Remove remote directory
+lrmdir path                    Remove local directory
+rm path                        Delete remote file
+lrm path                       Delete local file
+su username                    Substitutes the current user
+                                 This is only supported with VShell for 
+                                 Windows 3.5 or later.
+type [transfer-mode]           Display or set file transfer mode
+view remote-path               Download and open file
+version                        Display protocol version
+```
+###### 查看当前目录
+```
+sftp> pwd
+/root
+sftp> lpwd
+C:/Users/TosinJia/Documents
+```
+###### 查看当前目录内容
+```
+sftp> ls -l
+-rw------- root     root         1272 Jun 01, 2019 09:48 anaconda-ks.cfg
+drwxr-xr-x root     root           33 Jun 01, 2019 10:23 softwares
+sftp> lls -l
+d                 0 Mar 16, 2019 13:39 Apowersoft
+```
+###### 切换目录
+```
+sftp> cd softwares/
+sftp> lcd C:\Users\TosinJia\Downloads
+```
+###### 传输文件、文件夹
+```
+sftp> put jdk-8u202-linux-x64.tar.gz ./
+sftp> get anaconda-ks.cfg ./
+
+sftp> get -r /usr/local/nginx/conf
+sftp> put -r ./*
+```
+### XShell
+#### 官网
+- 官网 https://www.netsarang.com/zh/xshell/
+- 免费授权 https://www.netsarang.com/zh/free-for-home-school/
+- 绿色版 https://www.portablesoft.org/xshell-6/
+#### 设置
+- 工具
+	- 选项
+		- 键盘和鼠标
+			- 鼠标 中间按钮：打开属性对话框
+			- 鼠标 向右按钮：黏贴剪贴板内容
+			- 勾选将选定的文本自动复制到剪贴板
+
+
+#### 同时操作多个会话
+1. 方式一
+- 查看
+    - 撰写
+        - 栏
+        - 窗格
+
+2. 方式二
+- 工具
+    - 发送键输入到所有会话
+- 右键
+    - 排列
+        - 垂直排列
+#### 上传下载文件
+```
+[root@bd-00-00 ~]# yum -y install lrzsz
+[root@bd-00-00 ~]# rpm -qa | grep lrzsz
+lrzsz-0.12.20-36.el7.x86_64
+# 上传 选择上传文件
+[root@bd-00-00 ~]# rz
+# 下载 选择下载目录
+[root@bd-00-00 ~]# sz anaconda-ks.cfg
+```
+### putty
+- https://www.putty.org/
+	- https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html
+		- https://the.earth.li/~sgtatham/putty/0.76/w64/putty.zip
+### FinalShell
+- http://www.hostbuf.com/
+
+
 ## 日常问题
 ### Name or service not known
 ```
