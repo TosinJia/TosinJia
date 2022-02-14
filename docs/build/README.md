@@ -6,6 +6,13 @@
 - https://www.cnblogs.com/softidea/p/10084946.html
 
 - [二丫讲梵](https://wiki.eryajf.net/)
+
+### Markdown 增强
+- https://vuepress-theme-hope.github.io/md-enhance/zh/
+
+- 19^th^
+- H~2~O
+
 ### 搜索
 #### vuepress-plugin-fulltext-search
 1. 安装全文搜索插件

@@ -15,5 +15,8 @@
   "dependencies": {
     "vuepress": "^1.9.7",
     "vuepress-plugin-fulltext-search": "^2.2.1"
+  },
+  "devDependencies": {
+    "vuepress-plugin-md-enhance": "^1.27.1"
   }
 }
