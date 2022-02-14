@@ -30,6 +30,7 @@ MIT Licensed | Copyright © 2021-present [Evan You](https://github.com/yyx990803
         - https://vuepress.vuejs.org/zh/theme/default-theme-config.html#%E9%A6%96%E9%A1%B5
 
 ## 图片
+- [静态资源 | VuePress](https://vuepress.vuejs.org/zh/guide/assets.html#%E7%9B%B8%E5%AF%B9%E8%B7%AF%E5%BE%84)
 ![An image](./images/web.png)
 
 ## Markdown 增强
