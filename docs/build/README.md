@@ -1,7 +1,7 @@
 
 
-# Hello TosinJia!
-
+# 网站搭建
+[[toc]]
 ## 搭建
 - https://www.cnblogs.com/softidea/p/10084946.html
 
