@@ -1,4 +1,5 @@
 module.exports = {
+
     themeConfig: {
         // navbar: false,  //使用 themeConfig.navbar 来禁用所有页面的导航栏 https://vuepress.vuejs.org/zh/theme/default-theme-config.html#%E5%AF%BC%E8%88%AA%E6%A0%8F%E9%93%BE%E6%8E%A5
 
@@ -99,5 +100,18 @@ module.exports = {
 
         // https://vuepress.vuejs.org/zh/theme/default-theme-config.html#%E8%87%AA%E5%8A%A8%E7%94%9F%E6%88%90%E4%BE%A7%E6%A0%8F
         // sidebar: 'auto',
-      }
+      },
+      // https://vuepress.vuejs.org/zh/guide/markdown.html#%E8%A1%8C%E5%8F%B7
+      markdown: {
+        lineNumbers: true,
+        // https://vuepress.vuejs.org/zh/guide/markdown.html#%E8%BF%9B%E9%98%B6%E9%85%8D%E7%BD%AE
+        // markdown-it-anchor 的选项
+        anchor: { permalink: false },
+        // markdown-it-toc 的选项
+        toc: { includeLevel: [1, 2,3,4,5,6] },
+        extendMarkdown: md => {
+          // 使用更多的 markdown-it 插件!
+          // md.use(require('markdown-it-xxx'))
+        }
+      }     
 }
