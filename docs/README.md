@@ -29,6 +29,11 @@ MIT Licensed | Copyright © 2021-present [Evan You](https://github.com/yyx990803
     - https://vuepress.vuejs.org/zh/guide/directory-structure.html#%E9%BB%98%E8%AE%A4%E7%9A%84%E9%A1%B5%E9%9D%A2%E8%B7%AF%E7%94%B1
         - https://vuepress.vuejs.org/zh/theme/default-theme-config.html#%E9%A6%96%E9%A1%B5
 
+### Markdown 增强
+- https://vuepress-theme-hope.github.io/md-enhance/zh/
+
+- 19^th^
+- H~2~O
 
 ```
 E:\iEnviroment\development\projects\ideaProjects\VueDemo\vuepress-starter>yarn install 
