@@ -10,14 +10,25 @@ module.exports = {
             ]},
             {text: '软件架构', items:[
                 {text: '相关技术', link:'/softwareArchitecture/relatedTechnology'},  // 可不写后缀 .md
+                {text: '开源框架', link:'/softwareArchitecture/openSourceFramework'},
                 {text: 'Git教程', link:"/softwareArchitecture/gitTutorial"},
                 {text: 'Linux教程', link:"/softwareArchitecture/linuxTutorial"},
             ]},
             {text:"bing", link:"https://www.bing.com/"},
         ],
-        sidebar: 'auto',
+        // sidebar: 'auto',
+        sidebar:{
+          '/softwareArchitecture/': [
+            'relatedTechnology',
+            'openSourceFramework',
+            ['gitTutorial','Git教程'],
+            'linuxTutorial'
+          ],
+        },        
         sideBarDepth: 6,
+        
     },
+
     markdown:{
         toc:{includeLevel: [1,2,3,4,5,6]}
     },
