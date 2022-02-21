@@ -1,6 +1,8 @@
 # 相关技术
 [[TOC]]
 
+- [https://javadoc.io/](https://javadoc.io/)
+
 ## JDK
 [JDK](http://www.oracle.com/technetwork/java/javase/archive-139210.html)
 
@@ -218,3 +220,48 @@ public class XmlUtils {
 ## 其他
 - tk.mapper
 - mybatis plus
+
+## swagger系统接口
+- [https://swagger.io/](https://swagger.io/)
+
+## velocity代码生成
+    - https://velocity.apache.org/engine/devel/user-guide.html
+```
+        <!--velocity代码生成使用模板 -->
+        <dependency>
+            <groupId>org.apache.velocity</groupId>
+            <artifactId>velocity-engine-core</artifactId>
+        </dependency>
+```
+
+## quartz定时任务
+- [http://www.quartz-scheduler.org/](http://www.quartz-scheduler.org/)
+    - [http://www.quartz-scheduler.org/documentation/quartz-2.3.0/](http://www.quartz-scheduler.org/documentation/quartz-2.3.0/)
+```
+        <!-- 定时任务 -->
+        <dependency>
+            <groupId>org.quartz-scheduler</groupId>
+            <artifactId>quartz</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.mchange</groupId>
+                    <artifactId>c3p0</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+```
+
+## 验证框架
+### 表单验证
+- [https://element.eleme.cn/#/zh-CN/component/form](https://element.eleme.cn/#/zh-CN/component/form)
+
+### 自定义验证注解
+- [https://javadoc.io/doc/jakarta.validation/jakarta.validation-api/2.0.2/index.html](https://javadoc.io/doc/jakarta.validation/jakarta.validation-api/2.0.2/index.html)
+
+```
+        <!-- 自定义验证注解 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+```
