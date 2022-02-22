@@ -1,13 +1,20 @@
 module.exports = {
     '/softwareArchitecture/': [
       {
-        title:'文档',
+        title:'相关技术',
         collapsable: false,
         children:[
           'relatedTechnology',
-          'openSourceFramework',
         ]
-      }
+      },
+      {
+        title:'开源框架',
+        collapsable: false,
+        children:[
+          'openSourceFramework/introduction',
+          'openSourceFramework/ruoyi/ruoyi-vue/',
+        ]
+      },      
     ],
     '/tutorials/': [
       {

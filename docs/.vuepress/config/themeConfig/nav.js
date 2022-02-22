@@ -3,7 +3,12 @@ module.exports =[
     { text: '首页', link: '/' },
     {text: '软件架构', items:[
         {text: '相关技术', link:'/softwareArchitecture/relatedTechnology'},  // 可不写后缀 .md
-        {text: '开源框架', link:'/softwareArchitecture/openSourceFramework'},
+        {text: '开源框架', 
+            items:[
+                {text:'简介', link:'/softwareArchitecture/openSourceFramework/introduction'},
+                {text:'RuoYi-Vue', link:'/softwareArchitecture/openSourceFramework/ruoyi/ruoyi-vue/'},
+            ]
+        },
     ]},
     {text: '教程', 
         items:[
