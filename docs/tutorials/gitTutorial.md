@@ -9,7 +9,7 @@
 
 ## 参考
 - https://git-scm.com/docs
-
+- [Git 分支命名规范(完)](https://blog.csdn.net/qq_33858250/article/details/81047883)
 
 # 安装
 ## Git
@@ -48,7 +48,12 @@ Loading mirror speeds from cached hostfile
 git version 1.8.3.1
 ```
 
-# 工具
+# 可视化工具
+## Sourcetree
+- [Sourcetree | Free Git GUI for Mac and Windows](https://www.sourcetreeapp.com/)
+### Bitbucket账户
+- tosinjia@foxmail.com 
+
 ## TortoiseGit
 - https://tortoisegit.org/
 	- https://tortoisegit.org/download/

@@ -16,6 +16,16 @@ module.exports =[
             {text: 'Linux教程', link:"/tutorials/linuxTutorial"},
             {text: 'Vue教程', link:"/tutorials/vueTutorial"},
     ]},
+    {text: '数据库', 
+        items:[
+            {text: '设计', 
+                items:[
+                    {text:'PowerDesigner', link:'/database/PowerDesigner'},
+                    {text:'Oracle', link:'/database/oracle'}
+                ]
+            }
+        ],
+    },
     {text: '搭建', items:[
         {text: '站点搭建', link:'/build/'},         // 以'/'结束，默认读取 README.md
         {text: '三方Markdown', link:'/build/thirdPartyMd'},

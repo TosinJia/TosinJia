@@ -26,4 +26,13 @@ module.exports = {
         ]
       },
     ],
+    '/database/': [
+      {
+        title: '设计',
+        collapsable: false,
+        children:[
+          'PowerDesigner',
+        ]
+      },
+    ],    
   }
