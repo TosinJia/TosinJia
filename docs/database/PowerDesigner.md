@@ -43,6 +43,14 @@ shift+F4 | 关闭Workspace
 
 
 ## 菜单
+### File
+1. Reverse Engineer
+	1. Database... 【New Physical Data Model】
+		1. 确认【Database Reverse Engineering Options】
+			1. Using script files
+			2. Using a data source
+
+
 ### Database 
 - Change Current DBMS... 
 	- 选择 New DBMS
@@ -658,6 +666,19 @@ E:\TosinJia\MyEnviroment\WorkingEnvironment\JAVAEnviroment\x86\jdk1.8.0_111
 CLASSPATH
 E:\tools\maven\apache-maven-3.0.5-2.0\mavenrepo\com\oracle\ojdbc6\11.2.0.3\ojdbc6-11.2.0.3.jar
 ```
+
+# 数据库切换
+## mysql2oracle
+### 类型转换
+1. varchar(100) varchar2(100)
+1. datetime DATE
+1. bigint(20) NUMBER(20)
+1. int(4) NUMBER(4)
+1. decimal(12,2) NUMBER(12,2)
+
+- 参考
+    - [MYSQL 与 Oracle 之间的数据类型转换](https://www.cnblogs.com/guyueyanzi/archive/2010/02/27/1674788.html)
+    - [mysql与oracle之间的数据类型转换](https://www.cnblogs.com/priestess-zhao/p/14308959.html)
 
 # 案例
 ## SIM卡综合管理系统

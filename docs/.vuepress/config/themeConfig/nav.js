@@ -21,7 +21,8 @@ module.exports =[
             {text: '设计', 
                 items:[
                     {text:'PowerDesigner', link:'/database/PowerDesigner'},
-                    {text:'Oracle', link:'/database/oracle'}
+                    {text:'Oracle', link:'/database/oracle'},
+                    {text:'MySQL', link:'/database/mysql'}
                 ]
             }
         ],
