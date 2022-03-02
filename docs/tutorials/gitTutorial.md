@@ -65,6 +65,8 @@ git version 1.8.3.1
 - [TortoiseGit-使用教程（图文详细版）](https://www.cnblogs.com/linhuaming/p/15725776.html)
 
 - [TortoiseGit 使用教程](https://www.cnblogs.com/anayigeren/p/10177027.html)
+
+
 ### github
 #### 方式一
 1. [puttygen.exe]PuTTY Key Generator
@@ -115,6 +117,13 @@ Resolving deltas: 100% (15/15), done.
 4. PuTTY Key Generator
 	1. -> Conversions -> Import key -> C:\Users\User\.ssh\id_rsa
 	2. -> Save private key -> tortoiseGit.ppk
+### 工具
+#### pageant.exe
+##### [TortoiseGit中Pageant开机自启且自动加载SSH Key](https://blog.csdn.net/Nicolas12/article/details/80981398)
+1. Pageant 的开机自启
+	- 创建pageant.exe的快捷方式，复制到C:\Users\User\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup
+2. 关联加载秘钥ppk
+	- 快捷键 -> 目标 "D:\Program Files\TortoiseGit\bin\pageant.exe" C:\Users\User\.ssh\tortoiseGit.ppk
 
 # 实战与应用
 ## git 分布式控制的实战与应用
