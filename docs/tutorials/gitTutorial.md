@@ -10,7 +10,7 @@
 ## 参考
 - https://git-scm.com/docs
 - [Git 分支命名规范(完)](https://blog.csdn.net/qq_33858250/article/details/81047883)
-
+- [https://learngitbranching.js.org/](https://learngitbranching.js.org/)
 # 安装
 ## Git
 ### 下载
@@ -51,6 +51,9 @@ git version 1.8.3.1
 # 可视化工具
 ## Sourcetree
 - [Sourcetree | Free Git GUI for Mac and Windows](https://www.sourcetreeapp.com/)
+
+- [Git/SourceTree版本管理](https://www.bilibili.com/video/BV1Ev411j7e5)
+
 ### Bitbucket账户
 - tosinjia@foxmail.com 
 
@@ -65,6 +68,8 @@ git version 1.8.3.1
 - [TortoiseGit-使用教程（图文详细版）](https://www.cnblogs.com/linhuaming/p/15725776.html)
 
 - [TortoiseGit 使用教程](https://www.cnblogs.com/anayigeren/p/10177027.html)
+
+- [【最全面】SourceTree使用教程详解（连接远程仓库，克隆，拉取，提交，推送，新建/切换/合并分支，冲突解决，提交PR）](https://www.cnblogs.com/Can-daydayup/p/13128633.html)
 
 
 ### github
