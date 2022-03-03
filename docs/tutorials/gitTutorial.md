@@ -71,6 +71,8 @@ git version 1.8.3.1
 
 - [Git/SourceTree版本管理](https://www.bilibili.com/video/BV1Ev411j7e5)
 
+- [【最全面】SourceTree使用教程详解（连接远程仓库，克隆，拉取，提交，推送，新建/切换/合并分支，冲突解决，提交PR）](https://www.cnblogs.com/Can-daydayup/p/13128633.html)
+
 ### Bitbucket账户
 - tosinjia@foxmail.com 
 
@@ -86,7 +88,7 @@ git version 1.8.3.1
 
 - [TortoiseGit 使用教程](https://www.cnblogs.com/anayigeren/p/10177027.html)
 
-- [【最全面】SourceTree使用教程详解（连接远程仓库，克隆，拉取，提交，推送，新建/切换/合并分支，冲突解决，提交PR）](https://www.cnblogs.com/Can-daydayup/p/13128633.html)
+
 
 
 ### github
