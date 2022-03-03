@@ -7,10 +7,27 @@
 - 暂存区：英文叫stage, 或index。一般存放在"git目录"下的index文件（.git/index）中，所以我们把暂存区有时也叫作索引（index）。
 - 版本库：工作区有一个隐藏目录.git，这个不算工作区，而是Git的版本库。
 
+![An image](../images/gitTutorial-1.png)
+- 图示
+    - Workspace：工作区
+    - Index / Stage：暂存区
+    - Repository：仓库区（或本地仓库）
+    - Remote：远程仓库
+![An image](../images/gitTutorial-1-1.jpg)
+![An image](../images/gitTutorial-1-2.jpg)
+
 ## 参考
 - https://git-scm.com/docs
+
+- [图解Git操作，一篇就够](https://zhuanlan.zhihu.com/p/263050507)
 - [Git 分支命名规范(完)](https://blog.csdn.net/qq_33858250/article/details/81047883)
 - [https://learngitbranching.js.org/](https://learngitbranching.js.org/)
+
+
+### Git 常用命令大全
+- [Git 常用命令大全](https://www.runoob.com/note/56524)
+![An image](../images/gitTutorial-2.jpg)
+
 # 安装
 ## Git
 ### 下载
