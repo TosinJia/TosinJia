@@ -21,7 +21,7 @@
 
 ### 内置组件
 - [component](https://cn.vuejs.org/v2/api/#component)
-	- https://cn.vuejs.org/v2/guide/components.html
+	- [组件基础](https://cn.vuejs.org/v2/guide/components.html)
 - [transition](https://cn.vuejs.org/v2/api/#transition)
 - [transition-group](https://cn.vuejs.org/v2/api/#transition-group)
 	- \<transition> can only be used on a single element. Use \<transition-group> for lists.
@@ -80,23 +80,25 @@
 - [Vue-extend](https://cn.vuejs.org/v2/api/#Vue-extend)
 
 ## Vue Router
+> router.vuejs.org 最新版本地址；v3.router.vuejs.org V3.x
+
 - [Vue Router官网](https://router.vuejs.org/zh/)
 	 - [安装](https://router.vuejs.org/zh/installation.html)
-		 - https://router.vuejs.org/zh/installation.html#npm
+		 -[npm](https://router.vuejs.org/zh/installation.html#npm)
 
-
-- https://router.vuejs.org/zh/guide/
-	- https://router.vuejs.org/zh/guide/essentials/navigation.html
+- [指南](https://router.vuejs.org/zh/guide/)
+	- [编程式导航](https://router.vuejs.org/zh/guide/essentials/navigation.html)
 	- [路由组件传参](https://router.vuejs.org/zh/guide/essentials/passing-props.html)
 		- [布尔模式](https://router.vuejs.org/zh/guide/essentials/passing-props.html#%E5%B8%83%E5%B0%94%E6%A8%A1%E5%BC%8F)
 
-	- `<router-view>` Props
-			- https://router.vuejs.org/zh/api/#name
-	- `<router-link>` Props
-			- https://router.vuejs.org/zh/api/#tag
-	- Router 构建选项
-			- https://router.vuejs.org/zh/api/#routes
-			- https://router.vuejs.org/zh/api/#linkactiveclass
+- [API 参考](https://v3.router.vuejs.org/zh/api/)
+    - [`<router-view>` Props](https://router.vuejs.org/zh/api/#router-view-props)
+        - [name](https://router.vuejs.org/zh/api/#name)
+    - [`<router-link>` Props](https://v3.router.vuejs.org/zh/api/#router-link)
+        - [tag](https://v3.router.vuejs.org/zh/api/#tag)
+	- [Router 构建选项](https://v3.router.vuejs.org/zh/api/#router-%E6%9E%84%E5%BB%BA%E9%80%89%E9%A1%B9)
+        - [routes](https://v3.router.vuejs.org/zh/api/#routes)
+        - [linkActiveClass](https://v3.router.vuejs.org/zh/api/#linkactiveclass)
 
 ## npm
 
