@@ -22,7 +22,8 @@ module.exports = {
         collapsable: false,
         children:[
           ['gitTutorial','Git教程'],
-          'linuxTutorial'
+          'linuxTutorial',
+          'vueTutorial'
         ]
       },
     ],
