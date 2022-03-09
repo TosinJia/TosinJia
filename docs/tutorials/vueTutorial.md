@@ -528,6 +528,7 @@ return this.list.filter(x => {
 
 
 - 23.全局过滤器.html
+- 02.过滤器的基本使用.html
 	- https://cn.vuejs.org/v2/guide/filters.html#ad
 ```
 PS E:\iEnviroment\development\projects\ideaProjects\VueDemo\code_2020_4_2-master\practices\day1> npm i moment -S

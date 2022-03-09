@@ -12,9 +12,10 @@ module.exports =[
     ]},
     {text: '教程', 
         items:[
-            {text: 'Git教程', link:"/tutorials/gitTutorial"},
             {text: 'Linux教程', link:"/tutorials/linuxTutorial"},
+            {text: 'Git教程', link:"/tutorials/gitTutorial"},
             {text: 'Vue教程', link:"/tutorials/vueTutorial"},
+            {text: 'Docker教程', link:"/tutorials/docker"},
     ]},
     {text: '数据库', 
         items:[
