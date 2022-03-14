@@ -444,6 +444,9 @@ SCSI/SATA/USB硬盘 | /dev/sd[a-p]
         [root@localhost test]# mkdir -p testdir1/testdir11/ testdir1/testdir12
         #将目录下的testdir11和testdir12目录复制到/root/test目录下，保持目录属性
         [root@localhost test]# cp -rp testdir1/testdir11 testdir1/testdir12 /root/test
+
+        # 覆盖
+        # [root@CentOS-7 ~]# /bin/cp -rf test1/etc_mysql/* test/etc_mysql/
         ```
 
 
@@ -873,7 +876,12 @@ x | 执行 | 可以执行文件 | 可以进入目录（cd）
     
     * 功能描述：打包目录
     * 压缩后文件格式：.tar.gz
-    * 范例：$tar -zcf test.tar.gz test #将目录test打包并压缩为.tar.gz文件
+    * 范例：
+        ```
+        $tar -zcf test.tar.gz test #将目录test打包并压缩为.tar.gz文件
+        [root@CentOS-7 ~]# tar -czvf etc_mysql.tar.gz etc_mysql/* 
+        ```
+
     ---
     选项 | 说明
     ---|---
@@ -894,7 +902,70 @@ x | 执行 | 可以执行文件 | 可以进入目录（cd）
         ```
         [root@localhost sh]# tar -ztvf /tmp/dirbak/bak-1907131428.gz 
         ```
+    * 综合范例
+        ```
+        # 将目录etc_mysql打包并压缩为.tar.gz文件
+        [root@CentOS-7 ~]# tar -czvf etc_mysql.tar.gz etc_mysql/*
+        etc_mysql/mysql/
+        etc_mysql/mysql/conf.d/
+        etc_mysql/mysql/conf.d/docker.cnf
+        etc_mysql/mysql/conf.d/mysql.cnf
+        etc_mysql/mysql/conf.d/mysqldump.cnf
+        etc_mysql/mysql/my.cnf
+        etc_mysql/mysql/my.cnf.fallback
+        etc_mysql/mysql/mysql.cnf
+        etc_mysql/mysql/mysql.conf.d/
+        etc_mysql/mysql/mysql.conf.d/mysqld.cnf
 
+        [root@CentOS-7 ~]# mv etc_mysql.tar.gz test/
+        [root@CentOS-7 ~]# cd test/
+        # 解压缩并列出备份文件的内容
+        [root@CentOS-7 test]# tar -ztvf etc_mysql.tar.gz 
+        drwxr-xr-x root/root         0 2021-12-21 10:56 etc_mysql/mysql/
+        drwxr-xr-x root/root         0 2021-12-21 10:56 etc_mysql/mysql/conf.d/
+        -rw-r--r-- root/root        43 2021-12-21 10:56 etc_mysql/mysql/conf.d/docker.cnf
+        -rw-r--r-- root/root         8 2016-08-03 21:32 etc_mysql/mysql/conf.d/mysql.cnf
+        -rw-r--r-- root/root        55 2016-08-03 21:32 etc_mysql/mysql/conf.d/mysqldump.cnf
+        lrwxrwxrwx root/root         0 2021-12-21 10:56 etc_mysql/mysql/my.cnf -> /etc/alternatives/my.cnf
+        -rw-r--r-- root/root       839 2016-08-03 21:32 etc_mysql/mysql/my.cnf.fallback
+        -rw-r--r-- root/root      1200 2021-09-07 15:44 etc_mysql/mysql/mysql.cnf
+        drwxr-xr-x root/root         0 2021-12-21 10:56 etc_mysql/mysql/mysql.conf.d/
+        -rw-r--r-- root/root      1589 2021-12-21 10:56 etc_mysql/mysql/mysql.conf.d/mysqld.cnf
+
+        # 解压缩并解包备份文件的内容 到指定的解压缩目录
+        [root@CentOS-7 test]# tar -zxvf etc_mysql.tar.gz etc_mysql/mysql/conf.d -C /root/test/
+        etc_mysql/mysql/conf.d/
+        etc_mysql/mysql/conf.d/docker.cnf
+        etc_mysql/mysql/conf.d/mysql.cnf
+        etc_mysql/mysql/conf.d/mysqldump.cnf
+        [root@CentOS-7 test]# tree ./
+        ./
+        ├── etc_mysql
+        │   └── mysql
+        │       └── conf.d
+        │           ├── docker.cnf
+        │           ├── mysql.cnf
+        │           └── mysqldump.cnf
+        └── etc_mysql.tar.gz
+
+        # 修改docker.cnf文件
+        [root@CentOS-7 test]# ll etc_mysql/mysql/conf.d/            
+        total 12
+        -rw-r--r--. 1 root root 45 Mar 11 16:28 docker.cnf
+        -rw-r--r--. 1 root root  8 Aug  3  2016 mysql.cnf
+        -rw-r--r--. 1 root root 55 Aug  3  2016 mysqldump.cnf
+        # 重新解压后，会覆盖之前的文件
+        [root@CentOS-7 test]# tar -zxvf etc_mysql.tar.gz etc_mysql/mysql/conf.d -C /root/test/
+        etc_mysql/mysql/conf.d/
+        etc_mysql/mysql/conf.d/docker.cnf
+        etc_mysql/mysql/conf.d/mysql.cnf
+        etc_mysql/mysql/conf.d/mysqldump.cnf
+        [root@CentOS-7 test]# ll etc_mysql/mysql/conf.d/                                      
+        total 12
+        -rw-r--r--. 1 root root 43 Dec 21 10:56 docker.cnf
+        -rw-r--r--. 1 root root  8 Aug  3  2016 mysql.cnf
+        -rw-r--r--. 1 root root 55 Aug  3  2016 mysqldump.cnf
+        ```
 1. 名称：zip
     * 指令所在路径：/usr/bin/zip
     * 执行权限：所有用户

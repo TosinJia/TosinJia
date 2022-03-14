@@ -35,6 +35,8 @@ select current_timestamp(), now(), curdate();
 - [MySQL5.7 --- mysqldump 备份与恢复](https://blog.csdn.net/mashuai720/article/details/83347029)
 
 #### 整库备份还原
+
+
 ```
 [root@etc ~]# mysqldump -help
 Usage: mysqldump [OPTIONS] database [tables]
@@ -42,6 +44,10 @@ OR     mysqldump [OPTIONS] --databases [OPTIONS] DB1 [DB2 DB3...]
 OR     mysqldump [OPTIONS] --all-databases [OPTIONS]
 For more options, use mysqldump --help
 
+# 调用mysqldump带有--all-databases选项备份所有的数据库
+# mysqldump -uroot -pClgg7890 --all-databases > Shaanxi_NetworkFreight_20220310.sql
+# 调用mysqldump带有- -databases选项备份指定的数据库
+# mysqldump -uroot -pClgg7890 --databases gateway yy_framework yy_matchup yy_tms > Shaanxi_NetworkFreight_20220310_used.sql
 [root@localhost ~]# mysqldump -uroot -pClgg7890 --databases clgg_base > clgg_base20210929.sql
 mysqldump: [Warning] Using a password on the command line interface can be insecure.
 
