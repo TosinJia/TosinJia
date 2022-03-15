@@ -16,6 +16,7 @@ module.exports =[
             {text: 'Git教程', link:"/tutorials/gitTutorial"},
             {text: 'Vue教程', link:"/tutorials/vueTutorial"},
             {text: 'Docker教程', link:"/tutorials/docker"},
+            {text: '虚拟机', link:"/tutorials/virtualMachine"},
     ]},
     {text: '数据库', 
         items:[

@@ -1457,8 +1457,10 @@ root 123456
 ##### 环境
 - 主机IP：172.16.6.89
 	- VirtualBox 虚拟机CentOS7
-		- 网络网络地址转换 端口转发
-			- tracker:22122 8888 23000
+		- 虚拟机网络 
+			- 网络地址转换（NAT）  端口转发 【java.net.SocketTimeoutException: connect timed out】
+				- tracker:22122 8888 23000
+			- 仅主机（HOST-ONLY ）网络
 ```
 [root@Docker storage]# cat /etc/os-release 
 NAME="CentOS Linux"
@@ -1477,6 +1479,7 @@ CENTOS_MANTISBT_PROJECT_VERSION="7"
 REDHAT_SUPPORT_PRODUCT="centos"
 REDHAT_SUPPORT_PRODUCT_VERSION="7"
 
+# 网络地址转换（NAT）
 [root@Docker ~]# ip address
 1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
     link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
@@ -1491,6 +1494,20 @@ REDHAT_SUPPORT_PRODUCT_VERSION="7"
     inet6 fe80::806f:eb6c:8c0f:1819/64 scope link noprefixroute 
        valid_lft forever preferred_lft forever
 
+# 仅主机（HOST-ONLY ）网络
+[root@CentOS-7 ~]# ip address
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host 
+       valid_lft forever preferred_lft forever
+2: enp0s3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP group default qlen 1000
+    link/ether 08:00:27:80:9b:a2 brd ff:ff:ff:ff:ff:ff
+    inet 192.168.56.102/24 brd 192.168.56.255 scope global noprefixroute dynamic enp0s3
+       valid_lft 554sec preferred_lft 554sec
+    inet6 fe80::806f:eb6c:8c0f:1819/64 scope link noprefixroute 
+       valid_lft forever preferred_lft forever
 # 关闭防火墙
 [root@Docker storage]# systemctl stop firewalld  
 ```
@@ -1538,19 +1555,19 @@ REPOSITORY          TAG       IMAGE ID       CREATED        SIZE
 delron/fastdfs      latest    8487e86fc6ee   3 years ago    464
 
 # 使用docker镜像构建tracker容器（跟踪服务器，起到调度的作用）
-[root@Docker ~]# docker run -dti --network=host --name tracker -v /var/fdfs/tracker:/var/fdfs -v /etc/localtime:/etc/localtime delron/fastdfs tracker
-6599c54a6fd8a1d40e04261bbbf062bb9e09a451c94b76e6f932283dbc13765b
+[root@CentOS-7 ~]# docker run -dti --network=host --name tracker -v /var/fdfs/tracker:/var/fdfs -v /etc/localtime:/etc/localtime delron/fastdfs tracker
+7dc6b6c231441398925950c4ab3839b7b9aa0e92de90cd10bb1f6cd83e2b6276
 
 # 使用docker镜像构建storage容器（存储服务器，提供容量和备份服务）
 # TRACKER_SERVER=本机的ip地址:22122 本机ip地址不要使用127.0.0.1
-[root@Docker ~]# docker run -dti  --network=host --name storage -e TRACKER_SERVER=172.16.6.89:22122 -v /var/fdfs/storage:/var/fdfs  -v /etc/localtime:/etc/localtime delron/fastdfs storage
-5e47fb21dca1a725ede54285ad28a67cd64ae795166b6aafcc7d8c0343e13d0d
+[root@CentOS-7 ~]# docker run -dti --network=host --name storage -e TRACKER_SERVER=192.168.56.102:22122 -v /var/fdfs/storage:/var/fdfs  -v /etc/localtime:/etc/localtime delron/fastdfs storage
+34188ef60136bb4a6da788f676c5cb6c817ff8acefb8e9d5de7fe81b57776951
 ```
 ###### 进入storage容器
 ```
 #到storage的配置文件中查看（配置）http访问的端口
-[root@Docker ~]# docker exec -it storage /bin/bash
-[root@Docker nginx-1.12.2]# cat /etc/fdfs/storage.conf
+[root@CentOS-7 ~]# docker exec -it storage /bin/bash
+[root@CentOS-7 nginx-1.12.2]# cat /etc/fdfs/storage.conf
 # is this config file disabled
 # false for enabled
 # true for disabled
@@ -1668,7 +1685,7 @@ subdir_count_per_path=256
 
 # tracker_server can ocur more than once, and tracker_server format is
 #  "host:port", host can be hostname or ip address
-tracker_server=172.16.6.89:22122
+tracker_server=192.168.56.102:22122
 
 #standard log level as syslog, case insensitive, value list:
 ### emerg for emergency
@@ -1836,23 +1853,22 @@ http.domain_name=
 # the port of the web server on this storage server
 http.server_port=8888
 
-
 # 查看日志
-[root@Docker nginx-1.12.2]# tail -f /var/fdfs/logs/storaged.log 
-# 异常处理:VirtualBox网络 端口转发22122 8888
-data path: /var/fdfs/data, mkdir sub dir...
-mkdir data path: 00 ...
-
+[root@CentOS-7 nginx-1.12.2]# tail -f /var/fdfs/logs/storaged.log 
+mkdir data path: FB ...
+mkdir data path: FC ...
+mkdir data path: FD ...
+mkdir data path: FE ...
 mkdir data path: FF ...
 data path: /var/fdfs/data, mkdir sub dir done.
-data path: /var/fdfs/data, mkdir sub dir done.
-[2022-03-09 11:24:04] INFO - file: storage_param_getter.c, line: 191, use_storage_id=0, id_type_in_filename=ip, storage_ip_changed_auto_adjust=1, store_path=0, reserved_storage_space=10.00%, use_trunk_file=0, slot_min_size=256, slot_max_size=16 MB, trunk_file_size=64 MB, trunk_create_file_advance=0, trunk_create_file_time_base=02:00, trunk_create_file_interval=86400, trunk_create_file_space_threshold=20 GB, trunk_init_check_occupying=0, trunk_init_reload_from_binlog=0, trunk_compress_binlog_min_interval=0, store_slave_file_use_link=0
-[2022-03-09 11:24:04] INFO - file: storage_func.c, line: 257, tracker_client_ip: 10.0.2.15, my_server_id_str: 10.0.2.15, g_server_id_in_filename: 251789322
-[2022-03-09 11:24:04] INFO - file: tracker_client_thread.c, line: 310, successfully connect to tracker server 172.16.6.89:22122, as a tracker client, my ip is 10.0.2.15
+[2022-03-15 14:31:26] INFO - file: storage_param_getter.c, line: 191, use_storage_id=0, id_type_in_filename=ip, storage_ip_changed_auto_adjust=1, store_path=0, reserved_storage_space=10.00%, use_trunk_file=0, slot_min_size=256, slot_max_size=16 MB, trunk_file_size=64 MB, trunk_create_file_advance=0, trunk_create_file_time_base=02:00, trunk_create_file_interval=86400, trunk_create_file_space_threshold=20 GB, trunk_init_check_occupying=0, trunk_init_reload_from_binlog=0, trunk_compress_binlog_min_interval=0, store_slave_file_use_link=0
+[2022-03-15 14:31:26] INFO - file: storage_func.c, line: 257, tracker_client_ip: 192.168.56.102, my_server_id_str: 192.168.56.102, g_server_id_in_filename: 1714989248
+[2022-03-15 14:31:27] INFO - file: tracker_client_thread.c, line: 310, successfully connect to tracker server 192.168.56.102:22122, as a tracker client, my ip is 192.168.56.102
+[2022-03-15 14:31:57] INFO - file: tracker_client_thread.c, line: 1263, tracker server 192.168.56.102:22122, set tracker leader: 192.168.56.102:22122
 
 
 # 进入storage,查看（配置）nginx
-[root@Docker nginx-1.12.2]# cat /usr/local/nginx/conf/nginx.conf  
+[root@CentOS-7 nginx-1.12.2]# cat /usr/local/nginx/conf/nginx.conf 
 
 #user  nobody;
 worker_processes  1;
@@ -1936,6 +1952,60 @@ http {
 }
 
 # 测试上传文件
+## ONLY-HOST
+[root@CentOS-7 nginx-1.12.2]# cd /var/fdfs/
+[root@CentOS-7 fdfs]# wget https://tosinjia.github.io/assets/img/gitTutorial-1.5aedb74a.png
+--2022-03-15 14:35:54--  https://tosinjia.github.io/assets/img/gitTutorial-1.5aedb74a.png
+Resolving tosinjia.github.io (tosinjia.github.io)... failed: Name or service not known.
+wget: unable to resolve host address 'tosinjia.github.io'
+### sftp上传
+[root@CentOS-7 fdfs]# ll
+-rw-r--r--.   1 root root 47884 Mar 15 14:42 gitTutorial-1.5aedb74a.png
+[root@CentOS-7 fdfs]# /usr/bin/fdfs_upload_file /etc/fdfs/client.conf gitTutorial-1.5aedb74a.png 
+group1/M00/00/00/wKg4ZmIwNeqAOQV3AAC7DKpELK4856.png
+[root@CentOS-7 fdfs]# /usr/bin/fdfs_test /etc/fdfs/client.conf upload gitTutorial-1.5aedb74a.png
+This is FastDFS client test program v5.11
+
+Copyright (C) 2008, Happy Fish / YuQing
+
+FastDFS may be copied only under the terms of the GNU General
+Public License V3, which may be found in the FastDFS source kit.
+Please visit the FastDFS Home Page http://www.csource.org/ 
+for more detail.
+
+[2022-03-15 14:46:06] DEBUG - base_path=/var/fdfs, connect_timeout=30, network_timeout=60, tracker_server_count=1, anti_steal_token=0, anti_steal_secret_key length=0, use_connection_pool=0, g_connection_pool_max_idle_time=3600s, use_storage_id=0, storage server id count: 0
+
+tracker_query_storage_store_list_without_group: 
+        server 1. group_name=, ip_addr=192.168.56.102, port=23000
+
+group_name=group1, ip_addr=192.168.56.102, port=23000
+storage_upload_by_filename
+group_name=group1, remote_filename=M00/00/00/wKg4ZmIwNi6AFTz3AAC7DKpELK4735.png
+source ip address: 192.168.56.102
+file timestamp=2022-03-15 14:46:06
+file size=47884
+file crc32=2856594606
+example file url: http://192.168.56.102/group1/M00/00/00/wKg4ZmIwNi6AFTz3AAC7DKpELK4735.png
+storage_upload_slave_by_filename
+group_name=group1, remote_filename=M00/00/00/wKg4ZmIwNi6AFTz3AAC7DKpELK4735_big.png
+source ip address: 192.168.56.102
+file timestamp=2022-03-15 14:46:06
+file size=47884
+file crc32=2856594606
+example file url: http://192.168.56.102/group1/M00/00/00/wKg4ZmIwNi6AFTz3AAC7DKpELK4735_big.png
+
+[root@CentOS-7 fdfs]# wget http://192.168.56.102:8888/group1/M00/00/00/wKg4ZmIwNi6AFTz3AAC7DKpELK4735_big.png
+--2022-03-15 14:48:15--  http://192.168.56.102:8888/group1/M00/00/00/wKg4ZmIwNi6AFTz3AAC7DKpELK4735_big.png
+Connecting to 192.168.56.102:8888... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 47884 (47K) [image/png]
+Saving to: 'wKg4ZmIwNi6AFTz3AAC7DKpELK4735_big.png'
+
+100%[===================================================================================================================================================================================>] 47,884      --.-K/s   in 0s      
+
+2022-03-15 14:48:15 (204 MB/s) - 'wKg4ZmIwNi6AFTz3AAC7DKpELK4735_big.png' saved [47884/47884]
+
+## NAT
 [root@Docker nginx-1.12.2]# cd /var/fdfs/
 [root@Docker fdfs]# wget https://tosinjia.github.io/assets/img/gitTutorial-1.5aedb74a.png
 
@@ -1945,24 +2015,43 @@ upload file fail, error no: 111, error info: Connection refused
 
 [root@Docker fdfs]# /usr/bin/fdfs_upload_file /etc/fdfs/client.conf gitTutorial-1.5aedb74a.png 
 group1/M00/00/00/CgACD2IoH4OAb1s5AAC7DKpELK4099.png
+[root@CentOS-7 fdfs]# /usr/bin/fdfs_test /etc/fdfs/client.conf upload gitTutorial-1.5aedb74a.png
+This is FastDFS client test program v5.11
 
-[root@Docker fdfs]# wget http://172.16.6.89:8888/group1/M00/00/00/CgACD2IoH4OAb1s5AAC7DKpELK4099.png
---2022-03-09 11:32:54--  http://172.16.6.89:8888/group1/M00/00/00/CgACD2IoH4OAb1s5AAC7DKpELK4099.png
-Connecting to 172.16.6.89:8888... connected.
-HTTP request sent, awaiting response... 200 OK
-Length: 47884 (47K) [image/png]
-Saving to: 'CgACD2IoH4OAb1s5AAC7DKpELK4099.png'
+Copyright (C) 2008, Happy Fish / YuQing
 
-100%[==================================================================================================================================>] 47,884      --.-K/s   in 0s      
+FastDFS may be copied only under the terms of the GNU General
+Public License V3, which may be found in the FastDFS source kit.
+Please visit the FastDFS Home Page http://www.csource.org/ 
+for more detail.
 
-2022-03-09 11:32:54 (341 MB/s) - 'CgACD2IoH4OAb1s5AAC7DKpELK4099.png' saved [47884/47884]
+[2022-03-15 10:15:26] DEBUG - base_path=/var/fdfs, connect_timeout=30, network_timeout=60, tracker_server_count=1, anti_steal_token=0, anti_steal_secret_key length=0, use_connection_pool=0, g_connection_pool_max_idle_time=3600s, use_storage_id=0, storage server id count: 0
+
+tracker_query_storage_store_list_without_group: 
+        server 1. group_name=, ip_addr=10.0.2.2, port=23000
+
+group_name=group1, ip_addr=10.0.2.2, port=23000
+storage_upload_by_filename
+group_name=group1, remote_filename=M00/00/00/CgACD2Iv9r6AYpl6AAC7DKpELK4993.png
+source ip address: 10.0.2.15
+file timestamp=2022-03-15 10:15:26
+file size=47884
+file crc32=2856594606
+example file url: http://10.0.2.2/group1/M00/00/00/CgACD2Iv9r6AYpl6AAC7DKpELK4993.png
+storage_upload_slave_by_filename
+group_name=group1, remote_filename=M00/00/00/CgACD2Iv9r6AYpl6AAC7DKpELK4993_big.png
+source ip address: 10.0.2.15
+file timestamp=2022-03-15 10:15:26
+file size=47884
+file crc32=2856594606
+example file url: http://10.0.2.2/group1/M00/00/00/CgACD2Iv9r6AYpl6AAC7DKpELK4993_big.png
 ```
 
 ###### 虚拟主机
 ```
-[root@Docker ~]# wget http://172.16.6.89:8888/group1/M00/00/00/CgACD2IoH4OAb1s5AAC7DKpELK4099.png
+[root@CentOS-7 ~]# wget http://192.168.56.102:8888/group1/M00/00/00/wKg4ZmIwNi6AFTz3AAC7DKpELK4735_big.png
 
-[root@Docker ~]# tree /var/fdfs/tracker/
+[root@CentOS-7 ~]# tree /var/fdfs/tracker/
 /var/fdfs/tracker/
 ├── data
 │   ├── fdfs_trackerd.pid
@@ -1973,9 +2062,8 @@ Saving to: 'CgACD2IoH4OAb1s5AAC7DKpELK4099.png'
 └── logs
     └── trackerd.log
 
-[root@Docker ~]# tree /var/fdfs/storage/ -L 2
+[root@CentOS-7 ~]# tree /var/fdfs/storage/ -L 2
 /var/fdfs/storage/
-├── CgACD2IoH4OAb1s5AAC7DKpELK4099.png
 ├── data
 │   ├── 00
 │   ├── 01
@@ -1987,8 +2075,10 @@ Saving to: 'CgACD2IoH4OAb1s5AAC7DKpELK4099.png'
 │   ├── FF
 │   ├── storage_stat.dat
 │   └── sync
-└── logs
-    └── storaged.log
+├── gitTutorial-1.5aedb74a.png
+├── logs
+│   └── storaged.log
+└── wKg4ZmIwNi6AFTz3AAC7DKpELK4735_big.png
 
 # 开机自启动
 [root@CentOS-7 ~]# docker container update tracker --restart=always
@@ -1996,6 +2086,9 @@ tracker
 [root@CentOS-7 ~]# docker container update storage --restart=always
 storage
 ```
+###### 代码验证
+- https://github.com/TosinJia/lyyzoo-fastdfs-java/blob/master/src/main/java/com/lyyzoo/fastdfs/TestFastDFS.java
+
 ###### 问题处理
 1. 上传测试失败
 	1. 10.0.2.15图片上传测试成功
@@ -2027,6 +2120,9 @@ total 0
 touch /var/lock/subsys/local
 touch /var/fdfs/storage/logs/storaged.log
 ```
+4. java上传图片失败
+	- 调整虚拟机网络 HOST-ONLY
+
 ##### 卸载
 ```
 [root@Docker storage]# docker ps
