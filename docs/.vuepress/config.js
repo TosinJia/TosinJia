@@ -35,7 +35,15 @@ module.exports = {
                 { text: 'Japanese12', link: '/language/japanese/' }                        
               ] }
             ]
-          }
+          },
+
+          { text: '编程',link: '/code/',
+            items: [
+              { text: 'Vue', link: '/pages/5164.html'},
+              { text: 'Shell', link: '/pages/531.html'},
+              { text: 'Golang', link: '/pages/aeab08/'},
+            ]
+          },          
         ],
 
         // https://vuepress.vuejs.org/zh/theme/default-theme-config.html#%E4%BE%A7%E8%BE%B9%E6%A0%8F
