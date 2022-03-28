@@ -50,6 +50,10 @@ shift+F4 | 关闭Workspace
 			1. Using script files
 			2. Using a data source
 
+### Model
+1. Tables... [List of Tables]
+1. Columns... [List of Columns]
+
 
 ### Database 
 - Change Current DBMS... 
@@ -296,12 +300,11 @@ End Sub
 ```
 ##### comment写入name
 - [PowerDesigner书签（03）显示comment字段注释内容](https://blog.csdn.net/itanping/article/details/108563626)
+
 ```
 Option   Explicit   
     ValidationMode   =   True   
     InteractiveMode   =   im_Batch
-    Dim blankStr
-    blankStr   =   Space(1)
     Dim   mdl   '   the   current   model  
       
     '   get   the   current   active   model   
@@ -323,8 +326,7 @@ Option   Explicit
                       Dim   col   '   running   column   
                       for   each   col   in   tab.columns   
                       if col.comment = "" or replace(col.comment," ", "")="" Then
-                            col.name = blankStr
-                            blankStr = blankStr & Space(1)
+                            col.name = col.code
                       else  
                             col.name = col.comment   
                       end if  
@@ -348,10 +350,23 @@ Option   Explicit
           Next   
     end   sub
 ```
+#### Model Options... 【Model Options】
+- Model Settings
+    - 点击Reference, 
+        - 把"Auto-migrate columns"这个checkbox的勾去掉 （PowerDesigner删除外键关系,而不删除外键列）
+
+
+
+
 ### Help
 1. Help Contents F1
 1. Online Documentation
     - [Sybase 产品手册](https://infocenter.sybase.com/help/index.jsp)
+
+
+
+
+
 
 ## PhysicalDiagram
 
