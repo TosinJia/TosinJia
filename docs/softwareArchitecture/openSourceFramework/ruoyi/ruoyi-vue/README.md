@@ -1,7 +1,13 @@
 # RuoYi-Vue
 [[TOC]]
 
+
+
 ## 参考
+
+- [RuoYi-Vue源码](https://gitee.com/y_project/RuoYi-Vue)
+  - [Forked](https://gitee.com/tosin/RuoYi-Vue)
+
 - [Element官网](https://element.eleme.cn/#/zh-CN)
     - [组件 | Element Upload 上传](https://element.eleme.cn/#/zh-CN/component/upload)
     - [组件 | Element Link 文字链接](https://element.eleme.cn/#/zh-CN/component/link)
@@ -236,3 +242,115 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter
                 ).permitAll()
 ```
 
+
+## 重构
+- 数据库
+```
+[root@SystemFramework ~]# mysql -uroot -h127.0.0.1 -p123456
+mysql> CREATE DATABASE IF NOT EXISTS RuoYi_Vue DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;       
+Query OK, 1 row affected (0.00 sec)
+mysql> use RuoYi_Vue;
+Database changed
+mysql> source /root/RuoYi-Vue/ry_20210908.sql;
+mysql> source /root/RuoYi-Vue/quartz.sql;
+```
+- 缓存
+```
+D:\tools\portable\Redis-x64-3.0.504>redis-server.exe redis.windows.conf
+```
+
+```
+E:\iEnviroment\development\projects\ideaProjects\Demo\system-framework\RuoYi-Vue-master\ruoyi-ui>npm install
+E:\iEnviroment\development\projects\ideaProjects\Demo\system-framework\RuoYi-Vue-master\ruoyi-ui>npm run dev
+```
+- http://localhost/login
+
+### RuoYi-Vue-Oracle
+- https://github.com/yangzongzhuan/RuoYi-Vue-Oracle
+
+### 重构
+- https://blog.csdn.net/qq_36557065/article/details/115488387
+https://doc.ruoyi.vip/ruoyi/other/faq.html#%E5%A6%82%E4%BD%95%E4%B8%8D%E7%99%BB%E5%BD%95%E7%9B%B4%E6%8E%A5%E8%AE%BF%E9%97%AE
+
+> RuoYi -> SqdyEtc
+> ruoyi -> sqdyetc
+> Ruoyi -> Sqdyetc
+> 若依->陕汽德银ETC
+> 3.8.1->1.0.0
+
+#### 前端
+
+1. RuoYi->SqdyEtc	
+	1. 修改文件夹 sqdyetc-ui\src\components\RuoYi
+	1. 查找替换
+
+1. ruoyi->sqdyetc	
+	1. 重构文件
+		1. src\utils\ruoyi.js
+		1. src\assets\styles\ruoyi.scss
+	1. 查找替换
+1. 最终检索不到区分大小写 ruoyi
+1. 若依->陕汽德银ETC 查找替换
+
+#### 后端
+1. RuoYi-Vue-master.zip 解压 修改文件件为 SqdyEtc
+2. 修改项目名称、模块文件夹名
+	- File->Project Structure->Project Project Name SqdyEtc
+3. 修改模块名称
+	- File->Project Structure->Modules
+		- sqdyetc   Apply
+		- sqdyetc-admin
+		- sqdyetc-common
+		- sqdyetc-framework
+		- sqdyetc-generator
+		- sqdyetc-quartz
+		- sqdyetc-system
+4. 修改模块文件夹名
+5. 修改pom文件
+	1. pom.xml ruoyi->sqdyetc
+	2. sqdyetc-admin\pom.xml
+	3. sqdyetc-common\pom.xml
+	4. sqdyetc-framework\pom.xml
+	5. sqdyetc-generator\pom.xml
+	6. sqdyetc-quartz\pom.xml
+	7. sqdyetc-system\pom.xml
+
+6. 检测
+	1. 修改数据库配置 sqdyetc-admin\src\main\resources\application-druid.yml
+	```
+	            master:
+	                url: jdbc:mysql://localhost:3306/RuoYi_Vue?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
+	                username: root
+	                password: 123456
+	```
+	2. 前端
+	```
+	SqdyEtc>cd sqdyetc-ui
+	SqdyEtc\sqdyetc-ui>npm install
+	SqdyEtc\sqdyetc-ui>npm run dev
+	```
+6. 更换项目所有包名称com.ruoyi.xxx换成com.dyetc.xxx
+	- com.ruoyi -> Refactor -> Rename 
+		-> In Whole Project
+		-> 勾选 Search in comments and strings; Search for text occurences
+		-> Preview -> Do Refactor
+
+1. 启动检测
+	1. sqdyetc-admin\src\main\resources\application.yml
+		1. ruoyi->sqdyetc
+		2. RuoYi -> SqdyEtc
+1. 替换
+	1. RuoYi -> SqdyEtc
+		- RuoYiConfig -> SqdyEtcConfig
+		- RuoYiApplication -> SqdyEtcApplication
+		- RuoYiServletInitializer -> SqdyEtcServletInitializer
+	1. Ruoyi -> Sqdyetc
+		- RuoyiScheduler
+	1. 替换其他字符串，最终检索不到区分大小写 ruoyi
+
+1. 若依->陕汽德银ETC 查找替换
+
+##### 数据库
+```
+CREATE DATABASE IF NOT EXISTS `sqdy-etc` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+```

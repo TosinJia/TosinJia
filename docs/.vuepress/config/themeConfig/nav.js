@@ -7,6 +7,7 @@ module.exports =[
             items:[
                 {text:'简介', link:'/softwareArchitecture/openSourceFramework/introduction'},
                 {text:'RuoYi-Vue', link:'/softwareArchitecture/openSourceFramework/ruoyi/ruoyi-vue/'},
+                {text:'RuoYi-Cloud', link:'/softwareArchitecture/openSourceFramework/ruoyi/ruoyi-cloud/'},
             ]
         },
     ]},

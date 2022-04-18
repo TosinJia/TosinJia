@@ -2,11 +2,61 @@
 [[TOC]]
 
 - [秒建一个后台管理系统？用这5个开源免费的Java项目就够了](https://zhuanlan.zhihu.com/p/142046905)
+
+## 前端框架
+### PanJiaChen
+- [Docs](https://panjiachen.github.io/vue-element-admin-site/#/)
+#### vue-admin-template
+- [vue-admin-template](https://github.com/PanJiaChen/vue-admin-template/)
+
+#### vue-element-admin
+- [vue-element-admin](https://github.com/PanJiaChen/vue-element-admin)
+- [介绍 | vue-element-admin](https://panjiachen.gitee.io/vue-element-admin-site/zh/guide/)
+    - [手摸手，带你用vue撸后台 系列一（基础篇）](https://juejin.cn/post/6844903476661583880)
+
+
+
+##### 问题记录
+###### The unauthenticated git protocol on port 9418 is no longer supported.
+- 异常信息
+```
+npm WARN deprecated left-pad@1.3.0: use String.prototype.padStart()
+npm ERR! Error while executing:
+npm ERR! D:\tools\portable\PortableGit\cmd\git.EXE ls-remote -h -t git://github.com/adobe-webplatform/eve.git
+npm ERR!
+npm ERR! fatal: remote error:
+npm ERR!   The unauthenticated git protocol on port 9418 is no longer supported.
+npm ERR! Please see https://github.blog/2021-09-01-improving-git-protocol-security-github/ for more information.
+npm ERR!
+npm ERR! exited with error code: 128
+```
+- 解决方案：使用https:替换git:
+```
+>git config --global url."https://".insteadOf git://
+
+>git config --list
+url.https://.insteadof=git://
+```
+
+- 参考
+    - [fatal: remote error: The unauthenticated git protocol on port 9418 is no longer support问题解决](https://blog.csdn.net/m290345792/article/details/123577379)
 ## RuoYi
 
 - [技术官网](https://ruoyi.vip/)
 - [文档地址](http://doc.ruoyi.vip/)
 
+
+- 开发环境配置
+```
+E:\iEnviroment\development\projects\ideaProjects\Demo\system-framework
+
+Open File or Project
+	\RuoYi-master
+	\RuoYi-Vue-master
+Maven
+ E:/iEnviroment/development/apache-maven-3.8.2
+Java Compiler 8
+```
 
 ### RuoYi-Vue
 - [文档](http://doc.ruoyi.vip/ruoyi-vue/)
@@ -738,6 +788,16 @@ end;
 
 ### RuoYi
 - [项目地址](https://gitee.com/y_project/RuoYi)
+
+
+```
+mysql> CREATE DATABASE IF NOT EXISTS RuoYi DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci; 
+Query OK, 1 row affected (0.00 sec)
+mysql> use RuoYi;
+Database changed
+mysql> source /root/RuoYi/ry_20210924.sql
+mysql> source /root/RuoYi/quartz.sql
+```
 #### 重构
 ##### 1. git clone 项目到本地
 ```

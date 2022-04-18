@@ -19,6 +19,14 @@
         - portableSoft
 
 ### 功能菜单
+
+#### 管理
+
+##### 全局设定
+![GlobalSettings-Network](../images/VirtualBox-GlobalSettings-Network.png)
+##### 主机网络管理器
+![HostNetworkManager](../images/VirtualBox-HostNetworkManager.jpg)
+
 #### 视图
 功能 | 快捷键 | 说明
 ---|---|---
@@ -66,6 +74,8 @@ slmgr /ato
 虚拟机 -> 其他主机 | 可以 | 可以 | 不可以 | 可以
 其他主机 -> 主机 | 不可以 | 可以 | 不可以 | 不可以
 虚拟机之间 | 不可以 | 可以 | 同网络可以 | 可以
+
+
 
 #### NAT
 ![NAT](../images/virtualMachine-nat.png)
@@ -131,6 +141,133 @@ C:\Users\User>ipconfig
 
 - [virtualBox虚拟机网络配置教程](https://blog.csdn.net/wyj19950908/article/details/98966137)
 
+#### 多网卡配置
+- https://zhuanlan.zhihu.com/p/341328334
+
+1. 关闭虚拟机
+
+![网卡1](../images/virtualMachine-networkCard1.png)
+![网卡2](../images/virtualMachine-networkCard2.jpg)
+
+
+2. 启动虚拟机，进入CentOS进行额外的配置
+
+```
+[root@CentOS-7 ~]# ip addr
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host 
+       valid_lft forever preferred_lft forever
+2: enp0s3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP group default qlen 1000
+    link/ether 08:00:27:15:2d:ef brd ff:ff:ff:ff:ff:ff
+    inet 10.0.2.15/24 brd 10.0.2.255 scope global noprefixroute dynamic enp0s3
+       valid_lft 86360sec preferred_lft 86360sec
+    inet6 fe80::806f:eb6c:8c0f:1819/64 scope link noprefixroute 
+       valid_lft forever preferred_lft forever
+3: enp0s8: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP group default qlen 1000
+    link/ether 08:00:27:12:50:a2 brd ff:ff:ff:ff:ff:ff
+    inet 192.168.56.104/24 brd 192.168.56.255 scope global noprefixroute dynamic enp0s8
+       valid_lft 560sec preferred_lft 560sec
+    inet6 fe80::e832:a2fa:3348:ca90/64 scope link noprefixroute 
+       valid_lft forever preferred_lft forever
+
+# 查看网卡状态，可以看到enp0s8网卡缺少配置文件，需要自己配置
+[root@CentOS-7 ~]# service network status
+Configured devices:
+lo enp0s3
+Currently active devices:
+lo enp0s3 enp0s8
+```
+3. 添加网卡配置文件
+```
+一、使用nmcli con查看网卡uuid
+[root@CentOS-7 ~]# nmcli con
+NAME                UUID                                  TYPE      DEVICE 
+enp0s3              de52877b-61ff-40db-a1dc-6abe8669d2cd  ethernet  enp0s3 
+Wired connection 1  faa000fb-7e3d-3f4e-90c5-b9f5bcf091fb  ethernet  enp0s8
+
+二、使用ip addr或者ifconfig查看网卡mac地址
+[root@CentOS-7 ~]# ip addr
+3: enp0s8: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP group default qlen 1000
+    link/ether 08:00:27:12:50:a2 brd ff:ff:ff:ff:ff:ff
+    inet 192.168.56.104/24 brd 192.168.56.255 scope global noprefixroute dynamic enp0s8
+       valid_lft 538sec preferred_lft 538sec
+    inet6 fe80::e832:a2fa:3348:ca90/64 scope link noprefixroute 
+       valid_lft forever preferred_lft forever
+
+
+三、将/etc/sysconfig/network-scripts/ifcfg-enp0s3拷贝一份，重命名成ifcfg-enp0s8。然后修改enp0s8的网卡配置文件，修改完成以后，使用service network restart重启网络使配置生效
+[root@CentOS-7 ~]# cp /etc/sysconfig/network-scripts/ifcfg-enp0s3 /etc/sysconfig/network-scripts/ifcfg-enp0s8
+
+[root@CentOS-7 ~]# vim /etc/sysconfig/network-scripts/ifcfg-enp0s3
+TYPE="Ethernet"
+PROXY_METHOD="none"
+BROWSER_ONLY="no"
+BOOTPROTO="dhcp"
+DEFROUTE="yes"
+IPV4_FAILURE_FATAL="no"
+IPV6INIT="yes"
+IPV6_AUTOCONF="yes"
+IPV6_DEFROUTE="yes"
+IPV6_FAILURE_FATAL="no"
+IPV6_ADDR_GEN_MODE="stable-privacy"
+NAME="enp0s3"
+UUID="de52877b-61ff-40db-a1dc-6abe8669d2cd"
+DEVICE="enp0s3"
+ONBOOT="yes"
+
+[root@CentOS-7 ~]# vim /etc/sysconfig/network-scripts/ifcfg-enp0s8
+TYPE="Ethernet"
+PROXY_METHOD="none"
+BROWSER_ONLY="no"
+#BOOTPROTO="dhcp"
+BOOTPROTO=none
+HWADDR=08:00:27:12:50:a2
+DEFROUTE="yes"
+IPV4_FAILURE_FATAL="no"
+IPV6INIT="yes"
+IPV6_AUTOCONF="yes"
+IPV6_DEFROUTE="yes"
+IPV6_FAILURE_FATAL="no"
+IPV6_ADDR_GEN_MODE="stable-privacy"
+#NAME="enp0s3"
+NAME=enp0s8
+UUID="faa000fb-7e3d-3f4e-90c5-b9f5bcf091fb"
+#DEVICE="enp0s3"
+DEVICE=enp0s8
+ONBOOT="yes"
+
+# IP
+IPADDR=192.168.56.103
+# 子网掩码
+NETMASK=255.255.255.0
+# 网关
+GATEWAY=192.168.56.1
+```
+4. 重启服务器、查看网卡
+```
+[root@CentOS-7 ~]# ip addr
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host 
+       valid_lft forever preferred_lft forever
+2: enp0s3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP group default qlen 1000
+    link/ether 08:00:27:15:2d:ef brd ff:ff:ff:ff:ff:ff
+    inet 10.0.2.15/24 brd 10.0.2.255 scope global noprefixroute dynamic enp0s3
+       valid_lft 86377sec preferred_lft 86377sec
+    inet6 fe80::806f:eb6c:8c0f:1819/64 scope link noprefixroute 
+       valid_lft forever preferred_lft forever
+3: enp0s8: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP group default qlen 1000
+    link/ether 08:00:27:12:50:a2 brd ff:ff:ff:ff:ff:ff
+    inet 192.168.56.103/24 brd 192.168.56.255 scope global noprefixroute enp0s8
+       valid_lft forever preferred_lft forever
+    inet6 fe80::e832:a2fa:3348:ca90/64 scope link noprefixroute 
+       valid_lft forever preferred_lft forever
+```
 ### 导入导出虚拟机
 #### 导入
 1. 选择要导入的虚拟电脑 D:\VMware backup\centos.ova

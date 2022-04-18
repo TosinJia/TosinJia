@@ -88,7 +88,7 @@ set MODE="standalone"
 	2022-01-29 09:03:05,131 INFO Completed initialization in 22 ms
 	```
 4. 访问
-	- http://127.0.0.1:8848/nacos
+	- [http://127.0.0.1:8848/nacos](http://127.0.0.1:8848/nacos)
 	- http://192.168.56.1:8848/nacos/index.html
         - nacos nacos
 

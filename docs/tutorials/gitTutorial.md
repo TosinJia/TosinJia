@@ -2590,6 +2590,21 @@ nothing added to commit but untracked files present (use "git add" to track)
 
 ```
 
+## 综合实战
+
+```
+\>git clone https://e.coding.net/svtech/truckfinance/dy-api.git
+\>cd dy-pcweb
+\dy-pcweb>git branch -a
+* master
+  remotes/origin/HEAD -> origin/master
+  remotes/origin/master
+  remotes/origin/master-dev
+\dy-pcweb>git checkout -b master-dev origin/master-dev
+Switched to a new branch 'master-dev'
+Branch 'master-dev' set up to track remote branch 'master-dev' from 'origin'.
+```
+
 ## Git Docker
 ### Git
 #### 版本控制工具
