@@ -3,10 +3,12 @@
 # Docker
 [[TOC]]
 ## 参考
-- https://www.docker.com/ TosinJia d111111
+- https://www.docker.com/
     - https://docs.docker.com/
+        - [docker (base command)](https://docs.docker.com/engine/reference/commandline/docker/)
         - https://docs.docker.com/engine/reference/commandline/cli/
         - https://docs.docker.com/engine/reference/commandline/run/
+        - [docker update](https://docs.docker.com/engine/reference/commandline/update/)
 - Docker Hub
 		- https://docs.docker.com/reference/
 
@@ -26,7 +28,6 @@
     - https://www.docker.com/products/docker-toolbox
 
 ## Docker Toolbox
-    tosinjia:d111111
     C:\Users\TosinJia\.docker\machine\cache
 
 ## 常用命令及参数
@@ -269,7 +270,255 @@ yum remove docker docker-common docker-selinux docker-engine
 - [2021最新Docker入门到精通视频](https://www.bilibili.com/video/BV1844y167D1)
 - [笔记](https://www.cnblogs.com/mrhelloworld/tag/Docker/)
 
-### 八 Docker 镜像的备份恢复迁移
+
+### Docker Swarm 集群环境搭建及弹性服务部署
+- [Docker Swarm 集群环境搭建及弹性服务部署](https://www.cnblogs.com/mrhelloworld/p/docker16.html)
+
+#### 参考资料
+- https://docs.docker.com/engine/swarm/swarm-tutorial/
+- https://docs.docker.com/engine/swarm/swarm-mode/
+- https://docs.docker.com/engine/swarm/how-swarm-mode-works/pki/
+- https://docs.docker.com/engine/swarm/join-nodes/
+- https://docs.docker.com/engine/swarm/swarm-tutorial/rolling-update/
+### Docker Swarm 集群管理利器核心概念扫盲
+- [Docker Swarm 集群管理利器核心概念扫盲](https://www.cnblogs.com/mrhelloworld/p/docker15.html)
+
+#### 1.0 Swarm 简介
+- Docker Swarm 和 Docker Compose 一样，都是 Docker 官方容器编排工具，但不同的是，**Docker Compose 是一个在单个服务器或主机上创建多个容器的工具**，而 **Docker Swarm 则可以在多个服务器或主机上创建容器集群服务**，对于微服务的部署，显然 Docker Swarm 会更加适合。
+#### 2.0 Swarm 核心概念
+##### Swarm
+- Docker Engine 1.12 引入了 Swarm 模式，一个 Swarm 由多个 Docker 主机组成，它们以 Swarm 集群模式运行。Swarm 集群由 **Manager 节点**（管理者角色，管理成员和委托任务）和 **Worker 节点**（工作者角色，运行 Swarm 服务）组成。这些 Docker 主机有些是 Manager 节点，有些是 Worker 节点，或者同时扮演这两种角色。
+
+- Swarm 创建服务时，需要指定要使用的镜像、在运行的容器中执行的命令、定义其副本的数量、可用的网络和数据卷、将服务公开给外部的端口等等。与独立容器相比，群集服务的主要优势之一是，你可以修改服务的配置，包括它所连接的网络和数据卷等，而不需要手动重启服务。还有就是，如果一个 Worker Node 不可用了，Docker 会调度不可用 Node 的 Task 任务到其他 Nodes 上。
+
+#### 参考资料
+- https://docs.docker.com/engine/swarm/
+- https://docs.docker.com/engine/swarm/key-concepts/
+- https://docs.docker.com/engine/swarm/ swarm-tutorial/
+- https://docs.docker.com/engine/swarm/how-swarm-mode-works/nodes/
+- https://docs.docker.com/engine/swarm/how-swarm-mode-works/services/
+
+### Docker Compose 搭建 Redis Cluster 集群环境
+- [Docker Compose 搭建 Redis Cluster 集群环境](https://www.cnblogs.com/mrhelloworld/p/docker14.html)
+### Docker 容器编排利器 Docker Compose
+- [Docker 容器编排利器 Docker Compose](https://www.cnblogs.com/mrhelloworld/p/docker13.html)
+
+#### 参考资料
+- https://docs.docker.com/compose/install/
+- http://get.daocloud.io/#install-compose
+- https://docs.docker.com/compose/
+- https://docs.docker.com/compose/compose-file/
+- https://docs.docker.com/compose/reference/overview/
+
+### Docker 搭建 Redis Cluster 集群环境
+- [Docker 搭建 Redis Cluster 集群环境](https://www.cnblogs.com/mrhelloworld/p/docker12.html)
+
+### Docker 网络模式详解及容器间网络通信
+- [Docker 网络模式详解及容器间网络通信](https://www.cnblogs.com/mrhelloworld/p/docker11.html)
+
+### Docker 私有镜像仓库的搭建及认证
+- [Docker 私有镜像仓库的搭建及认证](https://www.cnblogs.com/mrhelloworld/p/docker10.html)
+
+- DockerHub 为我们提供了很多官方镜像和个人上传的镜像，我们可以下载机构或个人提供的镜像，也可以上传我们自己的本地镜像，但缺点是：
+    - 由于网络的原因，从 DockerHub 下载和上传镜像速度可能会比较慢；
+    - 在生产上使用的 Docker 镜像可能包含我们的代码、配置信息等，不想被外部人员获取，只允许内网的开发人员下载。
+
+- 为了解决以上问题，Docker 官方提供了一个叫做 ```registry``` 的镜像用于搭建本地私有仓库使用。在内部网络搭建的 Docker 私有仓库可以使内网人员下载、上传都非常快速，不受外网带宽等因素的影响，同时不在内网的人员也无法下载我们的镜像，并且私有仓库也支持配置仓库认证功能。接下来详细讲解 ```registry``` 私有仓库的搭建过程。
+
+#### 1.0 拉取私有仓库镜像
+- 拉取私有仓库镜像。
+```
+[root@Docker ~]# docker pull registry
+Using default tag: latest
+latest: Pulling from library/registry
+79e9f2f55bf5: Pull complete 
+0d96da54f60b: Pull complete 
+5b27040df4a2: Pull complete 
+e2ead8259a04: Pull complete 
+3790aef225b9: Pull complete 
+Digest: sha256:169211e20e2f2d5d115674681eb79d21a217b296b43374b8e39f97fcf866b375
+Status: Downloaded newer image for registry:latest
+docker.io/library/registry:latest
+```
+#### 2.0 修改配置
+- 修改 daemon.json 文件。
+- 添加以下内容```"insecure-registries": ["192.168.56.106:5000"]```，用于让 Docker 信任私有仓库地址，保存退出。
+```
+[root@Docker ~]# ip addr
+3: enp0s8: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP group default qlen 1000
+    link/ether 08:00:27:27:bb:60 brd ff:ff:ff:ff:ff:ff
+    inet 192.168.56.106/24 brd 192.168.56.255 scope global noprefixroute dynamic enp0s8
+       valid_lft 422sec preferred_lft 422sec
+    inet6 fe80::7601:80e4:1d9f:6c8c/64 scope link noprefixroute 
+       valid_lft forever preferred_lft forever
+
+[root@Docker ~]# vim /etc/docker/daemon.json 
+{
+  "registry-mirrors": ["https://docker.mirrors.ustc.edu.cn", "http://hub-mirror.c.163.com"],
+  "insecure-registries": ["192.168.56.106:5000"]
+}
+
+```
+- 重新加载配置信息及重启 Docker 服务。
+```
+# 重新加载某个服务的配置文件
+[root@Docker ~]# systemctl daemon-reload
+# 重新启动 docker
+[root@Docker ~]# systemctl restart docker
+```
+#### 3.0 创建私有仓库容器
+- 创建私有仓库容器。
+    - -d：后台运行容器；
+    - --name：为创建的容器命名；
+    - -p：表示端口映射，前者是宿主机端口，后者是容器内的映射端口。可以使用多个 -p 做多个端口映射；
+    - -v：将容器内 /var/lib/registry 目录下的数据挂载至宿主机 /mydata/docker_registry 目录下；
+```
+[root@Docker ~]# docker run -di --name iregistry -p 5000:5000 -v /mydata/docker_registry:/var/lib/registry registry
+```
+- 打开浏览器输入：[http://192.168.56.106:5000/v2/_catalog](http://192.168.56.106:5000/v2/_catalog) 看到 {"repositories":[]} 表示私有仓库搭建成功并且内容为空。
+#### 4.0 推送镜像至私有仓库
+- 先给镜像设置标签 docker tag local-image:tagname new-repo:tagname；
+- 再将镜像推送至私有仓库 docker push new-repo:tagname。
+```
+[root@Docker ~]# docker images
+REPOSITORY                  TAG       IMAGE ID       CREATED        SIZE
+hello-world                 latest    feb5d9fea6a5   7 months ago   13.3kB
+[root@Docker ~]# docker tag hello-world:latest 192.168.56.106:5000/test-hello-world:1.0.0
+[root@Docker ~]# docker images
+REPOSITORY                             TAG       IMAGE ID       CREATED        SIZE
+192.168.56.106:5000/test-hello-world   1.0.0     feb5d9fea6a5   7 months ago   13.3kB
+[root@Docker ~]# docker push 192.168.56.106:5000/test-hello-world:1.0.0
+The push refers to repository [192.168.56.106:5000/test-hello-world]
+e07ee1baac5f: Pushed 
+1.0.0: digest: sha256:f54a58bc1aac5ea1a25d796ae155dc228b3f0e11d046ae276b39c4bf2f13d8c4 size: 525
+```
+- 打开浏览器输入：[http://192.168.56.106:5000/v2/_catalog](http://192.168.56.106:5000/v2/_catalog) 可以看到私有仓库中已上传的镜像。
+    1. 获取仓库类的镜像：
+        - http://192.168.56.106:5000/v2/_catalog
+    2. 获取某个镜像的标签列表 ```/v2/image_name/tags/list```
+        - http://192.168.56.106:5000/v2/test-hello-world/tags/list
+    - [docker 查询或获取私有仓库(registry)中的镜像](https://www.west.cn/docs/56628.html)
+- 由于我们做了目录挂载，因此可以在宿主机 /mydata/docker_registry/docker/registry/v2/repositories 目录下查看。
+```
+[root@Docker ~]# tree /mydata/docker_registry
+/mydata/docker_registry
+└── docker
+    └── registry
+        └── v2
+            ├── blobs
+            │   └── sha256
+            │       ├── 2d
+            │       │   └── 2db29710123e3e53a794f2694094b9b4338aa9ee5c40b930cb8063a1be392c54
+            │       │       └── data
+            │       ├── f5
+            │       │   └── f54a58bc1aac5ea1a25d796ae155dc228b3f0e11d046ae276b39c4bf2f13d8c4
+            │       │       └── data
+            │       └── fe
+            │           └── feb5d9fea6a5e9606aa995e879d862b825965ba48de054caab5ef356dc6b3412
+            │               └── data
+            └── repositories
+                └── test-hello-world
+                    ├── _layers
+                    │   └── sha256
+                    │       ├── 2db29710123e3e53a794f2694094b9b4338aa9ee5c40b930cb8063a1be392c54
+                    │       │   └── link
+                    │       └── feb5d9fea6a5e9606aa995e879d862b825965ba48de054caab5ef356dc6b3412
+                    │           └── link
+                    ├── _manifests
+                    │   ├── revisions
+                    │   │   └── sha256
+                    │   │       └── f54a58bc1aac5ea1a25d796ae155dc228b3f0e11d046ae276b39c4bf2f13d8c4
+                    │   │           └── link
+                    │   └── tags
+                    │       └── 1.0.0
+                    │           ├── current
+                    │           │   └── link
+                    │           └── index
+                    │               └── sha256
+                    │                   └── f54a58bc1aac5ea1a25d796ae155dc228b3f0e11d046ae276b39c4bf2f13d8c4
+                    │                       └── link
+                    └── _uploads
+
+28 directories, 8 files
+```
+
+
+
+#### 5.0 配置私有仓库认证
+### 9 DockerHub 镜像仓库的使用
+- [DockerHub 镜像仓库的使用](https://www.cnblogs.com/mrhelloworld/p/docker9.html)
+
+- 之前我们使用的镜像都是从 DockerHub 公共仓库拉取的，我们也学习了如何制作自己的镜像，但是通过 tar 包的方式实现镜像的备份恢复迁移对于团队协作开发并不是特别友好，我们也可以将镜像推送至 DockerHub 仓库方便使用。
+
+- 温馨提示：如果构建的镜像内携带了项目数据，建议还是使用私有仓库比较好。
+
+#### 1.0 注册账户
+- [官网](https://hub.docker.com/)
+#### 2.0 登录账户
+- 通过 docker login 命令输入账号密码登录 DockerHub。
+```
+[root@Docker ~]# docker login
+Login with your Docker ID to push and pull images from Docker Hub. If you don't have a Docker ID, head over to https://hub.docker.com to create one.
+Username: tosinjia
+Password: 
+WARNING! Your password will be stored unencrypted in /root/.docker/config.json.
+Configure a credential helper to remove this warning. See
+https://docs.docker.com/engine/reference/commandline/login/#credentials-store
+
+Login Succeeded
+```
+#### 3.0 推送镜像至仓库
+- 为了方便测试，我们将 hello-world 镜像拉取至本地，然后再上传至 DockerHub 仓库中。
+- 先给镜像设置标签 ```docker tag local-image:tagname new-repo:tagname```；
+- 再将镜像推送至仓库 ```docker push new-repo:tagname```。
+```
+[root@Docker ~]# docker pull hello-world
+[root@Docker ~]# docker run hello-world
+[root@Docker ~]# docker images
+REPOSITORY          TAG       IMAGE ID       CREATED        SIZE
+hello-world         latest    feb5d9fea6a5   7 months ago   13.3
+[root@Docker ~]# docker tag hello-world:latest tosinjia/test-hello-world:1.0.0
+[root@Docker ~]# docker images
+REPOSITORY                  TAG       IMAGE ID       CREATED        SIZE
+tosinjia/test-hello-world   1.0.0     feb5d9fea6a5   7 months ago   13.3kB
+[root@Docker ~]# docker push tosinjia/test-hello-world:1.0.0
+The push refers to repository [docker.io/tosinjia/test-hello-world]
+e07ee1baac5f: Mounted from library/hello-world 
+1.0.0: digest: sha256:f54a58bc1aac5ea1a25d796ae155dc228b3f0e11d046ae276b39c4bf2f13d8c4 size: 525
+```
+#### 4.0 查看仓库
+- https://hub.docker.com/repository/docker/tosinjia/test-hello-world
+    - https://hub.docker.com/repository/registry-1.docker.io/tosinjia/test-hello-world/tags?page=1&ordering=last_updated
+#### 5.0 拉取镜像
+- 通过 ``` docker pull tosinjia/test-hello-world:1.0.0 ``` 测试镜像是否可以拉取。
+```
+[root@Docker ~]# docker pull tosinjia/test-hello-world:1.0.0
+1.0.0: Pulling from tosinjia/test-hello-world
+Digest: sha256:f54a58bc1aac5ea1a25d796ae155dc228b3f0e11d046ae276b39c4bf2f13d8c4
+Status: Image is up to date for tosinjia/test-hello-world:1.0.0
+docker.io/tosinjia/test-hello-world:1.0.0
+
+[root@Docker ~]# docker rmi tosinjia/test-hello-world:1.0.0
+Untagged: tosinjia/test-hello-world:1.0.0
+Untagged: tosinjia/test-hello-world@sha256:f54a58bc1aac5ea1a25d796ae155dc228b3f0e11d046ae276b39c4bf2f13d8c4
+
+[root@Docker ~]# docker pull tosinjia/test-hello-world:1.0.0
+1.0.0: Pulling from tosinjia/test-hello-world
+Digest: sha256:f54a58bc1aac5ea1a25d796ae155dc228b3f0e11d046ae276b39c4bf2f13d8c4
+Status: Downloaded newer image for tosinjia/test-hello-world:1.0.0
+docker.io/tosinjia/test-hello-world:1.0.0
+[root@Docker ~]# docker images
+REPOSITORY                  TAG       IMAGE ID       CREATED        SIZE
+tosinjia/test-hello-world   1.0.0     feb5d9fea6a5   7 months ago   13.3kB
+[root@Docker ~]# docker run tosinjia/test-hello-world:1.0.0
+```
+#### 6.0 退出账号
+- 通过 docker logout 命令退出 DockerHub。
+```
+[root@Docker ~]# docker logout
+Removing login credentials for https://index.docker.io/v1/
+```
+### Docker 镜像的备份恢复迁移
 - [Docker 镜像的备份恢复迁移](https://www.cnblogs.com/mrhelloworld/p/docker8.html)
 - https://www.bilibili.com/video/BV1844y167D1?p=34 - 
 
