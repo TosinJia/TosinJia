@@ -303,6 +303,56 @@ yum remove docker docker-common docker-selinux docker-engine
 ### Docker 容器编排利器 Docker Compose
 - [Docker 容器编排利器 Docker Compose](https://www.cnblogs.com/mrhelloworld/p/docker13.html)
 
+#### 1.0  Compose 简介
+- 通过前面几篇文章的学习，我们可以通过 Dockerfile 文件让用户很方便的定义一个单独的应用容器。然而，在日常工作中，经常会碰到需要多个容器相互配合来完成某项任务的情况，例如之前我给大家讲过的《Docker 搭建 Redis Cluster 集群》，或者开发一个 Web 应用，除了 Web 服务容器本身，还需要数据库服务容器、缓存容器，甚至还包括负载均衡容器等等。
+
+- Docker Compose 恰好满足了这样的需求，它是用于定义和运行多容器 Docker 应用程序的工具。通过 Compose，您可以使用 ```YAML``` 文件来配置应用程序所需要的服务。然后使用一个命令，就可以通过 ```YAML``` 配置文件创建并启动所有服务。
+
+- Docker Compose 项目是 Docker 官方的开源项目，来源于之前的 Fig 项目，使用 Python 语言编写。负责实现对 Docker 容器集群的快速编排。项目地址为：[https://github.com/docker/compose/releases](https://github.com/docker/compose/releases)
+
+- Docker Compose 使用的三个步骤为：
+    - 使用 ```Dockerfile``` 文件定义应用程序的环境；
+    - 使用 ```docker-compose.yml``` 文件定义构成应用程序的服务，这样它们可以在隔离环境中一起运行；
+    - 最后，执行 ```docker-compose up``` 命令来创建并启动所有服务。
+#### 2.0  Compose 安装
+##### 2.1  下载
+##### 2.2  授权
+##### 2.3  测试
+##### 2.4  卸载
+
+#### 3.0  docker-compose.yml 文件详解
+##### 3.1  概念
+##### 3.2  案例
+##### 3.3  version
+##### 3.4  services
+##### 3.5  volumes
+##### 3.6  networks
+
+#### 4.0  Compose 常用命令
+##### 4.1  help
+##### 4.2  config
+##### 4.3  pull
+##### 4.4  up
+##### 4.5  logs
+##### 4.6  ps
+##### 4.7  run
+##### 4.8  exec
+##### 4.9  pause
+##### 4.10  unpause
+##### 4.11  restart
+##### 4.12  start
+##### 4.13  stop
+##### 4.14  kill
+##### 4.15  rm
+##### 4.16  down
+##### 4.17  create
+##### 4.18  scale
+##### 4.19  images
+##### 4.20  port
+##### 4.21  top
+#### 5.0  总结
+#### 6.0  参考资料
+
 #### 参考资料
 - https://docs.docker.com/compose/install/
 - http://get.daocloud.io/#install-compose
@@ -312,11 +362,984 @@ yum remove docker docker-common docker-selinux docker-engine
 
 ### Docker 搭建 Redis Cluster 集群环境
 - [Docker 搭建 Redis Cluster 集群环境](https://www.cnblogs.com/mrhelloworld/p/docker12.html)
+#### 1.0  环境
+- 为了让环境更加真实，本文使用多机环境：
+    - 192.168.56.106
+    - 192.168.56.107
+```
+[root@Docker ~]# ip addr
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host 
+       valid_lft forever preferred_lft forever
+2: enp0s3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP group default qlen 1000
+    link/ether 08:00:27:06:95:01 brd ff:ff:ff:ff:ff:ff
+    inet 10.0.2.15/24 brd 10.0.2.255 scope global noprefixroute dynamic enp0s3
+       valid_lft 62635sec preferred_lft 62635sec
+    inet6 fe80::806f:eb6c:8c0f:1819/64 scope link noprefixroute 
+       valid_lft forever preferred_lft forever
+3: enp0s8: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP group default qlen 1000
+    link/ether 08:00:27:27:bb:60 brd ff:ff:ff:ff:ff:ff
+    inet 192.168.56.106/24 brd 192.168.56.255 scope global noprefixroute dynamic enp0s8
+       valid_lft 525sec preferred_lft 525sec
+    inet6 fe80::7601:80e4:1d9f:6c8c/64 scope link noprefixroute 
+       valid_lft forever preferred_lft forever
+[root@SystemFramework ~]# ip addr
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host 
+       valid_lft forever preferred_lft forever
+2: enp0s3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP group default qlen 1000
+    link/ether 08:00:27:62:70:fe brd ff:ff:ff:ff:ff:ff
+    inet 10.0.2.15/24 brd 10.0.2.255 scope global noprefixroute dynamic enp0s3
+       valid_lft 86327sec preferred_lft 86327sec
+    inet6 fe80::806f:eb6c:8c0f:1819/64 scope link noprefixroute 
+       valid_lft forever preferred_lft forever
+3: enp0s8: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP group default qlen 1000
+    link/ether 08:00:27:6d:a9:b6 brd ff:ff:ff:ff:ff:ff
+    inet 192.168.56.107/24 brd 192.168.56.255 scope global noprefixroute dynamic enp0s8
+       valid_lft 527sec preferred_lft 527sec
+    inet6 fe80::743a:5bee:6fea:2e30/64 scope link noprefixroute 
+       valid_lft forever preferred_lft forever
+```
+- 每台机器所使用的基础设施环境如下：
+    - CentOS 7.9.2009 ```centos-release-7-9```
+    - ```Docker version 20.10.9```
+```
+[root@Docker ~]# rpm -q centos-release
+centos-release-7-9.2009.0.el7.centos.x86_64
+[root@Docker ~]# cat /etc/redhat-release 
+CentOS Linux release 7.9.2009 (Core)
+[root@Docker ~]# docker -v
+Docker version 20.10.9, build c2ea9bc
 
-### Docker 网络模式详解及容器间网络通信
+[root@SystemFramework ~]# rpm -q centos-release
+centos-release-7-9.2009.0.el7.centos.x86_64
+[root@SystemFramework ~]# cat /etc/redhat-release 
+CentOS Linux release 7.9.2009 (Core)
+[root@SystemFramework ~]# docker -v
+Docker version 20.10.8, build 3967b7d
+```
+#### 2.0  搭建
+- 整体搭建步骤主要分为以下几步：
+    - 下载 Redis 镜像（其实这步可以省略，因为创建容器时，如果本地镜像不存在，就会去远程拉取）；
+    - 编写 Redis 配置文件；
+    - 创建 Redis 容器；
+    - 创建 Redis Cluster 集群。
+##### 2.1  编写 Redis 配置文件
+##### 2.2  创建 Redis 容器
+##### 2.3  创建 Redis Cluster 集群
+
+#### 3.0  查看集群状态
+- 我们先进入容器，然后通过一些集群常用的命令查看一下集群的状态。
+```
+
+```
+##### 3.1  检查集群状态
+##### 3.2  查看集群信息和节点信息
+##### 3.3  SET/GET
+#### 4.0  客户端连接
+- 最后来一波客户端连接操作，随便哪个节点，看看可否通过外部访问 Redis Cluster 集群。
+
+- 至此使用多机环境多个容器搭建 Redis Cluster 集群环境就到这里，其实整体搭建过程不算特别麻烦，因为：
+    - 创建 Redis 集群需要用到 Ruby，否则就得自己关联节点构建集群，自己分配槽；
+    - 如果使用 Ruby 构建 Redis 集群，就需要安装 Ruby 环境；
+    - 而 Redis 从 5 版本开始可以直接使用 redis-cli 命令创建集群了，就省去了很多麻烦事；
+    - 我们还使用了 shell for 循环语句简化了构建过程，否则那些语句一条条执行也够你闹心的。
+
+- 综上所述，有没有更简单的办法呢？当然有了，不然我在这跟你卖什么关子。
+- Docker Compose 就可以解决这个问题。后面我们先学习一下什么是 Docker Compose，然后使用 Docker Compose 再来搭建一遍 Redis Cluster 集群环境，感受感受这前后的区别。
+### 11 Docker 网络模式详解及容器间网络通信
 - [Docker 网络模式详解及容器间网络通信](https://www.cnblogs.com/mrhelloworld/p/docker11.html)
+- 当项目大规模使用 Docker 时，容器通信的问题也就产生了。要解决容器通信问题，必须先了解很多关于网络的知识。Docker 作为目前最火的轻量级容器技术，有很多令人称道的功能，如 Docker 的镜像管理。然而，Docker 同样有着很多不完善的地方，网络方面就是 Docker 比较薄弱的部分。因此，我们有必要深入了解 Docker 的网络知识，以满足更高的网络需求。
 
-### Docker 私有镜像仓库的搭建及认证
+#### 1.0  默认网络
+- 安装 Docker 以后，会默认创建三种网络，可以通过 docker network ls 查看。
+```
+[root@Docker ~]# docker network ls
+NETWORK ID     NAME      DRIVER    SCOPE
+4ae0332db571   bridge    bridge    local
+d8c2a3f46d08   host      host      local
+abadbe38c594   none      null      local
+```
+- 在学习 Docker 网络之前，我们有必要先来了解一下这几种网络模式都是什么意思。
+
+网络模式 | 简介
+--|--
+bridge | 为每一个容器分配、设置 IP 等，并将容器连接到一个 ```docker0``` 虚拟网桥，默认为该模式。
+host | 容器将不会虚拟出自己的网卡，配置自己的 IP 等，而是使用宿主机的 IP 和端口。
+none | 容器有独立的 Network namespace，但并没有对其进行任何网络设置，如分配 veth pair 和网桥连接，IP 等。
+container | 新创建的容器不会创建自己的网卡和配置自己的 IP，而是和一个指定的容器共享 IP、端口范围等。
+
+##### 1.1  bridge 网络模式
+- 在该模式中，Docker 守护进程创建了一个虚拟以太网桥 ```docker0```，新建的容器会自动桥接到这个接口，附加在其上的任何网卡之间都能自动转发数据包。
+- 默认情况下，守护进程会创建一对对等虚拟设备接口 ```veth pair```，将其中一个接口设置为容器的 ```eth0``` 接口（容器的网卡），另一个接口放置在宿主机的命名空间中，以类似 ```vethxxx``` 这样的名字命名，从而将宿主机上的所有容器都连接到这个内部网络上。
+- 比如我运行一个基于 ```busybox``` 镜像构建的容器 ```bbox01```，查看 ```ip addr```：
+
+> busybox 被称为嵌入式 Linux 的瑞士军刀，整合了很多小的 unix 下的通用功能到一个小的可执行文件中。
+
+```
+[root@Docker ~]# docker run -it --name bbox01 busybox
+Unable to find image 'busybox:latest' locally
+latest: Pulling from library/busybox
+5cc84ad355aa: Pull complete 
+Digest: sha256:5acba83a746c7608ed544dc1533b87c737a0b0fb730301639a0179f9344b1678
+Status: Downloaded newer image for busybox:latest
+/ # ip addr
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+7: eth0@if8: <BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN> mtu 1500 qdisc noqueue 
+    link/ether 02:42:ac:11:00:03 brd ff:ff:ff:ff:ff:ff
+    inet 172.17.0.3/16 brd 172.17.255.255 scope global eth0
+       valid_lft forever preferred_lft forever
+/ # 
+
+[root@Docker ~]# docker exec -it iauth-registry sh
+/ # ip addr
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+5: eth0@if6: <BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN> mtu 1500 qdisc noqueue state UP 
+    link/ether 02:42:ac:11:00:02 brd ff:ff:ff:ff:ff:ff
+    inet 172.17.0.2/16 brd 172.17.255.255 scope global eth0
+       valid_lft forever preferred_lft forever
+```
+- 然后宿主机通过 ip addr 查看信息如下：
+```
+[root@Docker ~]# ip addr
+4: docker0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default 
+    link/ether 02:42:16:c6:5e:87 brd ff:ff:ff:ff:ff:ff
+    inet 172.17.0.1/16 brd 172.17.255.255 scope global docker0
+       valid_lft forever preferred_lft forever
+    inet6 fe80::42:16ff:fec6:5e87/64 scope link 
+       valid_lft forever preferred_lft forever
+6: veth0d9b0ab@if5: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master docker0 state UP group default 
+    link/ether b6:e9:be:c6:15:7d brd ff:ff:ff:ff:ff:ff link-netnsid 0
+    inet6 fe80::b4e9:beff:fec6:157d/64 scope link 
+       valid_lft forever preferred_lft forever
+8: vetha1c5d0c@if7: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master docker0 state UP group default 
+    link/ether 9a:c6:42:99:91:67 brd ff:ff:ff:ff:ff:ff link-netnsid 1
+    inet6 fe80::98c6:42ff:fe99:9167/64 scope link 
+       valid_lft forever preferred_lft forever
+```
+
+- 通过以上的比较可以发现，证实了之前所说的：守护进程会创建一对对等虚拟设备接口 ```veth pair```，将其中一个接口设置为容器的 ```eth0``` [eth0@if8]接口（容器的网卡），另一个接口放置在宿主机的命名空间中，以类似 ```vethxxx``` [vetha1c5d0c@if7]这样的名字命名。
+
+- 同时，守护进程还会从网桥 ```docker0``` 的私有地址空间中分配一个 IP 地址和子网给该容器，并设置 docker0 的 IP 地址为容器的默认网关。也可以安装 ```yum install -y bridge-utils``` 以后，通过 ```brctl show``` 命令查看网桥信息。
+
+```
+[root@Docker ~]# yum install -y bridge-utils
+[root@Docker ~]# brctl show
+bridge name     bridge id               STP enabled     interfaces
+docker0         8000.024216c65e87       no              veth0d9b0ab
+                                                        vetha1c5d0c
+```
+- 对于每个容器的 IP 地址和 Gateway 信息，我们可以通过 ```docker inspect 容器名称|ID``` 进行查看，在 ```NetworkSettings``` 节点中可以看到详细信息。
+
+```{27-28}
+[root@Docker ~]# docker inspect bbox01
+        "NetworkSettings": {
+            "Bridge": "",
+            "SandboxID": "0f788c163a95cd94257a652ed4dd026bcf7329b7945c8d415f3d32f5ee0d662a",
+            "HairpinMode": false,
+            "LinkLocalIPv6Address": "",
+            "LinkLocalIPv6PrefixLen": 0,
+            "Ports": {},
+            "SandboxKey": "/var/run/docker/netns/0f788c163a95",
+            "SecondaryIPAddresses": null,
+            "SecondaryIPv6Addresses": null,
+            "EndpointID": "a13cc91243c1e4741a6e38fdbee2a36313423b1e89058b8ee015b591647ab0bd",
+            "Gateway": "172.17.0.1",
+            "GlobalIPv6Address": "",
+            "GlobalIPv6PrefixLen": 0,
+            "IPAddress": "172.17.0.3",
+            "IPPrefixLen": 16,
+            "IPv6Gateway": "",
+            "MacAddress": "02:42:ac:11:00:03",
+            "Networks": {
+                "bridge": {
+                    "IPAMConfig": null,
+                    "Links": null,
+                    "Aliases": null,
+                    "NetworkID": "4ae0332db57103ab7bbc5528b2c747201c0a4fdd51d0399d61924fc8be211a78",
+                    "EndpointID": "a13cc91243c1e4741a6e38fdbee2a36313423b1e89058b8ee015b591647ab0bd",
+                    "Gateway": "172.17.0.1",
+                    "IPAddress": "172.17.0.3",
+                    "IPPrefixLen": 16,
+                    "IPv6Gateway": "",
+                    "GlobalIPv6Address": "",
+                    "GlobalIPv6PrefixLen": 0,
+                    "MacAddress": "02:42:ac:11:00:03",
+                    "DriverOpts": null
+                }
+            }
+        }
+```
+- 我们可以通过 ```docker network inspect bridge``` 查看所有 ```bridge``` 网络模式下的容器，在 ```Containers``` 节点中可以看到容器名称。
+```{1,4,36}
+[root@Docker ~]# docker network inspect bridge
+[
+    {
+        "Name": "bridge",
+        "Id": "4ae0332db57103ab7bbc5528b2c747201c0a4fdd51d0399d61924fc8be211a78",
+        "Created": "2022-04-29T10:35:04.412494977+08:00",
+        "Scope": "local",
+        "Driver": "bridge",
+        "EnableIPv6": false,
+        "IPAM": {
+            "Driver": "default",
+            "Options": null,
+            "Config": [
+                {
+                    "Subnet": "172.17.0.0/16",
+                    "Gateway": "172.17.0.1"
+                }
+            ]
+        },
+        "Internal": false,
+        "Attachable": false,
+        "Ingress": false,
+        "ConfigFrom": {
+            "Network": ""
+        },
+        "ConfigOnly": false,
+        "Containers": {
+            "6cbedf1bc79b8134398899f235c181416eb351b0534c10ef9064a500dfd43f0e": {
+                "Name": "iauth-registry",
+                "EndpointID": "443c87f86790501ba6736731e1e7063d5ecb43896a4bed61e18778b6b448cbff",
+                "MacAddress": "02:42:ac:11:00:02",
+                "IPv4Address": "172.17.0.2/16",
+                "IPv6Address": ""
+            },
+            "f67155142ee170a49f7e25f625c38ca47c1b8f250daf4ffaccc4ba893243caf4": {
+                "Name": "bbox01",
+                "EndpointID": "a13cc91243c1e4741a6e38fdbee2a36313423b1e89058b8ee015b591647ab0bd",
+                "MacAddress": "02:42:ac:11:00:03",
+                "IPv4Address": "172.17.0.3/16",
+                "IPv6Address": ""
+            }
+        },
+        "Options": {
+            "com.docker.network.bridge.default_bridge": "true",
+            "com.docker.network.bridge.enable_icc": "true",
+            "com.docker.network.bridge.enable_ip_masquerade": "true",
+            "com.docker.network.bridge.host_binding_ipv4": "0.0.0.0",
+            "com.docker.network.bridge.name": "docker0",
+            "com.docker.network.driver.mtu": "1500"
+        },
+        "Labels": {}
+    }
+]
+```
+
+
+> 关于 ```bridge``` 网络模式的使用，只需要在创建容器时通过参数 ```--net bridge``` 或者 ```--network bridge``` 指定即可，当然这也是创建容器默认使用的网络模式，也就是说这个参数是可以省略的。
+
+![docker-bridge](../images/docker-bridge.jpg)
+
+容器名 | eth0 | veth
+--|--|--
+iauth-registry | eth0@if6 | veth0d9b0ab@if5
+bbox01 | eth0@if8 | vetha1c5d0c@if7
+
+- Bridge 桥接模式的实现步骤主要如下：
+    - Docker Daemon 利用 veth pair 技术，在宿主机上创建一对对等虚拟网络接口设备，假设为 veth0 和 veth1。而veth pair 技术的特性可以保证无论哪一个 veth 接收到网络报文，都会将报文传输给另一方。
+    - Docker Daemon 将 veth0 附加到 Docker Daemon 创建的 docker0 网桥上。保证宿主机的网络报文可以发往 veth0；
+    - Docker Daemon 将 veth1 添加到 Docker Container 所属的 namespace 下，并被改名为 eth0。如此一来，宿主机的网络报文若发往 veth0，则立即会被 Container 的 eth0 接收，实现宿主机到 Docker Container 网络的联通性；同时，也保证 Docker Container 单独使用 eth0，实现容器网络环境的隔离性。
+##### 1.2  host 网络模式
+- host 网络模式需要在创建容器时通过参数 ```--net host``` 或者 ```--network host``` 指定；
+- 采用 host 网络模式的 Docker Container，可以直接使用宿主机的 IP 地址与外界进行通信，若宿主机的 eth0 是一个公有 IP，那么容器也拥有这个公有 IP。同时容器内服务的端口也可以使用宿主机的端口，无需额外进行 NAT 转换；
+- host 网络模式可以让容器共享宿主机网络栈，这样的好处是外部主机与容器直接通信，但是容器的网络缺少隔离性。
+
+![docker-host](../images/docker-host.jpg)
+
+- 比如我基于 host 网络模式创建了一个基于 busybox 镜像构建的容器 bbox02，查看 ip addr：
+```
+[root@Docker ~]# docker run -di --name bbox02 --network host busybox  
+2c21d009f790237a6dab75658f06c7c01bbf7e2c363df7e5fea44f6d4703bc4e
+[root@Docker ~]# docker exec -it bbox02 sh
+/ # ip addr
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host 
+       valid_lft forever preferred_lft forever
+2: enp0s3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast qlen 1000
+    link/ether 08:00:27:06:95:01 brd ff:ff:ff:ff:ff:ff
+    inet 10.0.2.15/24 brd 10.0.2.255 scope global dynamic noprefixroute enp0s3
+       valid_lft 71032sec preferred_lft 71032sec
+    inet6 fe80::806f:eb6c:8c0f:1819/64 scope link noprefixroute 
+       valid_lft forever preferred_lft forever
+3: enp0s8: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast qlen 1000
+    link/ether 08:00:27:27:bb:60 brd ff:ff:ff:ff:ff:ff
+    inet 192.168.56.106/24 brd 192.168.56.255 scope global dynamic noprefixroute enp0s8
+       valid_lft 567sec preferred_lft 567sec
+    inet6 fe80::7601:80e4:1d9f:6c8c/64 scope link noprefixroute 
+       valid_lft forever preferred_lft forever
+4: docker0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue 
+    link/ether 02:42:16:c6:5e:87 brd ff:ff:ff:ff:ff:ff
+    inet 172.17.0.1/16 brd 172.17.255.255 scope global docker0
+       valid_lft forever preferred_lft forever
+    inet6 fe80::42:16ff:fec6:5e87/64 scope link 
+       valid_lft forever preferred_lft forever
+6: veth0d9b0ab@if5: <BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN> mtu 1500 qdisc noqueue master docker0 
+    link/ether b6:e9:be:c6:15:7d brd ff:ff:ff:ff:ff:ff
+    inet6 fe80::b4e9:beff:fec6:157d/64 scope link 
+       valid_lft forever preferred_lft forever
+8: vetha1c5d0c@if7: <BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN> mtu 1500 qdisc noqueue master docker0 
+    link/ether 9a:c6:42:99:91:67 brd ff:ff:ff:ff:ff:ff
+    inet6 fe80::98c6:42ff:fe99:9167/64 scope link 
+       valid_lft forever preferred_lft forever
+```
+- 然后宿主机通过 ip addr 查看信息如下：
+```
+[root@Docker ~]# ip addr
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host 
+       valid_lft forever preferred_lft forever
+2: enp0s3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP group default qlen 1000
+    link/ether 08:00:27:06:95:01 brd ff:ff:ff:ff:ff:ff
+    inet 10.0.2.15/24 brd 10.0.2.255 scope global noprefixroute dynamic enp0s3
+       valid_lft 70979sec preferred_lft 70979sec
+    inet6 fe80::806f:eb6c:8c0f:1819/64 scope link noprefixroute 
+       valid_lft forever preferred_lft forever
+3: enp0s8: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP group default qlen 1000
+    link/ether 08:00:27:27:bb:60 brd ff:ff:ff:ff:ff:ff
+    inet 192.168.56.106/24 brd 192.168.56.255 scope global noprefixroute dynamic enp0s8
+       valid_lft 515sec preferred_lft 515sec
+    inet6 fe80::7601:80e4:1d9f:6c8c/64 scope link noprefixroute 
+       valid_lft forever preferred_lft forever
+4: docker0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default 
+    link/ether 02:42:16:c6:5e:87 brd ff:ff:ff:ff:ff:ff
+    inet 172.17.0.1/16 brd 172.17.255.255 scope global docker0
+       valid_lft forever preferred_lft forever
+    inet6 fe80::42:16ff:fec6:5e87/64 scope link 
+       valid_lft forever preferred_lft forever
+6: veth0d9b0ab@if5: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master docker0 state UP group default 
+    link/ether b6:e9:be:c6:15:7d brd ff:ff:ff:ff:ff:ff link-netnsid 0
+    inet6 fe80::b4e9:beff:fec6:157d/64 scope link 
+       valid_lft forever preferred_lft forever
+8: vetha1c5d0c@if7: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master docker0 state UP group default 
+    link/ether 9a:c6:42:99:91:67 brd ff:ff:ff:ff:ff:ff link-netnsid 1
+    inet6 fe80::98c6:42ff:fe99:9167/64 scope link 
+       valid_lft forever preferred_lft forever
+```
+- 对，你没有看错，返回信息一模一样，不信接着往下看。我们可以通过 ```docker network inspect host``` 查看所有 ```host``` 网络模式下的容器，在 Containers 节点中可以看到容器名称。
+
+```{1,4,24}
+[root@Docker ~]# docker network inspect host
+[
+    {
+        "Name": "host",
+        "Id": "d8c2a3f46d08b8c0231d1cf7f553e724c0179254991fc6e08470e95698ea10a5",
+        "Created": "2021-10-17T12:13:11.090522799+08:00",
+        "Scope": "local",
+        "Driver": "host",
+        "EnableIPv6": false,
+        "IPAM": {
+            "Driver": "default",
+            "Options": null,
+            "Config": []
+        },
+        "Internal": false,
+        "Attachable": false,
+        "Ingress": false,
+        "ConfigFrom": {
+            "Network": ""
+        },
+        "ConfigOnly": false,
+        "Containers": {
+            "2c21d009f790237a6dab75658f06c7c01bbf7e2c363df7e5fea44f6d4703bc4e": {
+                "Name": "bbox02",
+                "EndpointID": "ba3b52244b8768aa6c0391ef30bed1f283eb3f01fbee96f850055158c76cae26",
+                "MacAddress": "",
+                "IPv4Address": "",
+                "IPv6Address": ""
+            }
+        },
+        "Options": {},
+        "Labels": {}
+    }
+]
+```
+
+##### 1.3  none 网络模式
+- none 网络模式是指禁用网络功能，只有 lo 接口 local 的简写，代表 127.0.0.1，即 localhost 本地环回接口。在创建容器时通过参数 ```--net none``` 或者 ```--network none``` 指定；
+- none 网络模式即不为 Docker Container 创建任何的网络环境，容器内部就只能使用 loopback 网络设备，不会再有其他的网络资源。可以说 none 模式为 Docke Container 做了极少的网络设定，但是俗话说得好“少即是多”，在没有网络配置的情况下，作为 Docker 开发者，才能在这基础做其他无限多可能的网络定制开发。这也恰巧体现了 Docker 设计理念的开放。
+
+- 比如我基于 none 网络模式创建了一个基于 busybox 镜像构建的容器 bbox03，查看 ip addr：
+```
+[root@Docker ~]# docker run -di --name bbox3 --network none busybox
+1b569f8d7989b6e11e2cbef2c4a1ee68216924d4645684d9465dd9a8ca40174d
+[root@Docker ~]# docker exec -it bbox3 sh
+/ # ip addr
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+/ # 
+```
+- 我们可以通过 ```docker network inspect none``` 查看所有 ```none``` 网络模式下的容器，在 ```Containers``` 节点中可以看到容器名称。
+```{1,4,24}
+[root@Docker ~]# docker network inspect none
+[
+    {
+        "Name": "none",
+        "Id": "abadbe38c594a75e7346c5f25183685f89013721ffced5dc1d4725c2e2083c82",
+        "Created": "2021-10-17T12:13:11.011457614+08:00",
+        "Scope": "local",
+        "Driver": "null",
+        "EnableIPv6": false,
+        "IPAM": {
+            "Driver": "default",
+            "Options": null,
+            "Config": []
+        },
+        "Internal": false,
+        "Attachable": false,
+        "Ingress": false,
+        "ConfigFrom": {
+            "Network": ""
+        },
+        "ConfigOnly": false,
+        "Containers": {
+            "1b569f8d7989b6e11e2cbef2c4a1ee68216924d4645684d9465dd9a8ca40174d": {
+                "Name": "bbox3",
+                "EndpointID": "a4b858333156a6c229b0739d59d24e0709ecda06ffe12fbde910183eac2b5d05",
+                "MacAddress": "",
+                "IPv4Address": "",
+                "IPv6Address": ""
+            }
+        },
+        "Options": {},
+        "Labels": {}
+    }
+]
+
+```
+##### 1.4  container 网络模式
+- Container 网络模式是 Docker 中一种较为特别的网络的模式。在创建容器时通过参数 ```--net container:已运行的容器名称|ID``` 或者 ```--network container:已运行的容器名称|ID``` 指定；
+- 处于这个模式下的 Docker 容器会共享一个网络栈，这样两个容器之间可以使用 localhost 高效快速通信。
+
+![docker-container](../images/docker-container.jpg)
+
+- **Container 网络模式即新创建的容器不会创建自己的网卡，配置自己的 IP，而是和一个指定的容器共享 IP、端口范围等**。同样两个容器除了网络方面相同之外，其他的如文件系统、进程列表等还是隔离的。
+- 比如我基于容器 ```bbox01``` 创建了 ```container``` 网络模式的容器 ```bbox04```，查看 ```ip addr```：
+```
+[root@Docker ~]# docker run -di --name bbox04 --network container:bbox01 busybox
+51c2c51fbb779f39d23fdf9c484490bd32f533de9e756b81fd9208a57514e444
+[root@Docker ~]# docker exec -it bbox04 sh
+/ # ip addr
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+7: eth0@if8: <BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN> mtu 1500 qdisc noqueue 
+    link/ether 02:42:ac:11:00:03 brd ff:ff:ff:ff:ff:ff
+    inet 172.17.0.3/16 brd 172.17.255.255 scope global eth0
+       valid_lft forever preferred_lft forever
+```
+- 容器 bbox01 的 ip addr 信息如下：
+
+```
+[root@Docker ~]# docker exec -it bbox01 sh
+/ # ip addr
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+7: eth0@if8: <BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN> mtu 1500 qdisc noqueue 
+    link/ether 02:42:ac:11:00:03 brd ff:ff:ff:ff:ff:ff
+    inet 172.17.0.3/16 brd 172.17.255.255 scope global eth0
+       valid_lft forever preferred_lft forever
+```
+- 宿主机的 ip addr 信息如下：
+```{1,30-33}
+[root@Docker ~]# ip addr
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host 
+       valid_lft forever preferred_lft forever
+2: enp0s3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP group default qlen 1000
+    link/ether 08:00:27:06:95:01 brd ff:ff:ff:ff:ff:ff
+    inet 10.0.2.15/24 brd 10.0.2.255 scope global noprefixroute dynamic enp0s3
+       valid_lft 69743sec preferred_lft 69743sec
+    inet6 fe80::806f:eb6c:8c0f:1819/64 scope link noprefixroute 
+       valid_lft forever preferred_lft forever
+3: enp0s8: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP group default qlen 1000
+    link/ether 08:00:27:27:bb:60 brd ff:ff:ff:ff:ff:ff
+    inet 192.168.56.106/24 brd 192.168.56.255 scope global noprefixroute dynamic enp0s8
+       valid_lft 594sec preferred_lft 594sec
+    inet6 fe80::7601:80e4:1d9f:6c8c/64 scope link noprefixroute 
+       valid_lft forever preferred_lft forever
+4: docker0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default 
+    link/ether 02:42:16:c6:5e:87 brd ff:ff:ff:ff:ff:ff
+    inet 172.17.0.1/16 brd 172.17.255.255 scope global docker0
+       valid_lft forever preferred_lft forever
+    inet6 fe80::42:16ff:fec6:5e87/64 scope link 
+       valid_lft forever preferred_lft forever
+6: veth0d9b0ab@if5: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master docker0 state UP group default 
+    link/ether b6:e9:be:c6:15:7d brd ff:ff:ff:ff:ff:ff link-netnsid 0
+    inet6 fe80::b4e9:beff:fec6:157d/64 scope link 
+       valid_lft forever preferred_lft forever
+8: vetha1c5d0c@if7: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master docker0 state UP group default 
+    link/ether 9a:c6:42:99:91:67 brd ff:ff:ff:ff:ff:ff link-netnsid 1
+    inet6 fe80::98c6:42ff:fe99:9167/64 scope link 
+       valid_lft forever preferred_lft forever
+```
+- 通过以上测试可以发现，Docker 守护进程只创建了一对对等虚拟设备接口用于连接 bbox01 容器和宿主机，而 bbox04 容器则直接使用了 bbox01 容器的网卡信息。
+- 这个时候如果将 bbox01 容器停止，会发现 bbox04 容器就只剩下 lo 接口了。
+```
+[root@Docker ~]# docker stop bbox01
+bbox01
+[root@Docker ~]# docker exec -it bbox04 sh
+/ # ip addr
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+/ # 
+
+```
+- 然后 bbox01 容器重启以后，bbox04 容器也重启一下，就又可以获取到网卡信息了。
+```
+[root@Docker ~]# docker restart bbox01
+[root@Docker ~]# docker exec -it bbox04 sh
+/ # ip addr
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+/ # exit
+[root@Docker ~]# docker restart bbox04
+bbox04
+[root@Docker ~]# docker exec -it bbox04 sh
+/ # ip addr
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+9: eth0@if10: <BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN> mtu 1500 qdisc noqueue 
+    link/ether 02:42:ac:11:00:03 brd ff:ff:ff:ff:ff:ff
+    inet 172.17.0.3/16 brd 172.17.255.255 scope global eth0
+       valid_lft forever preferred_lft forever
+```
+##### 1.5  link
+- ```docker run --link``` 可以用来链接两个容器，使得源容器（被链接的容器）和接收容器（主动去链接的容器）之间可以互相通信，并且接收容器可以获取源容器的一些数据，如源容器的环境变量。
+- 这种方式**官方已不推荐使用**，并且在未来版本可能会被移除，所以这里不作为重点讲解，感兴趣可自行了解。
+- 官网警告信息：[Legacy container links | Docker Documentation](https://docs.docker.com/network/links/)
+#### 2.0  自定义网络
+##### 2.1  创建网络
+- 通过 ```docker network create``` 命令可以创建自定义网络模式，命令提示如下：
+```{1,9}
+[root@Docker ~]# docker network --help
+
+Usage:  docker network COMMAND
+
+Manage networks
+
+Commands:
+  connect     Connect a container to a network
+  create      Create a network
+  disconnect  Disconnect a container from a network
+  inspect     Display detailed information on one or more networks
+  ls          List networks
+  prune       Remove all unused networks
+  rm          Remove one or more networks
+
+Run 'docker network COMMAND --help' for more information on a command.
+```
+- 进一步查看 ```docker network create``` 命令使用详情，发现可以通过 ```--driver``` 指定网络模式且默认是 ```bridge``` 网络模式，提示如下：
+```{1,12}
+[root@Docker ~]# docker network create --help
+
+Usage:  docker network create [OPTIONS] NETWORK
+
+Create a network
+
+Options:
+      --attachable           Enable manual container attachment
+      --aux-address map      Auxiliary IPv4 or IPv6 addresses used by Network driver (default map[])
+      --config-from string   The network from which to copy the configuration
+      --config-only          Create a configuration only network
+  -d, --driver string        Driver to manage the Network (default "bridge")
+      --gateway strings      IPv4 or IPv6 Gateway for the master subnet
+      --ingress              Create swarm routing-mesh network
+      --internal             Restrict external access to the network
+      --ip-range strings     Allocate container ip from a sub-range
+      --ipam-driver string   IP Address Management Driver (default "default")
+      --ipam-opt map         Set IPAM driver specific options (default map[])
+      --ipv6                 Enable IPv6 networking
+      --label list           Set metadata on a network
+  -o, --opt map              Set driver specific options (default map[])
+      --scope string         Control the network's scope
+      --subnet strings       Subnet in CIDR format that represents a network segment
+```
+- 创建一个基于 ```bridge``` 网络模式的自定义网络模式 ```custom_network```，完整命令如下：
+```{1,2}
+[root@Docker ~]# docker network create custom_network
+0925ffa4481531a8cc8d9f7ff1f046ab9d31c49bdb32ae30d78ae0f15dcb65ea
+```
+- 通过 ```docker network ls``` 查看网络模式：
+```{1,4}
+[root@Docker ~]# docker network ls
+NETWORK ID     NAME             DRIVER    SCOPE
+4ae0332db571   bridge           bridge    local
+0925ffa44815   custom_network   bridge    local
+d8c2a3f46d08   host             host      local
+abadbe38c594   none             null      local
+```
+- 通过自定义网络模式 ```custom_network``` 创建容器：
+```
+[root@Docker ~]# docker run -di --name bbox05 --network custom_network busybox
+7687391d404e1d526fdb8fd8d2707807bd51d7714775e554902506cc7c44881d
+```
+- 通过 ```docker inspect 容器名称|ID``` 查看容器的网络信息，在 ```NetworkSettings``` 节点中可以看到详细信息。
+```{21}
+[root@Docker ~]# docker inspect bbox05
+        "NetworkSettings": {
+            "Bridge": "",
+            "SandboxID": "38f0611b5d44f080a28f112715e0bea98653badeaad04a0080296c991a035ae2",
+            "HairpinMode": false,
+            "LinkLocalIPv6Address": "",
+            "LinkLocalIPv6PrefixLen": 0,
+            "Ports": {},
+            "SandboxKey": "/var/run/docker/netns/38f0611b5d44",
+            "SecondaryIPAddresses": null,
+            "SecondaryIPv6Addresses": null,
+            "EndpointID": "",
+            "Gateway": "",
+            "GlobalIPv6Address": "",
+            "GlobalIPv6PrefixLen": 0,
+            "IPAddress": "",
+            "IPPrefixLen": 0,
+            "IPv6Gateway": "",
+            "MacAddress": "",
+            "Networks": {
+                "custom_network": {
+                    "IPAMConfig": null,
+                    "Links": null,
+                    "Aliases": [
+                        "7687391d404e"
+                    ],
+                    "NetworkID": "0925ffa4481531a8cc8d9f7ff1f046ab9d31c49bdb32ae30d78ae0f15dcb65ea",
+                    "EndpointID": "cdecd69b44c08a29b880aa78b3d6cacb15804eb6df6db54110182d3fa03a3a38",
+                    "Gateway": "172.18.0.1",
+                    "IPAddress": "172.18.0.2",
+                    "IPPrefixLen": 16,
+                    "IPv6Gateway": "",
+                    "GlobalIPv6Address": "",
+                    "GlobalIPv6PrefixLen": 0,
+                    "MacAddress": "02:42:ac:12:00:02",
+                    "DriverOpts": null
+                }
+            }
+        }
+
+```
+##### 2.2  连接网络
+- 通过 ```docker network connect 网络名称 容器名称``` 为容器连接新的网络模式。
+```{1,3}
+[root@Docker ~]# docker network connect --help
+
+Usage:  docker network connect [OPTIONS] NETWORK CONTAINER
+
+Connect a container to a network
+
+Options:
+      --alias strings           Add network-scoped alias for the container
+      --driver-opt strings      driver options for the network
+      --ip string               IPv4 address (e.g., 172.30.100.104)
+      --ip6 string              IPv6 address (e.g., 2001:db8::33)
+      --link list               Add link to another container
+      --link-local-ip strings   Add a link-local address for the container
+
+[root@Docker ~]# docker network ls
+NETWORK ID     NAME             DRIVER    SCOPE
+4ae0332db571   bridge           bridge    local
+0925ffa44815   custom_network   bridge    local
+d8c2a3f46d08   host             host      local
+abadbe38c594   none             null      local
+[root@Docker ~]# docker network connect bridge bbox05
+```
+- 通过 ```docker inspect 容器名称|ID``` 再次查看容器的网络信息，多增加了默认的 ```bridge```。
+```{21,36}
+[root@Docker ~]# docker inspect bbox05
+        "NetworkSettings": {
+            "Bridge": "",
+            "SandboxID": "38f0611b5d44f080a28f112715e0bea98653badeaad04a0080296c991a035ae2",
+            "HairpinMode": false,
+            "LinkLocalIPv6Address": "",
+            "LinkLocalIPv6PrefixLen": 0,
+            "Ports": {},
+            "SandboxKey": "/var/run/docker/netns/38f0611b5d44",
+            "SecondaryIPAddresses": null,
+            "SecondaryIPv6Addresses": null,
+            "EndpointID": "944dc57a11be64f3bb511dbf6eeadfa553f37d70299ce7e338e94b1ae0838ec0",
+            "Gateway": "172.17.0.1",
+            "GlobalIPv6Address": "",
+            "GlobalIPv6PrefixLen": 0,
+            "IPAddress": "172.17.0.4",
+            "IPPrefixLen": 16,
+            "IPv6Gateway": "",
+            "MacAddress": "02:42:ac:11:00:04",
+            "Networks": {
+                "bridge": {
+                    "IPAMConfig": {},
+                    "Links": null,
+                    "Aliases": [],
+                    "NetworkID": "4ae0332db57103ab7bbc5528b2c747201c0a4fdd51d0399d61924fc8be211a78",
+                    "EndpointID": "944dc57a11be64f3bb511dbf6eeadfa553f37d70299ce7e338e94b1ae0838ec0",
+                    "Gateway": "172.17.0.1",
+                    "IPAddress": "172.17.0.4",
+                    "IPPrefixLen": 16,
+                    "IPv6Gateway": "",
+                    "GlobalIPv6Address": "",
+                    "GlobalIPv6PrefixLen": 0,
+                    "MacAddress": "02:42:ac:11:00:04",
+                    "DriverOpts": {}
+                },
+                "custom_network": {
+                    "IPAMConfig": null,
+                    "Links": null,
+                    "Aliases": [
+                        "7687391d404e"
+                    ],
+                    "NetworkID": "0925ffa4481531a8cc8d9f7ff1f046ab9d31c49bdb32ae30d78ae0f15dcb65ea",
+                    "EndpointID": "cdecd69b44c08a29b880aa78b3d6cacb15804eb6df6db54110182d3fa03a3a38",
+                    "Gateway": "172.18.0.1",
+                    "IPAddress": "172.18.0.2",
+                    "IPPrefixLen": 16,
+                    "IPv6Gateway": "",
+                    "GlobalIPv6Address": "",
+                    "GlobalIPv6PrefixLen": 0,
+                    "MacAddress": "02:42:ac:12:00:02",
+                    "DriverOpts": null
+                }
+            }
+        }
+```
+##### 2.3  断开网络
+- 通过 ```docker network disconnect 网络名称 容器名称``` 命令断开网络。
+```
+[root@Docker ~]# docker network disconnect custom_network bbox05
+```
+- 通过 ```docker inspect 容器名称|ID``` 再次查看容器的网络信息，发现只剩下默认的 ```bridge```。
+```{1,21}
+[root@Docker ~]# docker inspect bbox05
+        "NetworkSettings": {
+            "Bridge": "",
+            "SandboxID": "38f0611b5d44f080a28f112715e0bea98653badeaad04a0080296c991a035ae2",
+            "HairpinMode": false,
+            "LinkLocalIPv6Address": "",
+            "LinkLocalIPv6PrefixLen": 0,
+            "Ports": {},
+            "SandboxKey": "/var/run/docker/netns/38f0611b5d44",
+            "SecondaryIPAddresses": null,
+            "SecondaryIPv6Addresses": null,
+            "EndpointID": "944dc57a11be64f3bb511dbf6eeadfa553f37d70299ce7e338e94b1ae0838ec0",
+            "Gateway": "172.17.0.1",
+            "GlobalIPv6Address": "",
+            "GlobalIPv6PrefixLen": 0,
+            "IPAddress": "172.17.0.4",
+            "IPPrefixLen": 16,
+            "IPv6Gateway": "",
+            "MacAddress": "02:42:ac:11:00:04",
+            "Networks": {
+                "bridge": {
+                    "IPAMConfig": {},
+                    "Links": null,
+                    "Aliases": [],
+                    "NetworkID": "4ae0332db57103ab7bbc5528b2c747201c0a4fdd51d0399d61924fc8be211a78",
+                    "EndpointID": "944dc57a11be64f3bb511dbf6eeadfa553f37d70299ce7e338e94b1ae0838ec0",
+                    "Gateway": "172.17.0.1",
+                    "IPAddress": "172.17.0.4",
+                    "IPPrefixLen": 16,
+                    "IPv6Gateway": "",
+                    "GlobalIPv6Address": "",
+                    "GlobalIPv6PrefixLen": 0,
+                    "MacAddress": "02:42:ac:11:00:04",
+                    "DriverOpts": {}
+                }
+            }
+        }
+
+```
+##### 2.4  移除网络
+- 可以通过 ```docker network rm 网络名称``` 命令移除自定义网络模式，网络模式移除成功会返回网络模式名称。
+```
+[root@Docker ~]# docker network connect custom_network bbox05
+[root@Docker ~]# docker network rm custom_network
+Error response from daemon: error while removing network: network custom_network id 0925ffa4481531a8cc8d9f7ff1f046ab9d31c49bdb32ae30d78ae0f15dcb65ea has active endpoints
+[root@Docker ~]# docker network disconnect custom_network bbox05
+[root@Docker ~]# docker network rm custom_network
+custom_network
+```
+> 注意：如果通过某个自定义网络模式创建了容器，则该网络模式无法删除。
+
+#### 3.0  容器间网络通信
+- 接下来我们通过所学的知识实现容器间的网络通信。首先明确一点，容器之间要互相通信，必须要有属于同一个网络的网卡。
+- 我们先创建两个基于默认的 bridge 网络模式的容器
+```
+[root@Docker ~]# docker network ls
+NETWORK ID     NAME      DRIVER    SCOPE
+4ae0332db571   bridge    bridge    local
+d8c2a3f46d08   host      host      local
+abadbe38c594   none      null      local
+[root@Docker ~]# docker run -di --name default_bbox1 busybox
+a87cf4590425e892e2f35c2ba752133cd0bf2605e53d226d7677d4d5559236c4
+[root@Docker ~]# docker run -di --name default_bbox2 busybox
+02ccb288e946553a51667a6b98fe68e41b7cb33d35ad04028009a03cc5785b36
+```
+- 通过 ```docker network inspect bridge``` 查看两容器的具体 IP 信息。
+```{4,11}
+[root@Docker ~]# docker network inspect bridge
+        "Containers": {
+            "02ccb288e946553a51667a6b98fe68e41b7cb33d35ad04028009a03cc5785b36": {
+                "Name": "default_bbox2",
+                "EndpointID": "a262fdfe2c02178fa9291a2a8a015a6b1a5b08ad4bd443a7569da35800ffd16e",
+                "MacAddress": "02:42:ac:11:00:06",
+                "IPv4Address": "172.17.0.6/16",
+                "IPv6Address": ""
+            },
+            "a87cf4590425e892e2f35c2ba752133cd0bf2605e53d226d7677d4d5559236c4": {
+                "Name": "default_bbox1",
+                "EndpointID": "f3097cda5d8f65dd4475bfe074315614e490837e3af472e070d18d13a255ffe8",
+                "MacAddress": "02:42:ac:11:00:05",
+                "IPv4Address": "172.17.0.5/16",
+                "IPv6Address": ""
+            }
+        },
+```
+- 然后测试两容器间是否可以进行网络通信。
+```
+[root@Docker ~]# docker exec -it default_bbox1 ping 172.17.0.6 
+PING 172.17.0.6 (172.17.0.6): 56 data bytes
+64 bytes from 172.17.0.6: seq=0 ttl=64 time=0.326 ms
+64 bytes from 172.17.0.6: seq=1 ttl=64 time=0.104 ms
+```
+- 经过测试，从结果得知两个属于同一个网络的容器是可以进行网络通信的，但是 IP 地址可能是不固定的，有被更改的情况发生，那容器内所有通信的 IP 地址也需要进行更改，能否使用容器名称进行网络通信？继续测试。
+```
+[root@Docker ~]# docker exec -it default_bbox1 ping default_bbox2
+ping: bad address 'default_bbox2'
+```
+- 经过测试，从结果得知使用容器进行网络通信是不行的，那怎么实现这个功能呢？
+
+- 从 Docker 1.10 版本开始，docker daemon 实现了一个内嵌的 DNS server，使容器可以直接通过容器名称通信。方法很简单，只要在创建容器时使用 ```--name``` 为容器命名即可。
+- 但是使用 Docker DNS 有个限制：**只能在 user-defined 网络中使用**。也就是说，默认的 bridge 网络是无法使用 DNS 的，所以我们就需要自定义网络。
+- 我们先基于 ```bridge``` 网络模式创建自定义网络 ```custom_network```，然后创建两个基于自定义网络模式的容器。
+```
+[root@Docker ~]# docker network create custom_network
+c278737661f453cad48472351fbb7c4c9dde281da69b07f5deb2117783d5d709
+[root@Docker ~]# docker network ls
+NETWORK ID     NAME             DRIVER    SCOPE
+4ae0332db571   bridge           bridge    local
+c278737661f4   custom_network   bridge    local
+d8c2a3f46d08   host             host      local
+abadbe38c594   none             null      local
+
+[root@Docker ~]# docker run -di --name custom_bbox1 --network custom_network busybox
+029eef3bb1e02e7ba76e665b18f89f13bb0e50a369fad5cf44c0fe7dc664c369
+[root@Docker ~]# docker run -di --name custom_bbox2 --network custom_network busybox 
+ded7389b70d7e66c3ea6d88307c832de0f3ee736f43c02fb380c9a5f2967abea
+```
+- 通过 ```docker network inspect custom_network``` 查看两容器的具体 IP 信息。
+```
+[root@Docker ~]# docker network inspect custom_network
+        "Containers": {
+            "029eef3bb1e02e7ba76e665b18f89f13bb0e50a369fad5cf44c0fe7dc664c369": {
+                "Name": "custom_bbox1",
+                "EndpointID": "60eab74fc2fa2785ea2bf2a762288b204a5b8d8b48c4a6d208b58af577aa1c4a",
+                "MacAddress": "02:42:ac:13:00:02",
+                "IPv4Address": "172.19.0.2/16",
+                "IPv6Address": ""
+            },
+            "ded7389b70d7e66c3ea6d88307c832de0f3ee736f43c02fb380c9a5f2967abea": {
+                "Name": "custom_bbox2",
+                "EndpointID": "e72793fdee79f93229ecb77fe757dde024c9bb6a1cab79327ec93039723951fa",
+                "MacAddress": "02:42:ac:13:00:03",
+                "IPv4Address": "172.19.0.3/16",
+                "IPv6Address": ""
+            }
+        },
+```
+- 然后测试两容器间是否可以进行网络通信，分别使用具体 IP 和容器名称进行网络通信。
+```
+[root@Docker ~]# docker exec -it custom_bbox1 ping 172.19.0.3
+PING 172.19.0.3 (172.19.0.3): 56 data bytes
+64 bytes from 172.19.0.3: seq=0 ttl=64 time=0.209 ms
+64 bytes from 172.19.0.3: seq=1 ttl=64 time=0.108 ms
+^C
+--- 172.19.0.3 ping statistics ---
+2 packets transmitted, 2 packets received, 0% packet loss
+round-trip min/avg/max = 0.108/0.158/0.209 ms
+[root@Docker ~]# docker exec -it custom_bbox1 ping custom_bbox2
+PING custom_bbox2 (172.19.0.3): 56 data bytes
+64 bytes from 172.19.0.3: seq=0 ttl=64 time=0.083 ms
+64 bytes from 172.19.0.3: seq=1 ttl=64 time=0.186 ms
+^C
+--- custom_bbox2 ping statistics ---
+2 packets transmitted, 2 packets received, 0% packet loss
+round-trip min/avg/max = 0.083/0.134/0.186 ms
+```
+- 经过测试，从结果得知两个属于同一个自定义网络的容器是可以进行网络通信的，并且可以使用容器名称进行网络通信。
+- 那如果此时我希望 ```bridge``` 网络下的容器可以和 ```custom_network``` 网络下的容器进行网络又该如何操作？其实答案也非常简单：让 ```bridge``` 网络下的容器连接至新的 ```custom_network``` 网络即可。
+```
+[root@Docker ~]# docker network connect custom_network default_bbox1
+[root@Docker ~]# docker network inspect custom_network
+        "Containers": {
+            "029eef3bb1e02e7ba76e665b18f89f13bb0e50a369fad5cf44c0fe7dc664c369": {
+                "Name": "custom_bbox1",
+                "EndpointID": "60eab74fc2fa2785ea2bf2a762288b204a5b8d8b48c4a6d208b58af577aa1c4a",
+                "MacAddress": "02:42:ac:13:00:02",
+                "IPv4Address": "172.19.0.2/16",
+                "IPv6Address": ""
+            },
+            "a87cf4590425e892e2f35c2ba752133cd0bf2605e53d226d7677d4d5559236c4": {
+                "Name": "default_bbox1",
+                "EndpointID": "510a6a35e080b821d0021f467f869eb8cc6642c1b35a6b619b35f8510276acd1",
+                "MacAddress": "02:42:ac:13:00:04",
+                "IPv4Address": "172.19.0.4/16",
+                "IPv6Address": ""
+            },
+            "ded7389b70d7e66c3ea6d88307c832de0f3ee736f43c02fb380c9a5f2967abea": {
+                "Name": "custom_bbox2",
+                "EndpointID": "e72793fdee79f93229ecb77fe757dde024c9bb6a1cab79327ec93039723951fa",
+                "MacAddress": "02:42:ac:13:00:03",
+                "IPv4Address": "172.19.0.3/16",
+                "IPv6Address": ""
+            }
+        },
+[root@Docker ~]# docker exec -it default_bbox1 ping custom_bbox1
+PING custom_bbox1 (172.19.0.2): 56 data bytes
+64 bytes from 172.19.0.2: seq=0 ttl=64 time=0.112 ms
+64 bytes from 172.19.0.2: seq=1 ttl=64 time=0.103 ms
+^C
+--- custom_bbox1 ping statistics ---
+2 packets transmitted, 2 packets received, 0% packet loss
+round-trip min/avg/max = 0.103/0.107/0.112 ms
+[root@Docker ~]# docker exec -it custom_bbox2 ping default_bbox1
+PING default_bbox1 (172.19.0.4): 56 data bytes
+64 bytes from 172.19.0.4: seq=0 ttl=64 time=0.135 ms
+^C
+--- default_bbox1 ping statistics ---
+2 packets transmitted, 2 packets received, 0% packet loss
+round-trip min/avg/max = 0.135/0.189/0.244 ms
+```
+### 10 Docker 私有镜像仓库的搭建及认证
 - [Docker 私有镜像仓库的搭建及认证](https://www.cnblogs.com/mrhelloworld/p/docker10.html)
 
 - DockerHub 为我们提供了很多官方镜像和个人上传的镜像，我们可以下载机构或个人提供的镜像，也可以上传我们自己的本地镜像，但缺点是：
@@ -441,10 +1464,173 @@ e07ee1baac5f: Pushed
 
 28 directories, 8 files
 ```
-
-
-
 #### 5.0 配置私有仓库认证
+- 私有仓库已经搭建好了，要确保私有仓库的安全性，还需要一个安全认证证书，防止发生意想不到的事情。所以需要在搭建私有仓库的 Docker 主机上先生成自签名证书。
+- 创建证书存储目录。
+```
+[root@Docker ~]# mkdir -p /usr/local/registry/certs
+```
+- 生成自签名证书命令。
+	- openssl req：创建证书签名请求等功能；
+	- -newkey：创建 CSR 证书签名文件和 RSA 私钥文件；
+	- rsa:2048：指定创建的 RSA 私钥长度为 2048；
+	- -nodes：对私钥不进行加密；
+	- -sha256：使用 SHA256 算法；
+	- -keyout：创建的私钥文件名称及位置；
+	- -x509：自签发证书格式；
+	- -days：证书有效期；
+	- -out：指定 CSR 输出文件名称及位置；
+```
+openssl req -newkey rsa:2048 -nodes -sha256 -keyout /usr/local/registry/certs/domain.key -x509 -days 365 -out /usr/local/registry/certs/domain.crt
+```
+##### 5.1  生成自签名证书
+- 通过 openssl 先生成自签名证书，运行命令以后需要填写一些证书信息，里面最关键的部分是：```Common Name (eg, your name or your server's hostname) []:192.168.10.10```，这里填写的是私有仓库的地址。
+```
+[root@Docker ~]# openssl req -newkey rsa:2048 -nodes -sha256 -keyout /usr/local/registry/certs/domain.key -x509 -days 365 -out /usr/local/registry/certs/domain.crtGenerating a 2048 bit RSA private key
+.........................................................+++
+.............................................+++
+writing new private key to '/usr/local/registry/certs/domain.key'
+-----
+You are about to be asked to enter information that will be incorporated
+into your certificate request.
+What you are about to enter is what is called a Distinguished Name or a DN.
+There are quite a few fields but you can leave some blank
+For some fields there will be a default value,
+If you enter '.', the field will be left blank.
+-----
+Country Name (2 letter code) [XX]:
+State or Province Name (full name) []:
+Locality Name (eg, city) [Default City]:
+Organization Name (eg, company) [Default Company Ltd]:
+Organizational Unit Name (eg, section) []:
+Common Name (eg, your name or your server's hostname) []:192.168.56.106
+Email Address []:
+[root@Docker ~]# ll /usr/local/registry/certs      
+total 8
+-rw-r--r--. 1 root root 1285 Apr 29 10:45 domain.crt
+-rw-r--r--. 1 root root 1704 Apr 29 10:45 domain.key
+```
+##### 5.2  生成鉴权密码文件
+```
+# 创建存储鉴权密码文件目录
+[root@Docker ~]# mkdir -p /usr/local/registry/auth
+# 如果没有 htpasswd 功能需要安装 httpd
+[root@Docker ~]# yum install -y httpd
+# 创建用户和密码
+[root@Docker ~]# htpasswd --help
+ -b  Use the password from the command line rather than prompting for it.
+ -B  Force bcrypt aencryption of the password (very secure).
+ -n  Don't update file; display results on stdout.
+[root@Docker ~]# htpasswd -Bbn root 1234 > /usr/local/registry/auth/htpasswd
+[root@Docker ~]# cat /usr/local/registry/auth/htpasswd 
+root:$2y$05$aOvWaoEIi3unIBLD1dMrKut3JPQsaamHpfmkPq42vaiO4/N0ON.pu
+```
+- htpasswd 是 apache http 的基本认证文件，使用 htpasswd 命令可以生成用户及密码文件。
+##### 5.3  创建私有仓库容器
+```
+[root@Docker ~]# docker run -di --name iauth-registry -p 5000:5000 \
+	-v /mydata/docker_registry:/var/lib/registry \
+	-v /usr/local/registry/certs:/certs \
+	-v /usr/local/registry/auth:/auth \
+	-e "REGISTRY_AUTH=htpasswd" \
+	-e "REGISTRY_AUTH_HTPASSWD_REALM=Registry Realm" \
+	-e "REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd" \
+	-e "REGISTRY_HTTP_TLS_CERTIFICATE=/certs/domain.crt" \
+	-e REGISTRY_HTTP_TLS_KEY=/certs/domain.key \
+	registry
+```
+- [https://192.168.56.106:5000/v2/_catalog](https://192.168.56.106:5000/v2/_catalog)
+##### 5.4  推送镜像至私有仓库失败
+- 先给镜像设置标签 docker tag local-image:tagname new-repo:tagname；
+- 再将镜像推送至私有仓库 docker push new-repo:tagname。
+    - 如果直接 push 镜像肯定会失败，并且出现 no basic auth credentials 的错误，这是因为我们没有进行登录认证。
+```
+[root@Docker ~]# docker images
+REPOSITORY                             TAG       IMAGE ID       CREATED        SIZE
+hello-world                            latest    feb5d9fea6a5   7 months ago   13.3kB
+[root@Docker ~]# docker tag hello-world:latest 192.168.56.106:5000/test-hello-world:2.0.0
+[root@Docker ~]# docker images
+REPOSITORY                             TAG       IMAGE ID       CREATED        SIZE
+192.168.56.106:5000/test-hello-world   2.0.0     feb5d9fea6a5   7 months ago   13.3kB
+[root@Docker ~]# docker push 192.168.56.106:5000/test-hello-world:2.0.0
+The push refers to repository [192.168.56.106:5000/test-hello-world]
+e07ee1baac5f: Preparing 
+no basic auth credentials
+```
+
+##### 5.5  登录账号
+```
+[root@Docker ~]# docker login 192.168.56.106:5000
+Username: root
+Password: 
+WARNING! Your password will be stored unencrypted in /root/.docker/config.json.
+Configure a credential helper to remove this warning. See
+https://docs.docker.com/engine/reference/commandline/login/#credentials-store
+
+Login Succeeded
+```
+##### 5.6  推送镜像至私有仓库成功
+- 再次 push 镜像，发现已经可以推送成功了。
+```
+[root@Docker ~]# docker push 192.168.56.106:5000/test-hello-world:2.0.0
+The push refers to repository [192.168.56.106:5000/test-hello-world]
+e07ee1baac5f: Layer already exists 
+2.0.0: digest: sha256:f54a58bc1aac5ea1a25d796ae155dc228b3f0e11d046ae276b39c4bf2f13d8c4 size: 525
+[root@Docker ~]# tree /mydata/docker_registry
+/mydata/docker_registry
+└── docker
+    └── registry
+        └── v2
+            ├── blobs
+            │   └── sha256
+            │       ├── 2d
+            │       │   └── 2db29710123e3e53a794f2694094b9b4338aa9ee5c40b930cb8063a1be392c54
+            │       │       └── data
+            │       ├── f5
+            │       │   └── f54a58bc1aac5ea1a25d796ae155dc228b3f0e11d046ae276b39c4bf2f13d8c4
+            │       │       └── data
+            │       └── fe
+            │           └── feb5d9fea6a5e9606aa995e879d862b825965ba48de054caab5ef356dc6b3412
+            │               └── data
+            └── repositories
+                └── test-hello-world
+                    ├── _layers
+                    │   └── sha256
+                    │       ├── 2db29710123e3e53a794f2694094b9b4338aa9ee5c40b930cb8063a1be392c54
+                    │       │   └── link
+                    │       └── feb5d9fea6a5e9606aa995e879d862b825965ba48de054caab5ef356dc6b3412
+                    │           └── link
+                    ├── _manifests
+                    │   ├── revisions
+                    │   │   └── sha256
+                    │   │       └── f54a58bc1aac5ea1a25d796ae155dc228b3f0e11d046ae276b39c4bf2f13d8c4
+                    │   │           └── link
+                    │   └── tags
+                    │       ├── 1.0.0
+                    │       │   ├── current
+                    │       │   │   └── link
+                    │       │   └── index
+                    │       │       └── sha256
+                    │       │           └── f54a58bc1aac5ea1a25d796ae155dc228b3f0e11d046ae276b39c4bf2f13d8c4
+                    │       │               └── link
+                    │       └── 2.0.0
+                    │           ├── current
+                    │           │   └── link
+                    │           └── index
+                    │               └── sha256
+                    │                   └── f54a58bc1aac5ea1a25d796ae155dc228b3f0e11d046ae276b39c4bf2f13d8c4
+                    │                       └── link
+                    └── _uploads
+
+33 directories, 10 files
+```
+##### 5.7  退出账号
+- 通过 docker logout 命令退出账号。
+```
+[root@Docker ~]# docker logout 192.168.56.106:5000
+Removing login credentials for 192.168.56.106:5000
+```
+
 ### 9 DockerHub 镜像仓库的使用
 - [DockerHub 镜像仓库的使用](https://www.cnblogs.com/mrhelloworld/p/docker9.html)
 
@@ -2743,7 +3929,7 @@ e99c0f1d78c7   nginx:latest   "/docker-entrypoint.…"   21 seconds ago   Up 18 
 ```
 - 登录守护式容器方式
     - https://docs.docker.com/engine/reference/commandline/exec/#options
-> docker exec -it 容器名称|容器ID /bin/bash
+> docker exec -it 容器名称|容器ID /bin/bash|sh
 ```
 # docker exec -it -w /root mynginx /bin/bash
 [root@Docker ~]# docker exec -it mynginx /bin/bash
