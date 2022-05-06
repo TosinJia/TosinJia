@@ -1186,6 +1186,17 @@ tcp        0      0 0.0.0.0:80              0.0.0.0:*               LISTEN      
 # -O 参数指定文件名，需要注意的是，如果重命名中包含路径，那么该路径必须实现创建好
 [root@bd-01-01 ~]# wget https://ss0.bdstatic.com/5aV1bjqh_Q23odCf/static/superman/img/logo_top_86d58ae1.png -O /tmp/baidu.png
 ```
+#### curl
+* 利用URL规则在命令行下工作的文件传输工具
+    - https://ipcmen.com/curl
+```
+[root@Docker ~]# curl -L "https://github.com/docker/compose/releases/download/1.26.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+100 11.6M  100 11.6M    0     0  97938      0  0:02:05  0:02:05 --:--:-- 1986k
+```
+
 
 ### 8 关机重启命令
 1. shutdown命令
