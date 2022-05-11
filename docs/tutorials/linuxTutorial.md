@@ -490,6 +490,7 @@ SCSI/SATA/USB硬盘 | /dev/sd[a-p]
     * 范例：
         * $cat /etc/issue
         * $cat -n /etc/issue
+        * ```# cat /usr/local/docker-redis/redis-cluster/637[1-3]/conf/redis.conf```
 
 1. 名称：tac
     * 指令所在路径：/use/bin/chgrp
