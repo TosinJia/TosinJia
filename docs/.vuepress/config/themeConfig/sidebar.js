@@ -59,7 +59,7 @@ module.exports = {
           'openSourceFramework/introduction',
           'openSourceFramework/ruoyi/ruoyi-vue/',
           ['openSourceFramework/ruoyi/ruoyi-cloud/', 'RuoYi-Cloud'],
-          ['openSourceFramework/ruoyi/ruoyi-cloud-ow/', 'RuoYi-Cloud 官方']
+          ['openSourceFramework/ruoyi/ruoyi-cloud-ow/', 'RuoYi-Cloud 官网']
         ]
       },
     ],
