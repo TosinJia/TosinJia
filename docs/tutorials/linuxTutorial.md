@@ -1290,6 +1290,32 @@ root@d769aa0e20c4:/# ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 root@d769aa0e20c4:/# ls -l /etc/localtime                                    
 lrwxrwxrwx. 1 root root 33 Nov 23 21:45 /etc/localtime -> /usr/share/zoneinfo/Asia/Shanghai
 ```
+- 时间同步
+    - [Linux下使用ntpdate进行时间同步](https://www.cnblogs.com/zsg88/articles/8409020.html)
+```
+# 1、安装ntpdate
+[root@manager1 ~]# yum -y install ntpdate
+# 2、手工同步网络时间
+[root@manager1 ~]# ntpdate 0.asia.pool.ntp.org
+14 May 19:47:41 ntpdate[1993]: step time server 17.253.84.253 offset 2.228326 sec
+# 3、使用crontab计划任务定时更新网络时间，修改crontab文件，在末尾增加* */1 * * * ntpdate 0.asia.pool.ntp.org，每隔1小时同步一次时间。
+[root@manager1 ~]# vim /etc/crontab 
+SHELL=/bin/bash
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+MAILTO=root
+
+# For details see man 4 crontabs
+
+# Example of job definition:
+# .---------------- minute (0 - 59)
+# |  .------------- hour (0 - 23)
+# |  |  .---------- day of month (1 - 31)
+# |  |  |  .------- month (1 - 12) OR jan,feb,mar,apr ...
+# |  |  |  |  .---- day of week (0 - 6) (Sunday=0 or 7) OR sun,mon,tue,wed,thu,fri,sat
+# |  |  |  |  |
+# *  *  *  *  * user-name  command to be executed
+* */1 * * * ntpdate 0.asia.pool.ntp.org
+```
 
 #### cal
 ### 10. 其他
@@ -9210,6 +9236,23 @@ Last dump(s) done (Dump '>' file systems):
 
 
 ## 常用命令
+### 修改主机配置
+#### 主机名
+```
+[root@CentOS-7 ~]# hostnamectl set-hostname manager1
+
+[root@CentOS-7 ~]# vi /etc/hostname  
+manager2
+```
+#### hosts
+```
+[root@manager1 ~]# vim /etc/hosts
+127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
+
+192.168.217.3 manager1
+```
+
 ### 清空catalina.out日志 不需要重启tomcat
 - https://www.cnblogs.com/ainihaozhen/p/9466524.html
 ```
