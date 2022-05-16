@@ -27,6 +27,13 @@
 - Docker Toolbox
     - https://www.docker.com/products/docker-toolbox
 
+## 常见问题
+### bash: ping: command not found
+```
+apt-get update
+apt-get install iputils-ping
+```
+
 ## Docker Toolbox
     C:\Users\TosinJia\.docker\machine\cache
 
@@ -274,29 +281,761 @@ yum remove docker docker-common docker-selinux docker-engine
 ### Docker Swarm 集群环境搭建及弹性服务部署
 - [Docker Swarm 集群环境搭建及弹性服务部署](https://www.cnblogs.com/mrhelloworld/p/docker16.html)
 
-#### 参考资料
-- https://docs.docker.com/engine/swarm/swarm-tutorial/
-- https://docs.docker.com/engine/swarm/swarm-mode/
-- https://docs.docker.com/engine/swarm/how-swarm-mode-works/pki/
-- https://docs.docker.com/engine/swarm/join-nodes/
-- https://docs.docker.com/engine/swarm/swarm-tutorial/rolling-update/
+- 从零开始，搭建 Docker Swarm 集群环境，并通过 Swarm 实现服务的弹性部署，滚动更新服务及回滚服务等功能。
+#### 1.0  集群搭建
+##### 1.1  环境准备
+```
+[root@CentOS-7 ~]# rpm -q centos-release
+centos-release-7-9.2009.0.el7.centos.x86_64
+
+[root@CentOS-7 ~]# curl -fsSL https://get.docker.com | bash -s docker --mirror Aliyun
+[root@CentOS-7 ~]# docker -v
+Docker version 20.10.16, build aa7e414
+[root@CentOS-7 ~]# systemctl start docker      
+[root@CentOS-7 ~]# docker ps
+CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
+[root@CentOS-7 ~]# systemctl enable docker
+Created symlink from /etc/systemd/system/multi-user.target.wants/docker.service to /usr/lib/systemd/system/docker.service.
+
+[root@CentOS-7 ~]# systemctl stop firewalld  
+[root@CentOS-7 ~]# systemctl disable firewalld
+Removed symlink /etc/systemd/system/multi-user.target.wants/firewalld.service.
+Removed symlink /etc/systemd/system/dbus-org.fedoraproject.FirewallD1.service.
+```
+- 五台安装了 Docker 的 CentOS 机器，版本为：```CentOS 7.9.2009```
+- Docker Engine 1.12+（最低要求 1.12，本文使用 20.10.16）
+- 防火墙开启以下端口或者关闭防火墙：
+    - TCP 端口 2377，用于集群管理通信；
+    - TCP 和 UDP 端口 7946，用于节点之间通信；
+    - UDP 端口 4789，用于覆盖网络。
+##### 1.2  机器分布
+
+角色 | IP | HOSTNAME | Docker 版本
+--|--|--|--
+Manager | 192.168.217.3 | manager1 | 20.10.16
+Manager | 192.168.217.4 | manager2 | 20.10.16
+Manager | 192.168.217.5 | manager3 | 20.10.16
+Worker | 192.168.217.6 | worker1 | 20.10.16
+Worker | 192.168.217.7 | worker2 | 20.10.16
+
+- 可以通过 ```hostname 主机名``` 修改机器的主机名（立即生效，重启后失效）；
+- 或者 ```hostnamectl set-hostname``` 主机名 修改机器的主机名（立即生效，重启也生效）；
+```
+[root@CentOS-7 ~]# hostnamectl set-hostname manager1
+
+[root@CentOS-7 ~]# vi /etc/hostname  
+manager2
+
+[root@manager1 ~]# vim /etc/hosts
+127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
+
+192.168.217.3 manager1
+192.168.217.4 manager2
+192.168.217.5 manager3
+192.168.217.6 worker1
+192.168.217.7 worker2
+[root@manager1 ~]# scp /etc/hosts manager2:/etc/
+[root@manager1 ~]# scp /etc/hosts manager3:/etc/
+[root@manager1 ~]# scp /etc/hosts worker1:/etc/
+[root@manager1 ~]# scp /etc/hosts worker2:/etc/
+```
+##### 1.3  创建集群
+- 在任意节点下通过 ```docker swarm init``` 命令创建一个新的 Swarm 集群并加入，且该节点会默认成为 Manager 节点。根据我们预先定义的角色，在 3 ~ 5 的任意一台机器上运行该命令即可。
+
+- 通常，第一个加入集群的管理节点将成为 ```Leader```，后来加入的管理节点都是 ```Reachable```。当前的 Leader 如果挂掉，所有的 Reachable 将重新选举一个新的 Leader。
+```{1,2,8}
+[root@manager1 ~]# docker swarm init --advertise-addr 192.168.217.3
+Swarm initialized: current node (98t1cewaejvrla26icbs8wkdb) is now a manager.
+
+To add a worker to this swarm, run the following command:
+
+    docker swarm join --token SWMTKN-1-5eif2nhmirc844crj7qhumqhxjqg1vk1b965i8zm7nfw78het6-3gv2ifs7lhohg23853np8ksp5 192.168.217.3:2377
+
+To add a manager to this swarm, run 'docker swarm join-token manager' and follow the instructions.
+```
+##### 1.4  加入集群
+- Docker 中内置的集群模式自带了公钥基础设施(PKI)系统，使得安全部署容器变得简单。集群中的节点使用传输层安全协议(TLS)对集群中其他节点的通信进行身份验证、授权和加密。
+
+- 默认情况下，通过 ```docker swarm init``` 命令创建一个新的 Swarm 集群时，Manager 节点会生成新的根证书颁发机构（CA）和密钥对，用于保护与加入群集的其他节点之间的通信安全。
+
+- Manager 节点会生成两个令牌，供其他节点加入集群时使用：一个 Worker 令牌，一个 Manager 令牌。每个令牌都包括根 CA 证书的摘要和随机生成的密钥。当节点加入群集时，加入的节点使用摘要来验证来自远程管理节点的根 CA 证书。远程管理节点使用密钥来确保加入的节点是批准的节点。
+
+![docker-swarm-join_cluster](../images/docker-swarm-join_cluster.jpg)
+
+###### Manager
+- 若要向该集群添加 Manager 节点，管理节点先运行 ```docker swarm join-token manager``` 命令查看管理节点的令牌信息。
+```
+[root@manager1 ~]# docker swarm join-token manager
+To add a manager to this swarm, run the following command:
+
+    docker swarm join --token SWMTKN-1-5eif2nhmirc844crj7qhumqhxjqg1vk1b965i8zm7nfw78het6-a1p0ydpttswtfjhwo0afxa9mg 192.168.217.3:2377
+```
+- 然后在其他节点上运行 ```docker swarm join``` 并携带令牌参数加入 Swarm 集群，该节点角色为 Manager。
+```{2,4}
+# 时间同步 Error response from daemon: error while validating Root CA Certificate: x509: certificate has expired or is not yet valid: current time 2022-05-14T12:02:19+08:00 is before 2022-05-14T11:23:00Z
+[root@manager2 ~]# docker swarm join --token SWMTKN-1-5eif2nhmirc844crj7qhumqhxjqg1vk1b965i8zm7nfw78het6-a1p0ydpttswtfjhwo0afxa9mg 192.168.217.3:2377
+This node joined a swarm as a manager.
+[root@manager3 ~]# docker swarm join --token SWMTKN-1-5eif2nhmirc844crj7qhumqhxjqg1vk1b965i8zm7nfw78het6-a1p0ydpttswtfjhwo0afxa9mg 192.168.217.3:2377
+This node joined a swarm as a manager.
+```
+###### Workder
+- 通过创建集群时返回的结果可以得知，要向这个集群添加一个 Worker 节点，运行下图中的命令即可。或者管理节点先运行 ```docker swarm join-token worker``` 命令查看工作节点的令牌信息。
+```
+[root@manager1 ~]# docker swarm join-token worker
+To add a worker to this swarm, run the following command:
+
+    docker swarm join --token SWMTKN-1-5eif2nhmirc844crj7qhumqhxjqg1vk1b965i8zm7nfw78het6-3gv2ifs7lhohg23853np8ksp5 192.168.217.3:2377
+```
+- 然后在其他节点上运行 ```docker swarm join``` 并携带令牌参数加入 Swarm 集群，该节点角色为 Worker。
+```{1,3}
+[root@worker1 ~]# docker swarm join --token SWMTKN-1-5eif2nhmirc844crj7qhumqhxjqg1vk1b965i8zm7nfw78het6-3gv2ifs7lhohg23853np8ksp5 192.168.217.3:2377
+This node joined a swarm as a worker.
+[root@worker2 ~]# docker swarm join --token SWMTKN-1-5eif2nhmirc844crj7qhumqhxjqg1vk1b965i8zm7nfw78het6-3gv2ifs7lhohg23853np8ksp5 192.168.217.3:2377
+This node joined a swarm as a worker.
+```
+##### 1.5  查看集群信息
+- 在任意 Manager 节点中运行 ```docker info``` 可以查看当前集群的信息。
+```{30,34,35}
+[root@manager1 ~]# docker info
+Client:
+ Context:    default
+ Debug Mode: false
+ Plugins:
+  app: Docker App (Docker Inc., v0.9.1-beta3)
+  buildx: Docker Buildx (Docker Inc., v0.8.2-docker)
+  compose: Docker Compose (Docker Inc., v2.5.0)
+  scan: Docker Scan (Docker Inc., v0.17.0)
+
+Server:
+ Containers: 0
+  Running: 0
+  Paused: 0
+  Stopped: 0
+ Images: 0
+ Server Version: 20.10.16
+ Storage Driver: overlay2
+  Backing Filesystem: xfs
+  Supports d_type: true
+  Native Overlay Diff: true
+  userxattr: false
+ Logging Driver: json-file
+ Cgroup Driver: cgroupfs
+ Cgroup Version: 1
+ Plugins:
+  Volume: local
+  Network: bridge host ipvlan macvlan null overlay
+  Log: awslogs fluentd gcplogs gelf journald json-file local logentries splunk syslog
+ Swarm: active
+  NodeID: 98t1cewaejvrla26icbs8wkdb
+  Is Manager: true
+  ClusterID: pib1uii03yznnm8kghtj54wxw
+  Managers: 3
+  Nodes: 5
+  Default Address Pool: 10.0.0.0/8  
+  SubnetSize: 24
+  Data Path Port: 4789
+  Orchestration:
+   Task History Retention Limit: 5
+  Raft:
+   Snapshot Interval: 10000
+   Number of Old Snapshots to Retain: 0
+   Heartbeat Tick: 1
+   Election Tick: 10
+  Dispatcher:
+   Heartbeat Period: 5 seconds
+  CA Configuration:
+   Expiry Duration: 3 months
+   Force Rotate: 0
+  Autolock Managers: false
+  Root Rotation In Progress: false
+  Node Address: 192.168.217.3
+  Manager Addresses:
+   192.168.217.3:2377
+   192.168.217.4:2377
+   192.168.217.5:2377
+ Runtimes: io.containerd.runc.v2 io.containerd.runtime.v1.linux runc
+ Default Runtime: runc
+ Init Binary: docker-init
+ containerd version: 212e8b6fa2f44b9c21b2798135fc6fb7c53efc16
+ runc version: v1.1.1-0-g52de29d
+ init version: de40ad0
+ Security Options:
+  seccomp
+   Profile: default
+ Kernel Version: 3.10.0-1160.el7.x86_64
+ Operating System: CentOS Linux 7 (Core)
+ OSType: linux
+ Architecture: x86_64
+ CPUs: 1
+ Total Memory: 487MiB
+ Name: manager1
+ ID: CYUE:3XZO:5ZX7:DSHH:P5Z7:MRKI:5YF3:YTQZ:NLFN:ZQ74:7IU3:MD42
+ Docker Root Dir: /var/lib/docker
+ Debug Mode: false
+ Registry: https://index.docker.io/v1/
+ Labels:
+ Experimental: false
+ Insecure Registries:
+  127.0.0.0/8
+ Live Restore Enabled: false
+
+WARNING: bridge-nf-call-ip6tables is disabled
+```
+##### 1.6  查看集群节点
+- 在任意 Manager 节点中运行 ```docker node ls``` 可以查看当前集群节点信息。
+```{3}
+[root@manager1 ~]# docker node ls
+ID                            HOSTNAME   STATUS    AVAILABILITY   MANAGER STATUS   ENGINE VERSION
+98t1cewaejvrla26icbs8wkdb *   manager1   Ready     Active         Leader           20.10.16
+ng7q78fk4vhixxbzhe1xtm0fd     manager2   Ready     Active         Reachable        20.10.16
+a03apmtv3pemia3612vzwszys     manager3   Ready     Active         Reachable        20.10.16
+x4m3q557wj79iul8ivtxz122k     worker1    Ready     Active                          20.10.16
+tjwdrzb1y7pcs6wrfso0qgexf     worker2    Ready     Active                          20.10.16
+```
+
+> \* 代表当前节点，现在的环境为 3 个管理节点构成 1 主 2 从，以及 2 个工作节点。
+
+- 节点 ```MANAGER STATUS``` 说明：表示节点是属于 Manager 还是 Worker，没有值则属于 Worker 节点。
+    - ```Leader```：该节点是管理节点中的主节点，负责该集群的集群管理和编排决策；
+    -  ```Reachable```：该节点是管理节点中的从节点，如果 Leader 节点不可用，该节点有资格被选为新的 Leader；
+    - ```Unavailable```：该管理节点已不能与其他管理节点通信。如果管理节点不可用，应该将新的管理节点加入群集，或者将工作节点升级为管理节点。
+　　
+- 节点 ```AVAILABILITY``` 说明：表示调度程序是否可以将任务分配给该节点。
+    - ```Active```：调度程序可以将任务分配给该节点；
+    - ```Pause```：调度程序不会将新任务分配给该节点，但现有任务仍可以运行；
+    - ```Drain```：调度程序不会将新任务分配给该节点，并且会关闭该节点所有现有任务，并将它们调度在可用的节点上。
+##### 1.7  删除节点
+###### Manager
+1. 删除节点之前需要先将该节点的 ```AVAILABILITY``` 改为 ```Drain```。其目的是为了将该节点的服务迁移到其他可用节点上，确保服务正常。最好检查一下容器迁移情况，确保这一步已经处理完成再继续往下。
+```{1}
+[root@manager3 ~]# docker node update --availability drain a03apmtv3pemia3612vzwszys
+a03apmtv3pemia3612vzwszys
+[root@manager3 ~]# docker node ls
+ID                            HOSTNAME   STATUS    AVAILABILITY   MANAGER STATUS   ENGINE VERSION
+a03apmtv3pemia3612vzwszys *   manager3   Ready     Drain          Reachable        20.10.16
+```
+2. 然后，将该 Manager 节点进行降级处理，降级为 Worker 节点。
+```{1}
+[root@manager3 ~]# docker node demote a03apmtv3pemia3612vzwszys
+Manager a03apmtv3pemia3612vzwszys demoted in the swarm.
+[root@manager3 ~]# docker node ls
+Error response from daemon: This node is not a swarm manager. Worker nodes can't be used to view or modify cluster state. Please run this command on a manager node or promote the current node to a manager.
+[root@manager1 ~]# docker node ls
+ID                            HOSTNAME   STATUS    AVAILABILITY   MANAGER STATUS   ENGINE VERSION
+a03apmtv3pemia3612vzwszys     manager3   Ready     Drain                           20.10.16
+```
+3. 然后，在已经降级为 Worker 的节点中运行以下命令，离开集群。
+```{1}
+[root@manager3 ~]# docker swarm leave
+Node left the swarm.
+[root@manager1 ~]# docker node ls
+ID                            HOSTNAME   STATUS    AVAILABILITY   MANAGER STATUS   ENGINE VERSION
+a03apmtv3pemia3612vzwszys     manager3   Down      Drain                           20.10.16
+```
+4. 最后，在管理节点中对刚才离开的节点进行删除。
+```{1}
+[root@manager1 ~]# docker node rm a03apmtv3pemia3612vzwszys
+a03apmtv3pemia3612vzwszys
+[root@manager1 ~]# docker node ls
+ID                            HOSTNAME   STATUS    AVAILABILITY   MANAGER STATUS   ENGINE VERSION
+98t1cewaejvrla26icbs8wkdb *   manager1   Ready     Active         Leader           20.10.16
+ng7q78fk4vhixxbzhe1xtm0fd     manager2   Ready     Active         Reachable        20.10.16
+x4m3q557wj79iul8ivtxz122k     worker1    Ready     Active                          20.10.16
+tjwdrzb1y7pcs6wrfso0qgexf     worker2    Ready     Active                          20.10.16
+```
+###### Worker
+1. 删除节点之前需要先将该节点的 ```AVAILABILITY``` 改为 ```Drain```。其目的是为了将该节点的服务迁移到其他可用节点上，确保服务正常。最好检查一下容器迁移情况，确保这一步已经处理完成再继续往下。
+```{1}
+[root@manager1 ~]# docker node update --availability drain tjwdrzb1y7pcs6wrfso0qgexf
+tjwdrzb1y7pcs6wrfso0qgexf
+[root@manager1 ~]# docker node ls
+ID                            HOSTNAME   STATUS    AVAILABILITY   MANAGER STATUS   ENGINE VERSION
+tjwdrzb1y7pcs6wrfso0qgexf     worker2    Ready     Drain                           20.10.16
+```
+2. 然后，在准备删除的 Worker 节点中运行以下命令，离开集群。
+```{1}
+[root@worker2 ~]# docker swarm leave
+Node left the swarm.
+[root@manager1 ~]# docker node ls
+ID                            HOSTNAME   STATUS    AVAILABILITY   MANAGER STATUS   ENGINE VERSION
+tjwdrzb1y7pcs6wrfso0qgexf     worker2    Down      Drain                           20.10.16
+```
+3. 最后，在管理节点中对刚才离开的节点进行删除。
+```{1}
+[root@manager1 ~]# docker node rm tjwdrzb1y7pcs6wrfso0qgexf
+tjwdrzb1y7pcs6wrfso0qgexf
+[root@manager1 ~]# docker node ls
+ID                            HOSTNAME   STATUS    AVAILABILITY   MANAGER STATUS   ENGINE VERSION
+98t1cewaejvrla26icbs8wkdb *   manager1   Ready     Active         Leader           20.10.16
+ng7q78fk4vhixxbzhe1xtm0fd     manager2   Ready     Active         Reachable        20.10.16
+x4m3q557wj79iul8ivtxz122k     worker1    Ready     Active                          20.10.16
+```
+#### 2.0  服务部署
+> 注意：跟集群管理有关的任何操作，都是在 Manager 节点上操作的。
+##### 2.1  创建服务
+- 下面这个案例，使用 nginx 镜像创建了一个名为 mynginx 的服务，该服务会被随机指派给一个工作节点运行。
+    - ```docker service create```：创建服务；
+    - ```--replicas```：指定一个服务有几个实例运行；
+    - ```--name```：服务名称。
+
+```
+[root@manager1 ~]# docker service create --replicas 1 --name mynginx -p 80:80 nginx
+9eritgac3v7qp987gbmk06ldo
+overall progress: 1 out of 1 tasks 
+1/1: running   [==================================================>] 
+verify: Service converged 
+```
+##### 2.2  查看服务
+- 可以通过 ```docker service ls``` 查看运行的服务。
+```
+[root@manager1 ~]# docker service ls
+ID             NAME      MODE         REPLICAS   IMAGE          PORTS
+9eritgac3v7q   mynginx   replicated   1/1        nginx:latest   *:80->80/tcp
+```
+- 可以通过 ```docker service inspect 服务名称|服务ID``` 查看服务的详细信息。
+```
+[root@manager1 ~]# docker service inspect mynginx
+[
+    {
+        "ID": "9eritgac3v7qp987gbmk06ldo",
+        "Version": {
+            "Index": 59
+        },
+        "CreatedAt": "2022-05-14T12:41:23.106966446Z",
+        "UpdatedAt": "2022-05-14T12:41:23.138059604Z",
+        "Spec": {
+            "Name": "mynginx",
+            "Labels": {},
+            "TaskTemplate": {
+                "ContainerSpec": {
+                    "Image": "nginx:latest@sha256:2c72b42c3679c1c819d46296c4e79e69b2616fa28bea92e61d358980e18c9751",
+                    "Init": false,
+                    "StopGracePeriod": 10000000000,
+                    "DNSConfig": {},
+                    "Isolation": "default"
+                },
+                "Resources": {
+                    "Limits": {},
+                    "Reservations": {}
+                },
+                "RestartPolicy": {
+                    "Condition": "any",
+                    "Delay": 5000000000,
+                    "MaxAttempts": 0
+                },
+                "Placement": {
+                    "Platforms": [
+                        {
+                            "Architecture": "amd64",
+                            "OS": "linux"
+                        },
+                        {
+                            "OS": "linux"
+                        },
+                        {
+                            "OS": "linux"
+                        },
+                        {
+                            "Architecture": "arm64",
+                            "OS": "linux"
+                        },
+                        {
+                            "Architecture": "386",
+                            "OS": "linux"
+                        },
+                        {
+                            "Architecture": "mips64le",
+                            "OS": "linux"
+                        },
+                        {
+                            "Architecture": "ppc64le",
+                            "OS": "linux"
+                        },
+                        {
+                            "Architecture": "s390x",
+                            "OS": "linux"
+                        }
+                    ]
+                },
+                "ForceUpdate": 0,
+                "Runtime": "container"
+            },
+            "Mode": {
+                "Replicated": {
+                    "Replicas": 1
+                }
+            },
+            "UpdateConfig": {
+                "Parallelism": 1,
+                "FailureAction": "pause",
+                "Monitor": 5000000000,
+                "MaxFailureRatio": 0,
+                "Order": "stop-first"
+            },
+            "RollbackConfig": {
+                "Parallelism": 1,
+                "FailureAction": "pause",
+                "Monitor": 5000000000,
+                "MaxFailureRatio": 0,
+                "Order": "stop-first"
+            },
+            "EndpointSpec": {
+                "Mode": "vip",
+                "Ports": [
+                    {
+                        "Protocol": "tcp",
+                        "TargetPort": 80,
+                        "PublishedPort": 80,
+                        "PublishMode": "ingress"
+                    }
+                ]
+            }
+        },
+        "Endpoint": {
+            "Spec": {
+                "Mode": "vip",
+                "Ports": [
+                    {
+                        "Protocol": "tcp",
+                        "TargetPort": 80,
+                        "PublishedPort": 80,
+                        "PublishMode": "ingress"
+                    }
+                ]
+            },
+            "Ports": [
+                {
+                    "Protocol": "tcp",
+                    "TargetPort": 80,
+                    "PublishedPort": 80,
+                    "PublishMode": "ingress"
+                }
+            ],
+            "VirtualIPs": [
+                {
+                    "NetworkID": "xuhllxuf5o7rcw74t1odqewbq",
+                    "Addr": "10.0.0.9/24"
+                }
+            ]
+        }
+    }
+]
+```
+- 可以通过 ```docker service logs 服务名称|服务ID``` 查看服务日志。
+```
+[root@manager1 ~]# docker service logs mynginx
+mynginx.1.4wt9m2b2khos@manager1    | /docker-entrypoint.sh: /docker-entrypoint.d/ is not empty, will attempt to perform configuration
+```
+- 可以通过 ```docker service ps 服务名称|服务ID``` 查看服务运行在哪些节点上。
+```
+[root@manager1 ~]# docker service ps mynginx
+ID             NAME        IMAGE          NODE       DESIRED STATE   CURRENT STATE           ERROR     PORTS
+4wt9m2b2khos   mynginx.1   nginx:latest   manager1   Running         Running 5 minutes ago             
+```
+- 在对应的任务节点上运行 ```docker ps``` 可以查看该服务对应容器的相关信息。
+```
+CONTAINER ID   IMAGE          COMMAND                  CREATED         STATUS         PORTS     NAMES
+1f54c0fd4ccc   nginx:latest   "/docker-entrypoint.…"   6 minutes ago   Up 6 minutes   80/tcp    mynginx.1.4wt9m2b2khoso73xuzcxxusv1
+```
+##### 2.3  调用服务
+- 接下来我们测试一下服务是否能被正常访问，并且该集群下任意节点的 IP 地址都要能访问到该服务才行。
+- 测试结果：5 台机器均可正常访问到该服务。
+```
+[root@manager1 ~]# curl http://192.168.217.3
+[root@manager1 ~]# curl http://192.168.217.4
+[root@manager1 ~]# curl http://192.168.217.5
+[root@manager1 ~]# curl http://192.168.217.6
+[root@manager1 ~]# curl http://192.168.217.7
+<!DOCTYPE html>
+<html>
+<head>
+<title>Welcome to nginx!</title>
+<style>
+html { color-scheme: light dark; }
+body { width: 35em; margin: 0 auto;
+font-family: Tahoma, Verdana, Arial, sans-serif; }
+</style>
+</head>
+<body>
+<h1>Welcome to nginx!</h1>
+<p>If you see this page, the nginx web server is successfully installed and
+working. Further configuration is required.</p>
+
+<p>For online documentation and support please refer to
+<a href="http://nginx.org/">nginx.org</a>.<br/>
+Commercial support is available at
+<a href="http://nginx.com/">nginx.com</a>.</p>
+
+<p><em>Thank you for using nginx.</em></p>
+</body>
+</html>
+```
+##### 2.4  弹性服务
+- 将 service 部署到集群以后，可以通过命令弹性扩缩容 service 中的容器数量。在 service 中运行的容器被称为 task（任务）。
+- 通过 ```docker service scale 服务名称|服务ID=n``` 可以将 service 运行的任务扩缩容为 n 个。
+- 通过 ```docker service update --replicas n 服务名称|服务ID``` 也可以达到扩缩容的效果。
+- 将 mynginx service 运行的任务扩展为 5 个：
+
+```
+[root@manager1 ~]# docker service scale mynginx=5
+mynginx scaled to 5
+overall progress: 5 out of 5 tasks 
+1/5: running   [==================================================>] 
+2/5: running   [==================================================>] 
+3/5: running   [==================================================>] 
+4/5: running   [==================================================>] 
+5/5: running   [==================================================>] 
+verify: Service converged 
+```
+- 通过 ```docker service ps 服务名称|服务ID``` 查看服务运行在哪些节点上。
+```
+[root@manager1 ~]# docker service ps mynginx    
+ID             NAME        IMAGE          NODE       DESIRED STATE   CURRENT STATE                ERROR     PORTS
+4wt9m2b2khos   mynginx.1   nginx:latest   manager1   Running         Running 16 minutes ago                 
+0mo1srz65n6j   mynginx.2   nginx:latest   worker1    Running         Running about a minute ago             
+7vjifeyye1ki   mynginx.3   nginx:latest   worker2    Running         Running about a minute ago             
+s89qdssfw1xy   mynginx.4   nginx:latest   manager2   Running         Running about a minute ago             
+t65wugi3abpt   mynginx.5   nginx:latest   manager3   Running         Running about a minute ago             
+```
+- 我们再来一波缩容的操作，命令如下：
+```
+[root@manager1 ~]# docker service update --replicas 3 mynginx
+mynginx
+overall progress: 3 out of 3 tasks 
+1/3: running   [==================================================>] 
+2/3: running   [==================================================>] 
+3/3: running   [==================================================>] 
+verify: Service converged 
+```
+- 通过 ```docker service ps 服务名称|服务ID``` 查看服务运行在哪些节点上。
+```
+[root@manager1 ~]# docker service ps mynginx
+ID             NAME        IMAGE          NODE       DESIRED STATE   CURRENT STATE            ERROR     PORTS
+4wt9m2b2khos   mynginx.1   nginx:latest   manager1   Running         Running 18 minutes ago             
+0mo1srz65n6j   mynginx.2   nginx:latest   worker1    Running         Running 3 minutes ago              
+7vjifeyye1ki   mynginx.3   nginx:latest   worker2    Running         Running 3 minutes ago              
+```
+- 在 Swarm 集群模式下真正意义实现了所谓的**弹性服务**，动态扩缩容一行命令搞定，简单、便捷、强大。
+##### 2.5  删除服务
+- 通过 ```docker service rm 服务名称|服务ID``` 即可删除服务。
+```
+[root@manager1 ~]# docker service ls
+ID             NAME      MODE         REPLICAS   IMAGE          PORTS
+9eritgac3v7q   mynginx   replicated   3/3        nginx:latest   *:80->80/tcp
+[root@manager1 ~]# docker service rm mynginx
+mynginx
+[root@manager1 ~]# docker service ls
+ID        NAME      MODE      REPLICAS   IMAGE     PORTS
+````
+#### 3.0  滚动更新及回滚
+
+- 以下案例将演示 Redis 版本如何滚动升级至更高版本再回滚至上一次的操作。
+- 首先，创建 5 个 Redis 服务副本，版本为 5，详细命令如下：
+    - ```--update-delay```：定义滚动更新的时间间隔；
+    - ```--update-parallelism```：定义并行更新的副本数量，默认为 1；
+    - ```--update-failure-action```：定义容器启动失败之后所执行的动作；
+    - ```--rollback-monitor```：定义回滚的监控时间；
+    - ```--rollback-parallelism```：定义并行回滚的副本数量；
+    - ```--rollback-max-failure-ratio```：任务失败回滚比率，超过该比率执行回滚操作，0.2 表示 20%。
+```
+[root@manager1 ~]# docker service create --replicas 5 --name myredis --update-delay 10s --update-parallelism 2 --update-failure-action continue --rollback-monitor 20s --rollback-parallelism 2 --rollback-max-failure-ratio 0.2 redis:5j3jlu2t8ccd3uoj7e1tf0qcab
+overall progress: 5 out of 5 tasks 
+1/5: running   [==================================================>] 
+2/5: running   [==================================================>] 
+3/5: running   [==================================================>] 
+4/5: running   [==================================================>] 
+5/5: running   [==================================================>] 
+verify: Service converged 
+[root@manager1 ~]# docker service ls
+ID             NAME      MODE         REPLICAS   IMAGE     PORTS
+j3jlu2t8ccd3   myredis   replicated   5/5        redis:5   
+[root@manager1 ~]# docker service ps myredis
+ID             NAME        IMAGE     NODE       DESIRED STATE   CURRENT STATE            ERROR     PORTS
+hlgkun8nrpb4   myredis.1   redis:5   worker2    Running         Running 59 seconds ago             
+mzzr3tpn9y6b   myredis.2   redis:5   manager1   Running         Running 59 seconds ago             
+xtvwqwgsi504   myredis.3   redis:5   manager2   Running         Running 59 seconds ago             
+09y4tc7p8fys   myredis.4   redis:5   manager3   Running         Running 59 seconds ago             
+k71umcm3gq3f   myredis.5   redis:5   worker1    Running         Running 59 seconds ago 
+```
+- 然后通过以下命令实现服务的滚动更新。
+```
+[root@manager1 ~]# docker service update --image redis:6 myredis
+myredis
+overall progress: 5 out of 5 tasks 
+1/5: running   [==================================================>] 
+2/5: running   [==================================================>] 
+3/5: running   [==================================================>] 
+4/5: running   [==================================================>] 
+5/5: running   [==================================================>] 
+verify: Service converged 
+[root@manager1 ~]# docker service ps myredis
+ID             NAME            IMAGE     NODE       DESIRED STATE   CURRENT STATE                 ERROR     PORTS
+ip8u5w5aqclv   myredis.1       redis:6   worker1    Running         Running about a minute ago              
+hlgkun8nrpb4    \_ myredis.1   redis:5   worker2    Shutdown        Shutdown about a minute ago             
+870n295yfigv   myredis.2       redis:6   manager1   Running         Running about a minute ago              
+mzzr3tpn9y6b    \_ myredis.2   redis:5   manager1   Shutdown        Shutdown about a minute ago             
+rrots5gmu1al   myredis.3       redis:6   manager2   Running         Running about a minute ago              
+xtvwqwgsi504    \_ myredis.3   redis:5   manager2   Shutdown        Shutdown about a minute ago             
+lsf10n5aa17z   myredis.4       redis:6   manager3   Running         Running 49 seconds ago                  
+09y4tc7p8fys    \_ myredis.4   redis:5   manager3   Shutdown        Shutdown 59 seconds ago                 
+zntzu5lz135r   myredis.5       redis:6   worker2    Running         Running about a minute ago              
+k71umcm3gq3f    \_ myredis.5   redis:5   worker1    Shutdown        Shutdown about a minute ago             
+```
+- 回滚服务，只能回滚到上一次操作的状态，并不能连续回滚到指定操作。
+```
+[root@manager1 ~]# docker service update --rollback myredis
+myredis
+rollback: manually requested rollback 
+overall progress: rolling back update: 5 out of 5 tasks 
+1/5: running   [>                                                  ] 
+2/5: running   [>                                                  ] 
+3/5: running   [>                                                  ] 
+4/5: running   [>                                                  ] 
+5/5: running   [>                                                  ] 
+verify: Service converged 
+[root@manager1 ~]# docker service ps myredis
+ID             NAME            IMAGE     NODE       DESIRED STATE   CURRENT STATE             ERROR     PORTS
+lwdv0892dain   myredis.1       redis:5   worker1    Running         Running 16 seconds ago              
+ip8u5w5aqclv    \_ myredis.1   redis:6   worker1    Shutdown        Shutdown 16 seconds ago             
+hlgkun8nrpb4    \_ myredis.1   redis:5   worker2    Shutdown        Shutdown 3 minutes ago              
+052guq61n5g7   myredis.2       redis:5   manager3   Running         Running 18 seconds ago              
+870n295yfigv    \_ myredis.2   redis:6   manager1   Shutdown        Shutdown 19 seconds ago             
+mzzr3tpn9y6b    \_ myredis.2   redis:5   manager1   Shutdown        Shutdown 3 minutes ago              
+7khmefsyg2jg   myredis.3       redis:5   manager2   Running         Running 13 seconds ago              
+rrots5gmu1al    \_ myredis.3   redis:6   manager2   Shutdown        Shutdown 14 seconds ago             
+xtvwqwgsi504    \_ myredis.3   redis:5   manager2   Shutdown        Shutdown 3 minutes ago              
+ulldlv06lxqu   myredis.4       redis:5   manager1   Running         Running 17 seconds ago              
+lsf10n5aa17z    \_ myredis.4   redis:6   manager3   Shutdown        Shutdown 19 seconds ago             
+09y4tc7p8fys    \_ myredis.4   redis:5   manager3   Shutdown        Shutdown 2 minutes ago              
+5sck4bpkjvct   myredis.5       redis:5   worker2    Running         Running 15 seconds ago              
+zntzu5lz135r    \_ myredis.5   redis:6   worker2    Shutdown        Shutdown 16 seconds ago             
+k71umcm3gq3f    \_ myredis.5   redis:5   worker1    Shutdown        Shutdown 3 minutes ago              
+[root@manager1 ~]# docker ps
+CONTAINER ID   IMAGE     COMMAND                  CREATED          STATUS          PORTS      NAMES
+531f6551df0e   redis:5   "docker-entrypoint.s…"   53 seconds ago   Up 51 seconds   6379/tcp   myredis.4.ulldlv06lxqukhnlnvzf2imxd
+[root@manager1 ~]# docker ps -a
+CONTAINER ID   IMAGE     COMMAND                  CREATED              STATUS                          PORTS      NAMES
+531f6551df0e   redis:5   "docker-entrypoint.s…"   About a minute ago   Up About a minute               6379/tcp   myredis.4.ulldlv06lxqukhnlnvzf2imxd
+48048b4caacd   redis:6   "docker-entrypoint.s…"   4 minutes ago        Exited (0) About a minute ago              myredis.2.870n295yfigvjzctob5vcn209
+6c04e41fc606   redis:5   "docker-entrypoint.s…"   7 minutes ago        Exited (0) 4 minutes ago                   myredis.2.mzzr3tpn9y6bupvln32nq9qos
+[root@manager1 ~]# docker images
+REPOSITORY   TAG       IMAGE ID       CREATED      SIZE
+redis        <none>    972767e7d959   2 days ago   110MB
+redis        <none>    aa41c0869d44   2 days ago   113MB
+```
+
+#### 4.0  常用命令
+##### 4.1  docker swarm [--help]
+命令 | 说明
+--|--
+docker swarm init | 初始化集群
+docker swarm join-token worker | 查看工作节点的 token
+docker swarm join-token manager | 查看管理节点的 token
+docker swarm join | 加入集群
+
+##### 4.2  docker node [--help]
+命令 | 说明
+--|--
+docker node ls | 查看集群所有节点
+docker node ps | 查看当前节点所有任务
+docker node rm 节点名称\|节点ID | 删除节点（```-f```强制删除）
+docker node inspect 节点名称\|节点ID | 查看节点详情
+docker node demote 节点名称\|节点ID | 节点降级，由管理节点降级为工作节点
+docker node promote 节点名称\|节点ID | 节点升级，由工作节点升级为管理节点
+docker node update 节点名称\|节点ID | 更新节点
+
+##### 4.3  docker service [--help]
+命令 | 说明
+--|--
+docker service create | 创建服务
+docker service ls | 查看所有服务
+docker service ps 服务名称\|服务ID | 查看服务运行在哪些节点上
+docker service inspect 服务名称\|服务ID | 查看服务详情
+docker service logs 服务名称\|服务ID | 查看服务日志
+docker service rm 服务名称\|服务ID | 删除服务（```-f```强制删除）
+docker service scale 服务名称\|服务ID=n | 设置服务数量
+docker service update 服务名称\|服务ID | 更新服务
+
+
+
+#### 5.0  参考资料
+- [https://docs.docker.com/engine/swarm/swarm-tutorial/](https://docs.docker.com/engine/swarm/swarm-tutorial/)
+- [https://docs.docker.com/engine/swarm/swarm-mode/](https://docs.docker.com/engine/swarm/swarm-mode/)
+- [https://docs.docker.com/engine/swarm/how-swarm-mode-works/pki/](https://docs.docker.com/engine/swarm/how-swarm-mode-works/pki/)
+- [https://docs.docker.com/engine/swarm/join-nodes/](https://docs.docker.com/engine/swarm/join-nodes/)
+- [https://docs.docker.com/engine/swarm/swarm-tutorial/rolling-update/](https://docs.docker.com/engine/swarm/swarm-tutorial/rolling-update/)
 ### Docker Swarm 集群管理利器核心概念扫盲
 - [Docker Swarm 集群管理利器核心概念扫盲](https://www.cnblogs.com/mrhelloworld/p/docker15.html)
 
 #### 1.0 Swarm 简介
+
+- Docker Swarm 是 Docker 官方推出的容器集群管理工具，基于 Go 语言实现。代码开源在：[https://github.com/docker/swarm](https://github.com/docker/swarm) 使用它可以将多个 Docker 主机封装为单个大型的虚拟 Docker 主机，快速打造一套容器云平台。
+
+- Docker Swarm 是生产环境中运行 Docker 应用程序最简单的方法。作为容器集群管理器，Swarm 最大的优势之一就是 100% 支持标准的 Docker API。各种基于标准 API 的工具比如 Compose、docker-py、各种管理软件，甚至 Docker 本身等都可以很容易的与 Swarm 进行集成。大大方便了用户将原先基于单节点的系统移植到 Swarm 上，同时 Swarm 内置了对 Docker 网络插件的支持，用户可以很容易地部署跨主机的容器集群服务。
+
 - Docker Swarm 和 Docker Compose 一样，都是 Docker 官方容器编排工具，但不同的是，**Docker Compose 是一个在单个服务器或主机上创建多个容器的工具**，而 **Docker Swarm 则可以在多个服务器或主机上创建容器集群服务**，对于微服务的部署，显然 Docker Swarm 会更加适合。
+
 #### 2.0 Swarm 核心概念
-##### Swarm
+##### 2.1  Swarm
 - Docker Engine 1.12 引入了 Swarm 模式，一个 Swarm 由多个 Docker 主机组成，它们以 Swarm 集群模式运行。Swarm 集群由 **Manager 节点**（管理者角色，管理成员和委托任务）和 **Worker 节点**（工作者角色，运行 Swarm 服务）组成。这些 Docker 主机有些是 Manager 节点，有些是 Worker 节点，或者同时扮演这两种角色。
 
 - Swarm 创建服务时，需要指定要使用的镜像、在运行的容器中执行的命令、定义其副本的数量、可用的网络和数据卷、将服务公开给外部的端口等等。与独立容器相比，群集服务的主要优势之一是，你可以修改服务的配置，包括它所连接的网络和数据卷等，而不需要手动重启服务。还有就是，如果一个 Worker Node 不可用了，Docker 会调度不可用 Node 的 Task 任务到其他 Nodes 上。
 
-#### 参考资料
-- https://docs.docker.com/engine/swarm/
-- https://docs.docker.com/engine/swarm/key-concepts/
-- https://docs.docker.com/engine/swarm/ swarm-tutorial/
-- https://docs.docker.com/engine/swarm/how-swarm-mode-works/nodes/
-- https://docs.docker.com/engine/swarm/how-swarm-mode-works/services/
+##### 2.2  Nodes
+- Swarm 集群由 ```Manager 节点```（管理者角色，管理成员和委托任务）和 ```Worker 节点```（工作者角色，运行 Swarm 服务）组成。一个节点就是 Swarm 集群中的一个实例，也就是一个 Docker 主机。你可以运行一个或多个节点在单台物理机或云服务器上，但是生产环境上，典型的部署方式是：Docker 节点交叉分布式部署在多台物理机或云主机上。节点名称默认为机器的 ```hostname```。
+    - ```Manager```：负责整个集群的管理工作包括集群配置、服务管理、容器编排等所有跟集群有关的工作，它会选举出一个 leader 来指挥编排任务；
+    - ```Worker```：工作节点接收和执行从管理节点分派的任务（Tasks）运行在相应的服务（Services）上。
+![docker-swarm-nodes](../images/docker-swarm-nodes.jpg)
+##### 2.3  Services and Tasks
+- **服务**（Service）是一个抽象的概念，是对要在管理节点或工作节点上执行的**任务的定义**。它是集群系统的中心结构，是用户与集群交互的主要根源。Swarm 创建服务时，可以为服务定义以下信息：
+    - 服务名称；
+    - 使用哪个镜像来创建容器；
+    - 要运行多少个副本；
+    - 服务的容器要连接到哪个网络上；
+    - 要映射哪些端口。
+![docker-swarm-Services_and_Tasks](../images/docker-swarm-Services_and_Tasks.jpg)
+
+- **任务**（Task）包括**一个 Docker 容器**和**在容器中运行的命令**。任务是一个集群的最小单元，任务与容器是一对一的关系。管理节点根据服务规模中设置的副本数量将任务分配给工作节点。一旦任务被分配到一个节点，便无法移动到另一个节点。它只能在分配的节点上运行或失败。
+
+##### 2.4  Replicated and global services
+- Swarm 不只是提供了优秀的高可用性，同时也提供了节点的**弹性扩容和缩容**的功能。可以通过以下两种类型的 Services 部署实现：
+    - **Replicated Services**：当服务需要动态扩缩容时，只需通过 ```scale``` 参数或者 ```--replicas n``` 参数指定运行相同任务的数量，即可复制出新的副本，将一系列复制任务分发至各节点当中，这种操作便称之为**副本服务**（Replicate）。
+    - **Global Services**：我们也可以通过 ```--mode global``` 参数将服务分发至全部节点之上，这种操作我们称之为**全局服务**（Global）。在每个节点上运行一个相同的任务，不需要预先指定任务的数量，每增加一个节点到 Swarm 中，协调器就会创建一个任务，然后调度器把任务分配给新节点。
+- 下图用黄色表示拥有三个副本服务 Replicated Service，用灰色表示拥有一个全局服务 Global Service。
+
+![docker-swarm-Replicated_and_global_services](../images/docker-swarm-Replicated_and_global_services.jpg)
+#### 3.0  Swarm 工作流程
+
+![docker-swarm-workflow](../images/docker-swarm-workflow.jpg)
+- Swarm Manager：
+    1. API：接受命令并创建 service 对象（创建对象）
+    1. orchestrator：为 service 对象创建的 task 进行编排工作（服务编排）
+    1. allocater：为各个 task 分配 IP 地址（分配 IP）
+    1. dispatcher：将 task 分发到 nodes（分发任务）
+    1. scheduler：安排一个 worker 节点运行 task（运行任务）
+　　
+
+- Worker Node：
+    1. worker：连接到调度器，检查分配的 task（检查任务）
+    1. executor：执行分配给 worker 节点的 task（执行任务）
+#### 4.0  Overlay 网络
+- 关于 Docker 的网络我们在《Docker 网络模式详解及容器间网络通信》中已经给大家详细讲解过。不过，Docker Swarm 集群模式下却默认使用的是 Overlay 网络（覆盖网络），这里简单介绍一下什么是 Overlay 网络。
+
+- Overlay 网络其实并不是一门新技术，它是指构建在另一个网络上的计算机网络，这是一种网络虚拟化技术的形式，近年来云计算虚拟化技术的演进促进了网络虚拟化技术的应用。所以 Overlay 网络就是建立在另一个计算机网络之上的虚拟网络，它是不能独立出现的，Overlay 底层依赖的网络就是 Underlay 网络。
+
+- Underlay 网络是专门用来承载用户 IP 流量的基础架构层，它与 Overlay 网络之间的关系有点类似物理机和虚拟机。Underlay 网络和物理机都是真正存在的实体，它们分别对应着真实存在的网络设备和计算设备，而 Overlay 网络和虚拟机都是依托在下层实体的基础之上，使用软件虚拟出来的层级。
+![docker-swarm-overlay](../images/docker-swarm-overlay.jpg)
+
+- 在 Docker 版本 1.12 以后 **Swarm 模式原生已支持覆盖网络**（Overlay Network），只要是这个覆盖网络内的容器，不管在不在同一个宿主机上都能相互通信，即跨主机通信。不同覆盖网络内的容器之间是相互隔离的（相互 ping 不通）。
+
+- Overlay 网络是目前主流的容器跨节点数据传输和路由方案。当然，容器在跨主机进行通信的时候，除了可以使用 overlay 网络模式进行通信之外，还可以使用 host 网络模式，直接使用物理机的 IP 地址就可以进行通信。
+#### 5.0  参考资料
+- [https://docs.docker.com/engine/swarm/](https://docs.docker.com/engine/swarm/)
+- [https://docs.docker.com/engine/swarm/key-concepts/](https://docs.docker.com/engine/swarm/key-concepts/)
+- [https://docs.docker.com/engine/swarm/swarm-tutorial/](https://docs.docker.com/engine/swarm/swarm-tutorial/)
+- [https://docs.docker.com/engine/swarm/how-swarm-mode-works/nodes/](https://docs.docker.com/engine/swarm/how-swarm-mode-works/nodes/)
+- [https://docs.docker.com/engine/swarm/how-swarm-mode-works/services/](https://docs.docker.com/engine/swarm/how-swarm-mode-works/services/)
 
 ### Docker Compose 搭建 Redis Cluster 集群环境
 - [Docker Compose 搭建 Redis Cluster 集群环境](https://www.cnblogs.com/mrhelloworld/p/docker14.html)
@@ -312,6 +1051,8 @@ yum remove docker docker-common docker-selinux docker-engine
 
 #### 1.0  环境
 - 同 《Docker 搭建 Redis Cluster 集群环境》
+    - 192.168.56.106 Docker
+    - 192.168.56.107 SystemFramework
 #### 2.0  搭建
 - 整体搭建步骤主要分为以下几步：
     1. 下载 Redis 镜像（其实这步可以省略，因为创建容器时，如果本地镜像不存在，就会去远程拉取）；
@@ -572,19 +1313,90 @@ services:
 ##### 2.3  创建并启动所有服务容器
 - 分别在 ```192.168.56.106``` 和 ```192.168.56.107``` 机器的 ```/usr/local/docker-redis``` 目录下执行以下命令：
 ```
+[root@Docker redis-cluster]# docker-compose up -d
+Creating redis-6372 ... done
+Creating redis-6371 ... done
+Creating redis-6373 ... done
+[root@Docker redis-cluster]# docker-compose ps
+   Name                 Command               State   Ports
+-----------------------------------------------------------
+redis-6371   docker-entrypoint.sh redis ...   Up           
+redis-6372   docker-entrypoint.sh redis ...   Up           
+redis-6373   docker-entrypoint.sh redis ...   Up
 
+[root@SystemFramework redis-cluster]# docker-compose up -d
+Creating redis-6374 ... done
+Creating redis-6375 ... done
+Creating redis-6376 ... done
+[root@SystemFramework redis-cluster]# docker-compose ps
+   Name                 Command               State   Ports
+-----------------------------------------------------------
+redis-6374   docker-entrypoint.sh redis ...   Up           
+redis-6375   docker-entrypoint.sh redis ...   Up           
+redis-6376   docker-entrypoint.sh redis ...   Up
 ```
 ##### 2.4  创建 Redis Cluster 集群
 - 请先确保你的两台机器可以互相通信，然后随便进入一个容器节点，并进入 ```/usr/local/bin/``` 目录：
 ```
-
+# 进入容器
+[root@Docker redis-cluster]# docker-compose exec redis-6371 bash
+# 切换至指定目录
+root@Docker:/data# cd /usr/local/bin/
 ```
-- 接下来我们就可以通过以下命令实现 Redis Cluster 集群的创建。
+- 接下来我们就可以通过以下命令实现 Redis Cluster 集群的创建。出现选择提示信息，输入 yes，结果如下所示，集群创建成功如下：
+    1. 关闭两台机器防火墙 ```systemctl stop firewalld ```
+```{22,30,42,45,47,50}
+root@Docker:/usr/local/bin# redis-cli -a 1234 --cluster create 192.168.56.106:6371 192.168.56.106:6372 192.168.56.106:6373 192.168.56.107:6374 192.168.56.107:6375 192.168.56.107:6376 --cluster-replicas 1
+Warning: Using a password with '-a' or '-u' option on the command line interface may not be safe.
+>>> Performing hash slots allocation on 6 nodes...
+Master[0] -> Slots 0 - 5460
+Master[1] -> Slots 5461 - 10922
+Master[2] -> Slots 10923 - 16383
+Adding replica 192.168.56.107:6376 to 192.168.56.106:6371
+Adding replica 192.168.56.106:6373 to 192.168.56.107:6374
+Adding replica 192.168.56.107:6375 to 192.168.56.106:6372
+M: 908cef996b9759912ce2ff18eb6388618177ff95 192.168.56.106:6371
+   slots:[0-5460] (5461 slots) master
+M: 363710c4657b85add9aa38982b0cf475917cda2e 192.168.56.106:6372
+   slots:[10923-16383] (5461 slots) master
+S: b2157db1aa59644c62a3006c6388d6a256eb5ef4 192.168.56.106:6373
+   replicates 85bd9a592cd33351d348b8390f74764e8f6622e7
+M: 85bd9a592cd33351d348b8390f74764e8f6622e7 192.168.56.107:6374
+   slots:[5461-10922] (5462 slots) master
+S: d620e4bf67eb0c152944ebeb51b7cb8e96942dd3 192.168.56.107:6375
+   replicates 363710c4657b85add9aa38982b0cf475917cda2e
+S: 43e3cedfb93dbd312adb08bc41e717fc3baf08ad 192.168.56.107:6376
+   replicates 908cef996b9759912ce2ff18eb6388618177ff95
+Can I set the above configuration? (type 'yes' to accept): yes
+>>> Nodes configuration updated
+>>> Assign a different config epoch to each node
+>>> Sending CLUSTER MEET messages to join the cluster
+Waiting for the cluster to join
+# 两台机器防火墙未关闭，此时会一直等待
+>>> Performing Cluster Check (using node 192.168.56.106:6371)
+M: 908cef996b9759912ce2ff18eb6388618177ff95 192.168.56.106:6371
+   slots:[0-5460] (5461 slots) master
+   1 additional replica(s)
+S: 43e3cedfb93dbd312adb08bc41e717fc3baf08ad 192.168.56.107:6376
+   slots: (0 slots) slave
+   replicates 908cef996b9759912ce2ff18eb6388618177ff95
+S: d620e4bf67eb0c152944ebeb51b7cb8e96942dd3 192.168.56.107:6375
+   slots: (0 slots) slave
+   replicates 363710c4657b85add9aa38982b0cf475917cda2e
+S: b2157db1aa59644c62a3006c6388d6a256eb5ef4 192.168.56.106:6373
+   slots: (0 slots) slave
+   replicates 85bd9a592cd33351d348b8390f74764e8f6622e7
+M: 363710c4657b85add9aa38982b0cf475917cda2e 192.168.56.106:6372
+   slots:[10923-16383] (5461 slots) master
+   1 additional replica(s)
+M: 85bd9a592cd33351d348b8390f74764e8f6622e7 192.168.56.107:6374
+   slots:[5461-10922] (5462 slots) master
+   1 additional replica(s)
+[OK] All nodes agree about slots configuration.
+>>> Check for open slots...
+>>> Check slots coverage...
+[OK] All 16384 slots covered.
 ```
-
-```
-- 出现选择提示信息，输入 yes，结果如下所示：
-- 集群创建成功如下：
 
 - 至此一个高可用的 Redis Cluster 集群搭建完成，如下图所示，该集群中包含 6 个 Redis 节点，3 主 3 从。三个主节点会分配槽，处理客户端的命令请求，而从节点可用在主节点故障后，顶替主节点。
 ![docker-compose_redis-cluster](../images/docker-compose_redis-cluster.jpg)
@@ -592,14 +1404,138 @@ services:
 - 我们先进入容器，然后通过一些集群常用的命令查看一下集群的状态。
 
 ```
-
+# 进入容器
+[root@Docker redis-cluster]# docker-compose exec redis-6371 bash
+# 切换至指定目录
+root@Docker:/data# cd /usr/local/bin/
 ```
 ##### 3.1  检查集群状态
+```
+root@Docker:/usr/local/bin# redis-cli -a 1234 --cluster check 192.168.56.107:6375
+Warning: Using a password with '-a' or '-u' option on the command line interface may not be safe.
+192.168.56.106:6371 (908cef99...) -> 0 keys | 5461 slots | 1 slaves.
+192.168.56.106:6372 (363710c4...) -> 0 keys | 5461 slots | 1 slaves.
+192.168.56.107:6374 (85bd9a59...) -> 0 keys | 5462 slots | 1 slaves.
+[OK] 0 keys in 3 masters.
+0.00 keys per slot on average.
+>>> Performing Cluster Check (using node 192.168.56.107:6375)
+S: d620e4bf67eb0c152944ebeb51b7cb8e96942dd3 192.168.56.107:6375
+   slots: (0 slots) slave
+   replicates 363710c4657b85add9aa38982b0cf475917cda2e
+S: b2157db1aa59644c62a3006c6388d6a256eb5ef4 192.168.56.106:6373
+   slots: (0 slots) slave
+   replicates 85bd9a592cd33351d348b8390f74764e8f6622e7
+M: 908cef996b9759912ce2ff18eb6388618177ff95 192.168.56.106:6371
+   slots:[0-5460] (5461 slots) master
+   1 additional replica(s)
+S: 43e3cedfb93dbd312adb08bc41e717fc3baf08ad 192.168.56.107:6376
+   slots: (0 slots) slave
+   replicates 908cef996b9759912ce2ff18eb6388618177ff95
+M: 363710c4657b85add9aa38982b0cf475917cda2e 192.168.56.106:6372
+   slots:[10923-16383] (5461 slots) master
+   1 additional replica(s)
+M: 85bd9a592cd33351d348b8390f74764e8f6622e7 192.168.56.107:6374
+   slots:[5461-10922] (5462 slots) master
+   1 additional replica(s)
+[OK] All nodes agree about slots configuration.
+>>> Check for open slots...
+>>> Check slots coverage...
+[OK] All 16384 slots covered.
+```
 ##### 3.2  查看集群信息和节点信息
+```
+# 连接至集群某个节点
+root@Docker:/usr/local/bin# redis-cli -c -a 1234 -h 192.168.56.107 -p 6376  
+Warning: Using a password with '-a' or '-u' option on the command line interface may not be safe.
+# 查看集群信息
+192.168.56.107:6376> cluster info
+cluster_state:ok
+cluster_slots_assigned:16384
+cluster_slots_ok:16384
+cluster_slots_pfail:0
+cluster_slots_fail:0
+cluster_known_nodes:6
+cluster_size:3
+cluster_current_epoch:6
+cluster_my_epoch:1
+cluster_stats_messages_ping_sent:608
+cluster_stats_messages_pong_sent:633
+cluster_stats_messages_meet_sent:1
+cluster_stats_messages_sent:1242
+cluster_stats_messages_ping_received:633
+cluster_stats_messages_pong_received:609
+cluster_stats_messages_received:1242
+# 查看集群结点信息
+192.168.56.107:6376> cluster nodes
+d620e4bf67eb0c152944ebeb51b7cb8e96942dd3 192.168.56.107:6375@16375 slave 363710c4657b85add9aa38982b0cf475917cda2e 0 1652341127000 2 connected
+85bd9a592cd33351d348b8390f74764e8f6622e7 192.168.56.107:6374@16374 master - 0 1652341128089 4 connected 5461-10922
+363710c4657b85add9aa38982b0cf475917cda2e 192.168.56.106:6372@16372 master - 0 1652341128000 2 connected 10923-16383
+b2157db1aa59644c62a3006c6388d6a256eb5ef4 192.168.56.106:6373@16373 slave 85bd9a592cd33351d348b8390f74764e8f6622e7 0 1652341129111 4 connected
+908cef996b9759912ce2ff18eb6388618177ff95 192.168.56.106:6371@16371 master - 0 1652341127078 1 connected 0-5460
+43e3cedfb93dbd312adb08bc41e717fc3baf08ad 192.168.56.107:6376@16376 myself,slave 908cef996b9759912ce2ff18eb6388618177ff95 0 1652341129000 1 connected
+```
+
 ##### 3.3  SET/GET
+```
+# 进入容器并连接至集群某个节点
+[root@Docker redis-cluster]# docker-compose exec redis-6371 /usr/local/bin/redis-cli -c -a 1234 -h 192.168.56.106 -p 6371
+Warning: Using a password with '-a' or '-u' option on the command line interface may not be safe.
+# 写入数据
+192.168.56.106:6371> set name tosinjia
+-> Redirected to slot [5798] located at 192.168.56.107:6374
+OK
+192.168.56.107:6374> set aaa 111
+OK
+192.168.56.107:6374> set bbb 222
+-> Redirected to slot [5287] located at 192.168.56.106:6371
+OK
+# 读取数据
+192.168.56.106:6371> get name
+-> Redirected to slot [5798] located at 192.168.56.107:6374
+"tosinjia"
+192.168.56.107:6374> get aaa
+"111"
+192.168.56.107:6374> get bbb
+-> Redirected to slot [5287] located at 192.168.56.106:6371
+"222"
+192.168.56.106:6371> get aaa
+-> Redirected to slot [10439] located at 192.168.56.107:6374
+"111"
+```
+- 首先进入容器并连接至集群某个节点；
+- 然后执行第一个 set 命令 ```set name tosinjia```，```name``` 键根据哈希函数运算以后得到的值为 ```[5798]```。当前集群环境的槽分配情况为：```[0-5460] 6371节点```，```[5461-10922] 6374节点```，```[10923-16383] 6372节点```，所以该键的存储就被分配到了 **6374** 节点上；
+- 再来看第二个 set 命令 ```set aaa```，这里大家可能会有一些疑问，为什么看不到 ```aaa``` 键根据哈希函数运算以后得到的值？因为刚才重定向至 6374 节点插入了数据，此时如果还有数据插入，正好键根据哈希函数运算以后得到的值也还在该节点的范围内，那么直接插入数据即可；
+- 接着是第三个 set 命令 ```set bbb```，```bbb``` 键根据哈希函数运算以后得到的值为 ```[5287]```，所以该键的存储就被分配到了 **6371** 节点上；
+- 然后是读取操作，第四个命令 ```get name```，```name``` 键根据哈希函数运算以后得到的值为 ```[5798]```，被重定向至 **6374** 节点读取；
+- 第五个命令 ```get aaa```，```aaa``` 键根据哈希函数运算以后得到的值也在 **6374** 节点，直接读取；
+- 第六个命令 ```get bbb```，```bbb``` 键根据哈希函数运算以后得到的值为 ```[5287]```，被重定向至 **6371** 节点读取。
+
+```
+[root@Docker redis-cluster]# docker-compose exec redis-6371 /usr/local/bin/redis-cli -c -a 1234 -h 192.168.56.107 -p 6374 
+Warning: Using a password with '-a' or '-u' option on the command line interface may not be safe.
+192.168.56.107:6374> get name
+"tosinjia"
+192.168.56.107:6374> get bbb
+-> Redirected to slot [5287] located at 192.168.56.106:6371
+"222"
+192.168.56.106:6371> get aaa
+-> Redirected to slot [10439] located at 192.168.56.107:6374
+"111"
+192.168.56.107:6374> get name
+"tosinjia"
+```
 #### 4.0  客户端连接
 -  最后来一波客户端连接操作，随便哪个节点，看看可否通过外部访问 Redis Cluster 集群。
+    - name: docker-redis-cluster
+    - Host: 192.168.56.106
+    - Port: 6371
+    - Auth: 1234
 - 至此使用多机环境基于 Docker Compose 搭建 Redis Cluster 就到这里。虽然整体搭建过程感觉比起之前并没有简化太多。但是，如果我们想要停止并删除 Redis Cluster 集群环境，之前的方式就需要一个个去操作，而 Docker Compose 只需要一个 ```docker-compose down``` 命令的操作即可。Docker Compose 的学习及使用就到这里，下文开始我们学习 Docker Swarm 的相关内容。
+
+```
+docker-compose down
+
+```
 ### 13 Docker 容器编排利器 Docker Compose
 - [Docker 容器编排利器 Docker Compose](https://www.cnblogs.com/mrhelloworld/p/docker13.html)
 
@@ -2103,8 +3039,8 @@ root   8426   8408   0   08:40   ?     00:00:00   nginx: master process nginx -g
 - [Docker 搭建 Redis Cluster 集群环境](https://www.cnblogs.com/mrhelloworld/p/docker12.html)
 #### 1.0  环境
 - 为了让环境更加真实，本文使用多机环境：
-    - 192.168.56.106
-    - 192.168.56.107
+    - 192.168.56.106 Docker
+    - 192.168.56.107 SystemFramework
 ```
 [root@Docker ~]# ip addr
 1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
@@ -4610,7 +5546,1193 @@ With the Partitioning, OLAP, Data Mining and Real Application Testing options
 jdbc:oracle:thin:@localhost:1521:helowin
 root 123456
 ```
+####  Zabbix
+- [zabbix中文文档](https://www.zabbix.com/documentation/3.4/zh/start)
 
+
+- [https://hub.docker.com/u/zabbix](https://hub.docker.com/u/zabbix)
+    - [https://hub.docker.com/r/zabbix/zabbix-server-mysql/](https://hub.docker.com/r/zabbix/zabbix-server-mysql/)
+    - [https://hub.docker.com/r/zabbix/zabbix-web-nginx-mysql](https://hub.docker.com/r/zabbix/zabbix-web-nginx-mysql)
+    - [https://hub.docker.com/r/zabbix/zabbix-java-gateway](https://hub.docker.com/r/zabbix/zabbix-java-gateway)
+    - [https://hub.docker.com/r/zabbix/zabbix-agent](https://hub.docker.com/r/zabbix/zabbix-agent)
+    - [https://hub.docker.com/r/zabbix/zabbix-agent2](https://hub.docker.com/r/zabbix/zabbix-agent2)
+    - [https://hub.docker.com/_/mysql?tab=tags](https://hub.docker.com/_/mysql?tab=tags)
+
+
+##### 简介
+- Zabbix是一个基于WEB界面的提供分布式系统监视以及网络监视功能的企业级的开源解决方案。
+- Zabbix能监视各种网络参数，保证服务器系统的安全运营；并提供灵活的通知机制以让系统管理员快速定位/解决存在的各种问题。
+- Zabbix 作为企业级分布式监控系统，具有很多优点，如：分布式监控，支持 node 和 proxy 分布式模式；自动化注册，根据规则，自动注册主机到监控平台，自动添加监控模板；支持 agentd、snmp、ipmi 和 jmx 等很多通信方式。然而部署一套完整的zabbix，需要安装数据库、web服务器、zabbix-server和zabbix-agent。
+
+##### 方式二
+- [通过docker安装部署zabbix5.0监控平台](https://www.cnblogs.com/jykn92/p/15149299.html)
+
+###### 下载镜像
+1. 拉取mysql镜像 这里使用8.0版本，在linux终端拉取8.0.23镜像
+```
+[root@manager2 ~]# docker pull mysql:8.0
+```
+2. 下载zabbix-server镜像
+    - zabbix-server镜像分两种，支持MySQL数据库zabbix-server-mysql，支持支持PostgreSQL数据库zabbix/zabbix-server-pgsql。下面安装的是支持MySQL数据库的Server镜像。打开zabbix-server-mysql的docker hub，大家会发现，zabbix-server-mysql有多个版本，可根据自己的环境选择合适版本。因为我的服务器是centos7版本，所以选择的是centos版本，zabbix版本我也选择最新版5.2.4，所以下载镜像方式如下：
+```
+[root@manager2 ~]# docker pull zabbix/zabbix-server-mysql:centos-5.2.4
+# 如果你要使用最新版本的zabbix-server镜像，也可以直接执行如下方式下载镜像：
+[root@manager2 ~]# docker pull zabbix/zabbix-server-mysql:centos-latest
+```
+3. 下载Zabbix web镜像
+    - 这里使用的是基于Nginx web服务器及支持MySQL数据库的Zabbix web接口zabbix/zabbix-web-nginx-mysql。这里我用的是centos-5.2.4版本：
+```
+[root@manager2 ~]# docker pull zabbix/zabbix-web-nginx-mysql:centos-5.2.4
+# 要用最新版本，也可直接用latest版本
+[root@manager2 ~]# docker pull zabbix/zabbix-web-nginx-mysql:latest
+```
+4. 下载zabbix-java-gateway镜像
+    - Zabbix本身不支持直接监控Java，而是使用zabbix-java-gateway监控jvm/tomcat性能。这里我们使用centos-5.2.4版本，在linux终端执行如下命令：
+```
+[root@manager2 ~]# docker pull zabbix/zabbix-java-gateway:centos-5.2.4
+
+[root@manager2 ~]# docker images
+REPOSITORY                      TAG            IMAGE ID       CREATED         SIZE
+mysql                           8.0            76152be68449   3 days ago      524MB
+zabbix/zabbix-server-mysql      centos-5.2.4   da5a144a3d6d   15 months ago   348MB
+zabbix/zabbix-web-nginx-mysql   centos-5.2.4   aa0430d0a79a   15 months ago   447MB
+zabbix/zabbix-java-gateway      centos-5.2.4   8ee9b15d7d44   15 months ago   398MB
+```
+###### 运行镜像
+1. 创建docker网络
+    - 启动zabbix等镜像之前，需要先创建一个新的Docker网络。需要将后面的zabbix-server、mysql、web等容器都加入到此网络中，方便互相访问。在终端使用下面命令创建。
+```
+[root@manager2 ~]# docker network create --driver bridge zabbix_net
+23a29f8a60a5706f1f95d81f102542e4aac9a57fc9f650bc3b087c14cd340528
+# 创建后，可以查看是否创建成功
+[root@manager2 ~]# docker network ls
+NETWORK ID     NAME              DRIVER    SCOPE
+23a29f8a60a5   zabbix_net        bridge    local
+```
+2. 运行mysql镜像，创建mysql容器
+```
+[root@manager2 ~]# docker run -itd -p 3306:3306 --name zabbix-mysql --network zabbix_net --restart unless-stopped -v /etc/localtime:/etc/localtime -v /dockerdata/zabbix/db:/var/lib/mysql -e MYSQL_DATABASE="zabbix" -e MYSQL_USER="zabbix" -e MYSQL_PASSWORD="zabbix123" -e MYSQL_ROOT_PASSWORD="root123" mysql:8.0 --default-authentication-plugin=mysql_native_password --character-set-server=utf8 --collation-server=utf8_bin
+[root@manager3 zabbix]# docker run -itd -p 3306:3306 --name zabbix-mysql --network zabbix_net --restart unless-stopped -v /etc/localtime:/etc/localtime -v /dockerdata/zabbix/db:/var/lib/mysql -e MYSQL_DATABASE="zabbix" -e MYSQL_USER="zabbix" -e MYSQL_PASSWORD="zabbix123" -e MYSQL_ROOT_PASSWORD="root123" mysql:8.0.23 --default-authentication-plugin=mysql_native_password --character-set-server=utf8 --collation-server=utf8_bin
+f0876b901385d82f965816b6d72315e8efd0ef84a12a449ae29a1c1b6bbf0041
+
+[root@manager2 ~]# docker run -dit -p 3306:3306 --name zabbix-mysql --network zabbix_net --restart always -v /etc/localtime:/etc/localtime -e MYSQL_DATABASE="zabbix" -e MYSQL_USER="zabbix" -e MYSQL_PASSWORD="zabbix123" -e MYSQL_ROOT_PASSWORD="root123" mysql:5.7
+Unable to find image 'mysql:5.7' locally
+5.7: Pulling from library/mysql
+Status: Downloaded newer image for mysql:5.7
+7614c92f7edc7810c382a412e26dc43801763b0fad2843e07e856313119c1c91
+```
+3. 运行zabbix-java-gateway镜像，创建zabbix-java-gateway容器
+```
+[root@manager2 ~]# docker run -v /etc/localtime:/etc/localtime -dit --restart=always --name=zabbix-java-gateway --network zabbix_net zabbix/zabbix-java-gateway:centos-5.2.4
+ad95051e33a914bcf99ca602caa4caf67ccab6dae40f4a821389e015771b6188
+```
+4. 运行zabbix-server-mysql镜像，启动zabbix-server-mysql容器
+    - 创建zabbix-server-mysql容器之前，首先创建数据卷zabbix-server-vol
+```
+[root@manager2 ~]# docker volume create zabbix-server-vol
+zabbix-server-vol
+[root@manager2 ~]# docker volume ls
+DRIVER    VOLUME NAME
+local     zabbix-server-vol
+
+[root@manager2 ~]# docker run -dit -p 10051:10051 --mount source=zabbix-server-vol,target=/etc/zabbix -v /etc/localtime:/etc/localtime -v /usr/lib/zabbix/alertscripts:/usr/lib/zabbix/alertscripts --name=zabbix-server-mysql --restart=always --network zabbix_net -e DB_SERVER_HOST="zabbix-mysql" -e MYSQL_DATABASE="zabbix" -e MYSQL_USER="zabbix" -e MYSQL_PASSWORD="zabbix123" -e MYSQL_ROOT_PASSWORD="root123" -e ZBX_JAVAGATEWAY="zabbix-java-gateway" -e ZBX_JAVAGATEWAY_ENABLE="true" -e ZBX_JAVAGATEWAYPORT=10052 zabbix/zabbix-server-mysql:centos-5.2.4
+a921517b9275639147fc919fc159808cb67cfb34d96834e733cb70a09a5d5b23
+```
+5. 运行zabbix-web-nginx-mysql镜像，创建zabbix-web-nginx-mysql容器
+    - [http://192.168.217.4:8080/zabbix](http://192.168.217.4:8080/zabbix)
+        - admin/zabbix
+```
+[root@manager2 ~]# docker run -dit -p 8080:8080 -v /etc/localtime:/etc/localtime -v /dockerdata/zabbix/fonts/DejaVuSans.ttf:/usr/share/zabbix/assets/fonts/DejaVuSans.ttf --name zabbix-web-nginx-mysql --restart=always --network zabbix_net -e DB_SERVER_HOST="zabbix-mysql" -e MYSQL_DATABASE="zabbix" -e MYSQL_USER="zabbix" -e MYSQL_PASSWORD="zabbix123" -e MYSQL_ROOT_PASSWORD="root123" -e ZBX_SERVER_HOST="zabbix-server-mysql" zabbix/zabbix-web-nginx-mysql:centos-5.2.4
+82ad7379ab2ce69e838c4a378ef3d00746d4c2a180b9e5bd7378989e3b12664d
+docker: Error response from daemon: failed to create shim task: OCI runtime create failed: runc create failed: unable to start container process: error during container init: error mounting "/dockerdata/zabbix/fonts/DejaVuSans.ttf" to rootfs at "/usr/share/zabbix/assets/fonts/DejaVuSans.ttf": mount /dockerdata/zabbix/fonts/DejaVuSans.ttf:/usr/share/zabbix/assets/fonts/DejaVuSans.ttf (via /proc/self/fd/7), flags: 0x5000: not a directory: unknown: Are you trying to mount a directory onto a file (or vice-versa)? Check if the specified host path exists and is the expected type.
+
+[root@manager2 ~]# docker ps -a
+CONTAINER ID   IMAGE                                        COMMAND                  CREATED          STATUS          PORTS                                                  NAMES
+0b606fd4a3dd   zabbix/zabbix-web-nginx-mysql:centos-5.2.4   "docker-entrypoint.sh"   2 minutes ago    Created         0.0.0.0:8080->8080/tcp, :::8080->8080/tcp, 8443/tcp    zabbix-web-nginx-mysql
+[root@manager2 ~]# docker rm zabbix-web-nginx-mysql
+zabbix-web-nginx-mysql
+
+[root@manager2 ~]# docker run -dit -p 8080:8080 -v /etc/localtime:/etc/localtime --name zabbix-web-nginx-mysql --restart=always --network zabbix_net -e DB_SERVER_HOST="zabbix-mysql" -e MYSQL_DATABASE="zabbix" -e MYSQL_USER="zabbix" -e MYSQL_PASSWORD="zabbix123" -e MYSQL_ROOT_PASSWORD="root123" -e ZBX_SERVER_HOST="zabbix-server-mysql" zabbix/zabbix-web-nginx-mysql:centos-5.2.4
+ddac6b6e7f19aba7069ef488c70745744d0a4e956e5d41c38f9889930d6b5261
+```
+6. 运行zabbix-agent镜像
+```
+docker pull zabbix/zabbix-agent:centos-5.2.4
+# 本地agent的安装
+[root@manager2 ~]# docker run -dit --name zabbix-agent -p 10050:10050 --network zabbix_net -e ZBX_HOSTNAME="Zabbix server" -e ZBX_SERVER_HOST="zabbix-server-mysql" -e ZBX_SERVER_PORT=10051 zabbix/zabbix-agent:centos-5.2.4
+0b34525ec603dcf0a6c986061b49852e16e34e8ec8dd3f23be9e24a31c51eef1
+[root@manager2 ~]# docker ps
+CONTAINER ID   IMAGE                                        COMMAND                  CREATED          STATUS          PORTS                                                  NAMES
+0b34525ec603   zabbix/zabbix-agent:centos-5.2.4             "/sbin/tini -- /usr/…"   18 seconds ago   Up 16 seconds   0.0.0.0:10050->10050/tcp, :::10050->10050/tcp          zabbix-agent
+ddac6b6e7f19   zabbix/zabbix-web-nginx-mysql:centos-5.2.4   "docker-entrypoint.sh"   5 minutes ago    Up 5 minutes    0.0.0.0:8080->8080/tcp, :::8080->8080/tcp, 8443/tcp    zabbix-web-nginx-mysql
+a921517b9275   zabbix/zabbix-server-mysql:centos-5.2.4      "/sbin/tini -- /usr/…"   16 minutes ago   Up 16 minutes   0.0.0.0:10051->10051/tcp, :::10051->10051/tcp          zabbix-server-mysql
+ad95051e33a9   zabbix/zabbix-java-gateway:centos-5.2.4      "docker-entrypoint.s…"   18 minutes ago   Up 18 minutes   10052/tcp                                              zabbix-java-gateway
+7614c92f7edc   mysql:5.7                                    "docker-entrypoint.s…"   19 minutes ago   Up 19 minutes   0.0.0.0:3306->3306/tcp, :::3306->3306/tcp, 33060/tcp   zabbix-mysql
+[root@manager2 ~]# docker stop zabbix-agent
+
+# zabbix-agent2 zabbix/zabbix-agent2:centos-5.2.4 docker: Error response from daemon: manifest for zabbix/zabbix-agent2:centos-5.2.4 not found: manifest unknown: manifest unknown.
+[root@manager2 ~]# docker run -dit --name zabbix-agent2 -p 10050:10050 -v /var/run/docker.sock:/var/run/docker.sock --network zabbix_net -e ZBX_HOSTNAME="Zabbix-agent2 server" -e ZBX_SERVER_HOST="zabbix-server-mysql" -e ZBX_SERVER_PORT=10051 --privileged zabbix/zabbix-agent2:latest
+85b21ee93c34d35023e5980a2408bf124fa17b1f3c5070579cf3d77fa4dcd510
+[root@manager2 ~]# docker ps
+CONTAINER ID   IMAGE                                        COMMAND                  CREATED          STATUS          PORTS                                                      NAMES
+85b21ee93c34   zabbix/zabbix-agent2:latest                  "/sbin/tini -- /usr/…"   53 seconds ago   Up 52 seconds   0.0.0.0:10050->10050/tcp, :::10050->10050/tcp, 31999/tcp   zabbix-agent2
+ddac6b6e7f19   zabbix/zabbix-web-nginx-mysql:centos-5.2.4   "docker-entrypoint.sh"   17 minutes ago   Up 17 minutes   0.0.0.0:8080->8080/tcp, :::8080->8080/tcp, 8443/tcp        zabbix-web-nginx-mysql
+a921517b9275   zabbix/zabbix-server-mysql:centos-5.2.4      "/sbin/tini -- /usr/…"   28 minutes ago   Up 28 minutes   0.0.0.0:10051->10051/tcp, :::10051->10051/tcp              zabbix-server-mysql
+ad95051e33a9   zabbix/zabbix-java-gateway:centos-5.2.4      "docker-entrypoint.s…"   30 minutes ago   Up 30 minutes   10052/tcp                                                  zabbix-java-gateway
+7614c92f7edc   mysql:5.7                                    "docker-entrypoint.s…"   31 minutes ago   Up 31 minutes   0.0.0.0:3306->3306/tcp, :::3306->3306/tcp, 33060/tcp       zabbix-mysql
+```
+
+
+###### 通过docker-compose一键安装zabbix
+- 待编排的容器
+```
+docker network create --driver bridge zabbix_net
+# docker run -dit -p 3306:3306 --name zabbix-mysql --network zabbix_net --restart always -v /etc/localtime:/etc/localtime -e MYSQL_DATABASE="zabbix" -e MYSQL_USER="zabbix" -e MYSQL_PASSWORD="zabbix123" -e MYSQL_ROOT_PASSWORD="root123" mysql:5.7
+docker run -v /etc/localtime:/etc/localtime -dit --restart=always --name=zabbix-java-gateway --network zabbix_net zabbix/zabbix-java-gateway:centos-5.2.4
+docker run -itd -p 3306:3306 --name zabbix-mysql --network zabbix_net --restart unless-stopped -v /etc/localtime:/etc/localtime -v /dockerdata/zabbix/db:/var/lib/mysql -e MYSQL_DATABASE="zabbix" -e MYSQL_USER="zabbix" -e MYSQL_PASSWORD="zabbix123" -e MYSQL_ROOT_PASSWORD="root123" mysql:8.0.23 --default-authentication-plugin=mysql_native_password --character-set-server=utf8 --collation-server=utf8_bin
+
+docker volume create zabbix-server-vol
+docker run -dit -p 10051:10051 --mount source=zabbix-server-vol,target=/etc/zabbix -v /etc/localtime:/etc/localtime -v /usr/lib/zabbix/alertscripts:/usr/lib/zabbix/alertscripts --name=zabbix-server-mysql --restart=always --network zabbix_net -e DB_SERVER_HOST="zabbix-mysql" -e MYSQL_DATABASE="zabbix" -e MYSQL_USER="zabbix" -e MYSQL_PASSWORD="zabbix123" -e MYSQL_ROOT_PASSWORD="root123" -e ZBX_JAVAGATEWAY="zabbix-java-gateway" -e ZBX_JAVAGATEWAY_ENABLE="true" -e ZBX_JAVAGATEWAYPORT=10052 zabbix/zabbix-server-mysql:centos-5.2.4
+docker run -dit -p 8080:8080 -v /etc/localtime:/etc/localtime --name zabbix-web-nginx-mysql --restart=always --network zabbix_net -e DB_SERVER_HOST="zabbix-mysql" -e MYSQL_DATABASE="zabbix" -e MYSQL_USER="zabbix" -e MYSQL_PASSWORD="zabbix123" -e MYSQL_ROOT_PASSWORD="root123" -e ZBX_SERVER_HOST="zabbix-server-mysql" zabbix/zabbix-web-nginx-mysql:centos-5.2.4
+docker run -dit --name zabbix-agent2 -p 10050:10050 -v /var/run/docker.sock:/var/run/docker.sock --network zabbix_net -e ZBX_HOSTNAME="Zabbix-agent2 server" -e ZBX_SERVER_HOST="zabbix-server-mysql" -e ZBX_SERVER_PORT=10051 --privileged zabbix/zabbix-agent2:latest
+```
+- docker-compose.yml
+```
+# 描述 Compose 文件的版本信息
+version: "3.8"
+
+# 定义服务，可以多个
+services:
+#    zabbix-mysql:
+#        image: mysql:5.7
+#        restart: always 
+#        environment: 
+#            - MYSQL_DATABASE=zabbix
+#            - MYSQL_USER=zabbix
+#            - MYSQL_PASSWORD=zabbix123
+#            - MYSQL_ROOT_PASSWORD=root123
+#        volumes: 
+#            - /etc/localtime:/etc/localtime
+#        ports: 
+#            - "3306:3306" 
+#        networks: 
+#            - zabbix_net 
+    zabbix-mysql:
+        image: mysql:8.0.23
+        restart: unless-stopped
+        environment:
+            - MYSQL_DATABASE=zabbix
+            - MYSQL_USER=zabbix
+            - MYSQL_PASSWORD=zabbix123 
+            - MYSQL_ROOT_PASSWORD=root123
+        command: # 覆盖容器启动后默认执行的命令
+            - mysqld
+            - --default-authentication-plugin=mysql_native_password 
+            - --character-set-server=utf8 
+            - --collation-server=utf8_bin
+        volumes:
+            - /etc/localtime:/etc/localtime 
+            - /dockerdata/zabbix/db:/var/lib/mysql 
+        ports:
+            - "3306:3306"
+        networks:
+            - zabbix_net
+
+
+    zabbix-java-gateway:
+        image: zabbix/zabbix-java-gateway:centos-5.2.4
+        restart: always
+        volumes:
+            - /etc/localtime:/etc/localtime
+        networks:
+            - zabbix_net
+
+    zabbix-server-mysql: # 服务名称
+        image: zabbix/zabbix-server-mysql:centos-5.2.4 # 指定创建容器时所需的镜像名称标签或者镜像 ID
+        restart: always # 容器重启策略 容器总是重新启动，即使容器被手动停止了，当 Docker 重启时容器也还是会一起启动
+        environment: # 添加环境变量 可以使用数组也可以使用字典。布尔相关的值（true、false、yes、no）都需要用引号括起来，以确保 YML 解析器不会将它们转换为真或假
+            - DB_SERVER_HOST=zabbix-mysql
+            - MYSQL_DATABASE=zabbix
+            - MYSQL_USER=zabbix
+            - MYSQL_PASSWORD=zabbix123
+            - MYSQL_ROOT_PASSWORD=root123
+            - ZBX_JAVAGATEWAY=zabbix-java-gateway
+            - ZBX_JAVAGATEWAY_ENABLE="true" 
+            - ZBX_JAVAGATEWAYPORT=10052
+        volumes: # 数据卷，用于实现目录挂载，支持指定目录挂载、匿名挂载、具名挂载
+            # 具名挂载，就是给数据卷起了个名字，容器外对应的目录会在 /var/lib/docker/volume 中生成
+            - zabbix-server-vol:/etc/zabbix
+            # 绝对路径
+            - /etc/localtime:/etc/localtime 
+            - /usr/lib/zabbix/alertscripts:/usr/lib/zabbix/alertscripts
+        ports: # 宿主机与容器的端口映射关系
+            - "10051:10051" # 左边宿主机端口:右边容器端口
+        networks: # 配置容器连接的网络，引用顶级 networks 下的条目
+            - zabbix_net # 一个具体网络的条目名称
+        depends_on: # 容器依赖、启动先后问题的配置项
+            - zabbix-mysql
+
+    zabbix-web-nginx-mysql:
+        image: zabbix/zabbix-web-nginx-mysql:centos-5.2.4
+        restart: always
+        environment:
+            - DB_SERVER_HOST=zabbix-mysql
+            - MYSQL_DATABASE=zabbix
+            - MYSQL_USER=zabbix
+            - MYSQL_PASSWORD=zabbix123
+            - MYSQL_ROOT_PASSWORD=root123
+            - ZBX_SERVER_HOST=zabbix-server-mysql
+        volumes:
+            - /etc/localtime:/etc/localtime
+        ports:
+            - "8080:8080"
+        networks:
+            - zabbix_net
+        depends_on:
+            - zabbix-mysql
+            - zabbix-server-mysql
+
+    zabbix-agent2:
+        image: zabbix/zabbix-agent2:latest
+        restart: always
+        environment:
+            - ZBX_HOSTNAME=Zabbix-agent2 server
+            - ZBX_SERVER_HOST=zabbix-server-mysql
+            - ZBX_SERVER_PORT=10051
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock 
+        ports:
+            - "10050:10050"
+        networks:
+            - zabbix_net
+
+# 定义网络，可以多个。如果不声明，默认会创建一个网络名称为"工程名称_default"的 bridge 网络
+networks:
+    zabbix_net: # 一个具体网络的条目名称
+#        name: zabbix_net # 网络名称，默认为"工程名称_网络条目名称"
+        driver: bridge # 网络模式，默认为 bridge
+
+# 定义数据卷，可以多个
+volumes:
+    zabbix-server-vol: # 一个具体数据卷的条目名称
+#        name: zabbix-server-vol # 数据卷名称，默认为"工程名称_数据卷条目名称"
+
+```
+- 测试
+```
+[root@manager3 zabbix]# docker compose config -q
+[root@manager3 zabbix]# docker compose up -d 
+[root@manager3 zabbix]# docker compose ps
+NAME                              COMMAND                  SERVICE                  STATUS              PORTS
+zabbix-zabbix-agent2-1            "/sbin/tini -- /usr/…"   zabbix-agent2            running             0.0.0.0:10050->10050/tcp, :::10050->10050/tcp
+zabbix-zabbix-java-gateway-1      "docker-entrypoint.s…"   zabbix-java-gateway      running             10052/tcp
+zabbix-zabbix-mysql-1             "docker-entrypoint.s…"   zabbix-mysql             running             0.0.0.0:3306->3306/tcp, :::3306->3306/tcp
+zabbix-zabbix-server-mysql-1      "/sbin/tini -- /usr/…"   zabbix-server-mysql      running             0.0.0.0:10051->10051/tcp, :::10051->10051/tcp
+zabbix-zabbix-web-nginx-mysql-1   "docker-entrypoint.sh"   zabbix-web-nginx-mysql   running             0.0.0.0:8080->8080/tcp, :::8080->8080/tcp
+[root@manager3 zabbix]# docker ps
+CONTAINER ID   IMAGE                                        COMMAND                  CREATED          STATUS          PORTS                                                      NAMES
+5edae596d56a   zabbix/zabbix-web-nginx-mysql:centos-5.2.4   "docker-entrypoint.sh"   14 minutes ago   Up 14 minutes   0.0.0.0:8080->8080/tcp, :::8080->8080/tcp, 8443/tcp        zabbix-zabbix-web-nginx-mysql-1
+be56ce541307   zabbix/zabbix-server-mysql:centos-5.2.4      "/sbin/tini -- /usr/…"   14 minutes ago   Up 14 minutes   0.0.0.0:10051->10051/tcp, :::10051->10051/tcp              zabbix-zabbix-server-mysql-1
+423fff963383   zabbix/zabbix-agent2:latest                  "/sbin/tini -- /usr/…"   14 minutes ago   Up 14 minutes   0.0.0.0:10050->10050/tcp, :::10050->10050/tcp, 31999/tcp   zabbix-zabbix-agent2-1
+c3173e870b6b   zabbix/zabbix-java-gateway:centos-5.2.4      "docker-entrypoint.s…"   14 minutes ago   Up 14 minutes   10052/tcp                                                  zabbix-zabbix-java-gateway-1
+ae506163854e   mysql:8.0.23                                 "docker-entrypoint.s…"   14 minutes ago   Up 14 minutes   0.0.0.0:3306->3306/tcp, :::3306->3306/tcp, 33060/tcp       zabbix-zabbix-mysql-1
+[root@manager3 zabbix]# docker compose ls
+NAME                STATUS              CONFIG FILES
+zabbix              running(5)          /root/docker/zabbix/docker-compose.yml
+[root@manager3 zabbix]# docker compose logs -f zabbix-mysql
+[root@manager3 zabbix]# docker compose images zabbix-agent2
+Container                Repository             Tag                 Image Id            Size
+zabbix-zabbix-agent2-1   zabbix/zabbix-agent2   latest              51a2ca7b3174        34.3MB
+[root@manager3 zabbix]# docker compose port zabbix-mysql 3306
+0.0.0.0:3306
+[root@manager3 zabbix]# docker compose top zabbix-mysql     
+zabbix-zabbix-mysql-1
+UID       PID     PPID    C    STIME   TTY   TIME       CMD
+polkitd   14563   14516   4    10:35   ?     00:03:15   mysqld --default-authentication-plugin=mysql_native_password --character-set-server=utf8 --collation-server=utf8_bin 
+[root@manager3 zabbix]# docker compose stop zabbix-web-nginx-mysql
+[+] Running 1/1
+ ⠿ Container zabbix-zabbix-web-nginx-mysql-1  Stopped 
+[root@manager3 zabbix]# docker compose start zabbix-web-nginx-mysql 
+[+] Running 1/1
+ ⠿ Container zabbix-zabbix-web-nginx-mysql-1  Started 
+
+[root@manager3 zabbix]# docker compose exec zabbix-server-mysql bash
+# 环境变量      
+bash-4.4$ echo $MYSQL_ROOT_PASSWORD
+root123
+bash-4.4$ ip addr
+'1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+66: eth0@if67: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default 
+    link/ether 02:42:ac:18:00:05 brd ff:ff:ff:ff:ff:ff link-netnsid 0
+    inet 172.24.0.5/16 brd 172.24.255.255 scope global eth0
+       valid_lft forever preferred_lft forever
+
+[root@manager3 zabbix]# docker network ls
+7d9d9358e4ab   zabbix_zabbix_net   bridge    local
+[root@manager3 ~]# brctl show
+bridge name     bridge id               STP enabled     interfaces
+br-7d9d9358e4ab         8000.02424fa7e9a8       no              veth0760fd2
+                                                        veth140fd74
+                                                        vethb515ec8
+                                                        vethf108366
+                                                        vethf3195d9
+[root@manager3 ~]# ip addr
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host 
+       valid_lft forever preferred_lft forever
+2: enp0s3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP group default qlen 1000
+    link/ether 08:00:27:d4:51:b6 brd ff:ff:ff:ff:ff:ff
+    inet 10.0.2.15/24 brd 10.0.2.255 scope global noprefixroute dynamic enp0s3
+       valid_lft 78391sec preferred_lft 78391sec
+    inet6 fe80::806f:eb6c:8c0f:1819/64 scope link noprefixroute 
+       valid_lft forever preferred_lft forever
+3: enp0s8: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP group default qlen 1000
+    link/ether 08:00:27:4a:3b:34 brd ff:ff:ff:ff:ff:ff
+    inet 192.168.217.5/24 brd 192.168.217.255 scope global noprefixroute dynamic enp0s8
+       valid_lft 535sec preferred_lft 535sec
+    inet6 fe80::f24f:3bd1:29b8:24be/64 scope link noprefixroute 
+       valid_lft forever preferred_lft forever
+4: docker_gwbridge: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default 
+    link/ether 02:42:01:85:17:10 brd ff:ff:ff:ff:ff:ff
+    inet 172.18.0.1/16 brd 172.18.255.255 scope global docker_gwbridge
+       valid_lft forever preferred_lft forever
+    inet6 fe80::42:1ff:fe85:1710/64 scope link 
+       valid_lft forever preferred_lft forever
+5: docker0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc noqueue state DOWN group default 
+    link/ether 02:42:ff:44:7c:c5 brd ff:ff:ff:ff:ff:ff
+    inet 172.17.0.1/16 brd 172.17.255.255 scope global docker0
+       valid_lft forever preferred_lft forever
+58: veth0d87341@if57: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master docker_gwbridge state UP group default 
+    link/ether 96:ec:f7:7b:8e:8d brd ff:ff:ff:ff:ff:ff link-netnsid 6
+    inet6 fe80::94ec:f7ff:fe7b:8e8d/64 scope link 
+       valid_lft forever preferred_lft forever
+59: br-7d9d9358e4ab: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default 
+    link/ether 02:42:4f:a7:e9:a8 brd ff:ff:ff:ff:ff:ff
+    inet 172.24.0.1/16 brd 172.24.255.255 scope global br-7d9d9358e4ab
+       valid_lft forever preferred_lft forever
+    inet6 fe80::42:4fff:fea7:e9a8/64 scope link 
+       valid_lft forever preferred_lft forever
+61: veth0760fd2@if60: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master br-7d9d9358e4ab state UP group default 
+    link/ether 4e:ea:bd:ed:b0:e3 brd ff:ff:ff:ff:ff:ff link-netnsid 0
+    inet6 fe80::4cea:bdff:feed:b0e3/64 scope link 
+       valid_lft forever preferred_lft forever
+63: vethf108366@if62: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master br-7d9d9358e4ab state UP group default 
+    link/ether 06:45:06:62:95:74 brd ff:ff:ff:ff:ff:ff link-netnsid 2
+    inet6 fe80::445:6ff:fe62:9574/64 scope link 
+       valid_lft forever preferred_lft forever
+65: veth140fd74@if64: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master br-7d9d9358e4ab state UP group default 
+    link/ether fe:11:7b:e9:20:4b brd ff:ff:ff:ff:ff:ff link-netnsid 1
+    inet6 fe80::fc11:7bff:fee9:204b/64 scope link 
+       valid_lft forever preferred_lft forever
+67: vethb515ec8@if66: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master br-7d9d9358e4ab state UP group default 
+    link/ether 82:e1:9c:60:0c:97 brd ff:ff:ff:ff:ff:ff link-netnsid 3
+    inet6 fe80::80e1:9cff:fe60:c97/64 scope link 
+       valid_lft forever preferred_lft forever
+69: vethf3195d9@if68: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master br-7d9d9358e4ab state UP group default 
+    link/ether 06:a9:11:e7:79:b4 brd ff:ff:ff:ff:ff:ff link-netnsid 4
+    inet6 fe80::4a9:11ff:fee7:79b4/64 scope link 
+       valid_lft forever preferred_lft forever
+
+[root@manager3 ~]# docker network inspect zabbix_zabbix_net
+[
+    {
+        "Name": "zabbix_zabbix_net",
+        "Id": "7d9d9358e4ab0c45ae081ca945424eb92e8e300b554b3de8c25ebd29f320665f",
+        "Created": "2022-05-16T10:35:04.280479061+08:00",
+        "Scope": "local",
+        "Driver": "bridge",
+        "EnableIPv6": false,
+        "IPAM": {
+            "Driver": "default",
+            "Options": null,
+            "Config": [
+                {
+                    "Subnet": "172.24.0.0/16",
+                    "Gateway": "172.24.0.1"
+                }
+            ]
+        },
+        "Internal": false,
+        "Attachable": false,
+        "Ingress": false,
+        "ConfigFrom": {
+            "Network": ""
+        },
+        "ConfigOnly": false,
+        "Containers": {
+            "423fff963383f5b3050b5c3fbe660bbd73ee36bc9233ac6558d4816ce62b0662": {
+                "Name": "zabbix-zabbix-agent2-1",
+                "EndpointID": "dbe48835142a5499cd328618ffb6595a3c25cab05190c193c22ff7d0abbabb3d",
+                "MacAddress": "02:42:ac:18:00:03",
+                "IPv4Address": "172.24.0.3/16",
+                "IPv6Address": ""
+            },
+            "5edae596d56ac74bdec3f5e3146565c23aed08ffeea87142cf273ad157a7ff00": {
+                "Name": "zabbix-zabbix-web-nginx-mysql-1",
+                "EndpointID": "bb9d481d9fb914bc9e3712d7f4a8d313cec29a7414c49eb12a8520d9eb55eee4",
+                "MacAddress": "02:42:ac:18:00:06",
+                "IPv4Address": "172.24.0.6/16",
+                "IPv6Address": ""
+            },
+            "ae506163854ebc2748c5e625de932f5e87529f8fa029dd9c10c5e7cc1b143969": {
+                "Name": "zabbix-zabbix-mysql-1",
+                "EndpointID": "706e078dad8214c37d36b6313d8a50be387a38af761cb07e46bb8d04c5677a40",
+                "MacAddress": "02:42:ac:18:00:02",
+                "IPv4Address": "172.24.0.2/16",
+                "IPv6Address": ""
+            },
+            "be56ce541307761e2c231575b458e6c0fa5958d8bc3cf8e2ee818abd731bca2e": {
+                "Name": "zabbix-zabbix-server-mysql-1",
+                "EndpointID": "cbbb543cb3d7902a881d77d5363b9d3f2fe64495073ec4b93b9743cfe6dab302",
+                "MacAddress": "02:42:ac:18:00:05",
+                "IPv4Address": "172.24.0.5/16",
+                "IPv6Address": ""
+            },
+            "c3173e870b6b79f405787332ea9c14b54281c0e7b49f84e5f5a7b0fcf1c4e262": {
+                "Name": "zabbix-zabbix-java-gateway-1",
+                "EndpointID": "d97b2529ff621243311c2cd200615e5fd22d8aee45abf6f6ffde9d10ee7af8a2",
+                "MacAddress": "02:42:ac:18:00:04",
+                "IPv4Address": "172.24.0.4/16",
+                "IPv6Address": ""
+            }
+        },
+        "Options": {},
+        "Labels": {
+            "com.docker.compose.network": "zabbix_net",
+            "com.docker.compose.project": "zabbix",
+            "com.docker.compose.version": "2.5.0"
+        }
+    }
+]
+
+[root@manager3 zabbix]# docker volume ls
+DRIVER    VOLUME NAME
+local     zabbix_zabbix-server-vol
+[root@manager3 zabbix]# docker volume inspect zabbix_zabbix-server-vol
+[
+    {
+        "CreatedAt": "2022-05-16T10:37:32+08:00",
+        "Driver": "local",
+        "Labels": {
+            "com.docker.compose.project": "zabbix",
+            "com.docker.compose.version": "2.5.0",
+            "com.docker.compose.volume": "zabbix-server-vol"
+        },
+        "Mountpoint": "/var/lib/docker/volumes/zabbix_zabbix-server-vol/_data",
+        "Name": "zabbix_zabbix-server-vol",
+        "Options": null,
+        "Scope": "local"
+    }
+]
+```
+- [http://192.168.217.5:8080/zabbix](http://192.168.217.5:8080/zabbix)
+    - Admin:zabbix
+
+- docker inspect zabbix-zabbix-server-mysql-1
+```{43-44,51,53-58,60-63,126-129,162-171,192-207,217,223-230,245,263,294-305,318}
+[root@manager3 zabbix]# docker inspect zabbix-zabbix-server-mysql-1
+[
+    {
+        "Id": "be56ce541307761e2c231575b458e6c0fa5958d8bc3cf8e2ee818abd731bca2e",
+        "Created": "2022-05-16T02:35:04.735227182Z",
+        "Path": "/sbin/tini",
+        "Args": [
+            "--",
+            "/usr/bin/docker-entrypoint.sh",
+            "/usr/sbin/zabbix_server",
+            "--foreground",
+            "-c",
+            "/etc/zabbix/zabbix_server.conf"
+        ],
+        "State": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 14795,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2022-05-16T02:35:08.919402675Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+        },
+        "Image": "sha256:da5a144a3d6dbc46c629cf8866fc73ccc7c91400c09d8607519c081801411d15",
+        "ResolvConfPath": "/var/lib/docker/containers/be56ce541307761e2c231575b458e6c0fa5958d8bc3cf8e2ee818abd731bca2e/resolv.conf",
+        "HostnamePath": "/var/lib/docker/containers/be56ce541307761e2c231575b458e6c0fa5958d8bc3cf8e2ee818abd731bca2e/hostname",
+        "HostsPath": "/var/lib/docker/containers/be56ce541307761e2c231575b458e6c0fa5958d8bc3cf8e2ee818abd731bca2e/hosts",
+        "LogPath": "/var/lib/docker/containers/be56ce541307761e2c231575b458e6c0fa5958d8bc3cf8e2ee818abd731bca2e/be56ce541307761e2c231575b458e6c0fa5958d8bc3cf8e2ee818abd731bca2e-json.log",
+        "Name": "/zabbix-zabbix-server-mysql-1",
+        "RestartCount": 0,
+        "Driver": "overlay2",
+        "Platform": "linux",
+        "MountLabel": "",
+        "ProcessLabel": "",
+        "AppArmorProfile": "",
+        "ExecIDs": null,
+        "HostConfig": {
+            "Binds": [
+                "/etc/localtime:/etc/localtime:rw",
+                "/usr/lib/zabbix/alertscripts:/usr/lib/zabbix/alertscripts:rw"
+            ],
+            "ContainerIDFile": "",
+            "LogConfig": {
+                "Type": "json-file",
+                "Config": {}
+            },
+            "NetworkMode": "zabbix_zabbix_net",
+            "PortBindings": {
+                "10051/tcp": [
+                    {
+                        "HostIp": "",
+                        "HostPort": "10051"
+                    }
+                ]
+            },
+            "RestartPolicy": {
+                "Name": "always",
+                "MaximumRetryCount": 0
+            },
+            "AutoRemove": false,
+            "VolumeDriver": "",
+            "VolumesFrom": null,
+            "CapAdd": null,
+            "CapDrop": null,
+            "CgroupnsMode": "host",
+            "Dns": null,
+            "DnsOptions": null,
+            "DnsSearch": null,
+            "ExtraHosts": null,
+            "GroupAdd": null,
+            "IpcMode": "private",
+            "Cgroup": "",
+            "Links": null,
+            "OomScoreAdj": 0,
+            "PidMode": "",
+            "Privileged": false,
+            "PublishAllPorts": false,
+            "ReadonlyRootfs": false,
+            "SecurityOpt": null,
+            "UTSMode": "",
+            "UsernsMode": "",
+            "ShmSize": 67108864,
+            "Runtime": "runc",
+            "ConsoleSize": [
+                0,
+                0
+            ],
+            "Isolation": "",
+            "CpuShares": 0,
+            "Memory": 0,
+            "NanoCpus": 0,
+            "CgroupParent": "",
+            "BlkioWeight": 0,
+            "BlkioWeightDevice": null,
+            "BlkioDeviceReadBps": null,
+            "BlkioDeviceWriteBps": null,
+            "BlkioDeviceReadIOps": null,
+            "BlkioDeviceWriteIOps": null,
+            "CpuPeriod": 0,
+            "CpuQuota": 0,
+            "CpuRealtimePeriod": 0,
+            "CpuRealtimeRuntime": 0,
+            "CpusetCpus": "",
+            "CpusetMems": "",
+            "Devices": null,
+            "DeviceCgroupRules": null,
+            "DeviceRequests": null,
+            "KernelMemory": 0,
+            "KernelMemoryTCP": 0,
+            "MemoryReservation": 0,
+            "MemorySwap": 0,
+            "MemorySwappiness": null,
+            "OomKillDisable": false,
+            "PidsLimit": null,
+            "Ulimits": null,
+            "CpuCount": 0,
+            "CpuPercent": 0,
+            "IOMaximumIOps": 0,
+            "IOMaximumBandwidth": 0,
+            "Mounts": [
+                {
+                    "Type": "volume",
+                    "Source": "zabbix_zabbix-server-vol",
+                    "Target": "/etc/zabbix",
+                    "VolumeOptions": {}
+                }
+            ],
+            "MaskedPaths": [
+                "/proc/asound",
+                "/proc/acpi",
+                "/proc/kcore",
+                "/proc/keys",
+                "/proc/latency_stats",
+                "/proc/timer_list",
+                "/proc/timer_stats",
+                "/proc/sched_debug",
+                "/proc/scsi",
+                "/sys/firmware"
+            ],
+            "ReadonlyPaths": [
+                "/proc/bus",
+                "/proc/fs",
+                "/proc/irq",
+                "/proc/sys",
+                "/proc/sysrq-trigger"
+            ]
+        },
+        "GraphDriver": {
+            "Data": {
+                "LowerDir": "/var/lib/docker/overlay2/a0cf401bbdbf4dcb32dd7f60ddbe44b31dd3f7e5d8ddf11ffcf71c1cbc73bc51-init/diff:/var/lib/docker/overlay2/6258e28b823b4f33b356067408b9578d62c546e7286230df8b9bdfb9ce7baf4f/diff:/var/lib/docker/overlay2/58c5e75ed74b8ba99f6f9ced4171e57a8c9c8dad93d31346670756e0c9b77f7b/diff:/var/lib/docker/overlay2/a496045898bb6d5b3a991c508ece8e75cf72021f4801476c0c1178172bf31c51/diff:/var/lib/docker/overlay2/7124cc22fb0092c33720f960a9316355dc6fb10a028286d2393b73c661c8e500/diff",
+                "MergedDir": "/var/lib/docker/overlay2/a0cf401bbdbf4dcb32dd7f60ddbe44b31dd3f7e5d8ddf11ffcf71c1cbc73bc51/merged",
+                "UpperDir": "/var/lib/docker/overlay2/a0cf401bbdbf4dcb32dd7f60ddbe44b31dd3f7e5d8ddf11ffcf71c1cbc73bc51/diff",
+                "WorkDir": "/var/lib/docker/overlay2/a0cf401bbdbf4dcb32dd7f60ddbe44b31dd3f7e5d8ddf11ffcf71c1cbc73bc51/work"
+            },
+            "Name": "overlay2"
+        },
+        "Mounts": [
+            {
+                "Type": "volume",
+                "Name": "zabbix_zabbix-server-vol",
+                "Source": "/var/lib/docker/volumes/zabbix_zabbix-server-vol/_data",
+                "Destination": "/etc/zabbix",
+                "Driver": "local",
+                "Mode": "z",
+                "RW": true,
+                "Propagation": ""
+            },
+            {
+                "Type": "volume",
+                "Name": "a44ba1fda704100a630ea0dbbf692d18f721988f9c57a7181c58db0c3408036e",
+                "Source": "/var/lib/docker/volumes/a44ba1fda704100a630ea0dbbf692d18f721988f9c57a7181c58db0c3408036e/_data",
+                "Destination": "/var/lib/zabbix/snmptraps",
+                "Driver": "local",
+                "Mode": "",
+                "RW": true,
+                "Propagation": ""
+            },
+            {
+                "Type": "volume",
+                "Name": "75ce4556e36592d50cbed272c36ee7167ed517d84fb48257b1f12f3ada948b42",
+                "Source": "/var/lib/docker/volumes/75ce4556e36592d50cbed272c36ee7167ed517d84fb48257b1f12f3ada948b42/_data",
+                "Destination": "/var/lib/zabbix/export",
+                "Driver": "local",
+                "Mode": "",
+                "RW": true,
+                "Propagation": ""
+            },
+            {
+                "Type": "bind",
+                "Source": "/etc/localtime",
+                "Destination": "/etc/localtime",
+                "Mode": "rw",
+                "RW": true,
+                "Propagation": "rprivate"
+            },
+            {
+                "Type": "bind",
+                "Source": "/usr/lib/zabbix/alertscripts",
+                "Destination": "/usr/lib/zabbix/alertscripts",
+                "Mode": "rw",
+                "RW": true,
+                "Propagation": "rprivate"
+            }
+        ],
+        "Config": {
+            "Hostname": "be56ce541307",
+            "Domainname": "",
+            "User": "1997",
+            "AttachStdin": false,
+            "AttachStdout": true,
+            "AttachStderr": true,
+            "ExposedPorts": {
+                "10051/tcp": {}
+            },
+            "Tty": false,
+            "OpenStdin": false,
+            "StdinOnce": false,
+            "Env": [
+                "ZBX_JAVAGATEWAY_ENABLE=\"true\"",
+                "ZBX_JAVAGATEWAYPORT=10052",
+                "DB_SERVER_HOST=zabbix-mysql",
+                "MYSQL_DATABASE=zabbix",
+                "MYSQL_USER=zabbix",
+                "MYSQL_PASSWORD=zabbix123",
+                "MYSQL_ROOT_PASSWORD=root123",
+                "ZBX_JAVAGATEWAY=zabbix-java-gateway",
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "TINI_VERSION=v0.19.0",
+                "TERM=xterm",
+                "MIBDIRS=/usr/share/snmp/mibs:/var/lib/zabbix/mibs",
+                "MIBS=+ALL",
+                "ZBX_VERSION=5.2.4",
+                "ZBX_SOURCES=https://git.zabbix.com/scm/zbx/zabbix.git"
+            ],
+            "Cmd": [
+                "/usr/sbin/zabbix_server",
+                "--foreground",
+                "-c",
+                "/etc/zabbix/zabbix_server.conf"
+            ],
+            "Image": "zabbix/zabbix-server-mysql:centos-5.2.4",
+            "Volumes": {
+                "/etc/localtime": {},
+                "/etc/zabbix": {},
+                "/usr/lib/zabbix/alertscripts": {},
+                "/var/lib/zabbix/export": {},
+                "/var/lib/zabbix/snmptraps": {}
+            },
+            "WorkingDir": "/var/lib/zabbix",
+            "Entrypoint": [
+                "/sbin/tini",
+                "--",
+                "/usr/bin/docker-entrypoint.sh"
+            ],
+            "OnBuild": null,
+            "Labels": {
+                "com.docker.compose.config-hash": "8073bebcfce6c6c0a4eda8d202d0d5783b5a9f3669f4fd770ee3165bc442a4c7",
+                "com.docker.compose.container-number": "1",
+                "com.docker.compose.depends_on": "zabbix-mysql:service_started",
+                "com.docker.compose.image": "sha256:da5a144a3d6dbc46c629cf8866fc73ccc7c91400c09d8607519c081801411d15",
+                "com.docker.compose.oneoff": "False",
+                "com.docker.compose.project": "zabbix",
+                "com.docker.compose.project.config_files": "/root/docker/zabbix/docker-compose.yml",
+                "com.docker.compose.project.working_dir": "/root/docker/zabbix",
+                "com.docker.compose.service": "zabbix-server-mysql",
+                "com.docker.compose.version": "2.5.0",
+                "org.label-schema.build-date": "20201204",
+                "org.label-schema.license": "GPLv2",
+                "org.label-schema.name": "CentOS Base Image",
+                "org.label-schema.schema-version": "1.0",
+                "org.label-schema.vendor": "CentOS",
+                "org.opencontainers.image.authors": "Alexey Pustovalov <alexey.pustovalov@zabbix.com>",
+                "org.opencontainers.image.description": "Zabbix server with MySQL database support",
+                "org.opencontainers.image.documentation": "https://www.zabbix.com/documentation/5.2/manual/installation/containers",
+                "org.opencontainers.image.licenses": "GPL v2.0",
+                "org.opencontainers.image.source": "https://git.zabbix.com/scm/zbx/zabbix.git",
+                "org.opencontainers.image.title": "Zabbix server (MySQL)",
+                "org.opencontainers.image.url": "https://zabbix.com/",
+                "org.opencontainers.image.vendor": "Zabbix LLC",
+                "org.opencontainers.image.version": "5.2.4"
+            },
+            "StopSignal": "SIGTERM"
+        },
+        "NetworkSettings": {
+            "Bridge": "",
+            "SandboxID": "a3d408075ce3d790002ad0ee0fba7ddc74f98f58cc0d754f864ccfc7daf1b4c3",
+            "HairpinMode": false,
+            "LinkLocalIPv6Address": "",
+            "LinkLocalIPv6PrefixLen": 0,
+            "Ports": {
+                "10051/tcp": [
+                    {
+                        "HostIp": "0.0.0.0",
+                        "HostPort": "10051"
+                    },
+                    {
+                        "HostIp": "::",
+                        "HostPort": "10051"
+                    }
+                ]
+            },
+            "SandboxKey": "/var/run/docker/netns/a3d408075ce3",
+            "SecondaryIPAddresses": null,
+            "SecondaryIPv6Addresses": null,
+            "EndpointID": "",
+            "Gateway": "",
+            "GlobalIPv6Address": "",
+            "GlobalIPv6PrefixLen": 0,
+            "IPAddress": "",
+            "IPPrefixLen": 0,
+            "IPv6Gateway": "",
+            "MacAddress": "",
+            "Networks": {
+                "zabbix_zabbix_net": {
+                    "IPAMConfig": null,
+                    "Links": null,
+                    "Aliases": [
+                        "zabbix-zabbix-server-mysql-1",
+                        "zabbix-server-mysql",
+                        "be56ce541307"
+                    ],
+                    "NetworkID": "7d9d9358e4ab0c45ae081ca945424eb92e8e300b554b3de8c25ebd29f320665f",
+                    "EndpointID": "cbbb543cb3d7902a881d77d5363b9d3f2fe64495073ec4b93b9743cfe6dab302",
+                    "Gateway": "172.24.0.1",
+                    "IPAddress": "172.24.0.5",
+                    "IPPrefixLen": 16,
+                    "IPv6Gateway": "",
+                    "GlobalIPv6Address": "",
+                    "GlobalIPv6PrefixLen": 0,
+                    "MacAddress": "02:42:ac:18:00:05",
+                    "DriverOpts": null
+                }
+            }
+        }
+    }
+]
+```
+- zabbix-zabbix-mysql-1
+```{7-12,193-198}
+[root@manager3 zabbix]# docker inspect zabbix-zabbix-mysql-1
+[
+    {
+        "Id": "ae506163854ebc2748c5e625de932f5e87529f8fa029dd9c10c5e7cc1b143969",
+        "Created": "2022-05-16T02:35:04.511742468Z",
+        "Path": "docker-entrypoint.sh",
+        "Args": [
+            "mysqld",
+            "--default-authentication-plugin=mysql_native_password",
+            "--character-set-server=utf8",
+            "--collation-server=utf8_bin"
+        ],
+        "State": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 14563,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2022-05-16T02:35:07.097629925Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+        },
+        "Image": "sha256:cbe8815cbea8fb86ce7d3169a82d05301e7dfe1a8d4228941f23f4f115a887f2",
+        "ResolvConfPath": "/var/lib/docker/containers/ae506163854ebc2748c5e625de932f5e87529f8fa029dd9c10c5e7cc1b143969/resolv.conf",
+        "HostnamePath": "/var/lib/docker/containers/ae506163854ebc2748c5e625de932f5e87529f8fa029dd9c10c5e7cc1b143969/hostname",
+        "HostsPath": "/var/lib/docker/containers/ae506163854ebc2748c5e625de932f5e87529f8fa029dd9c10c5e7cc1b143969/hosts",
+        "LogPath": "/var/lib/docker/containers/ae506163854ebc2748c5e625de932f5e87529f8fa029dd9c10c5e7cc1b143969/ae506163854ebc2748c5e625de932f5e87529f8fa029dd9c10c5e7cc1b143969-json.log",
+        "Name": "/zabbix-zabbix-mysql-1",
+        "RestartCount": 0,
+        "Driver": "overlay2",
+        "Platform": "linux",
+        "MountLabel": "",
+        "ProcessLabel": "",
+        "AppArmorProfile": "",
+        "ExecIDs": null,
+        "HostConfig": {
+            "Binds": [
+                "/dockerdata/zabbix/db:/var/lib/mysql:rw",
+                "/etc/localtime:/etc/localtime:rw"
+            ],
+            "ContainerIDFile": "",
+            "LogConfig": {
+                "Type": "json-file",
+                "Config": {}
+            },
+            "NetworkMode": "zabbix_zabbix_net",
+            "PortBindings": {
+                "3306/tcp": [
+                    {
+                        "HostIp": "",
+                        "HostPort": "3306"
+                    }
+                ]
+            },
+            "RestartPolicy": {
+                "Name": "unless-stopped",
+                "MaximumRetryCount": 0
+            },
+            "AutoRemove": false,
+            "VolumeDriver": "",
+            "VolumesFrom": null,
+            "CapAdd": null,
+            "CapDrop": null,
+            "CgroupnsMode": "host",
+            "Dns": null,
+            "DnsOptions": null,
+            "DnsSearch": null,
+            "ExtraHosts": null,
+            "GroupAdd": null,
+            "IpcMode": "private",
+            "Cgroup": "",
+            "Links": null,
+            "OomScoreAdj": 0,
+            "PidMode": "",
+            "Privileged": false,
+            "PublishAllPorts": false,
+            "ReadonlyRootfs": false,
+            "SecurityOpt": null,
+            "UTSMode": "",
+            "UsernsMode": "",
+            "ShmSize": 67108864,
+            "Runtime": "runc",
+            "ConsoleSize": [
+                0,
+                0
+            ],
+            "Isolation": "",
+            "CpuShares": 0,
+            "Memory": 0,
+            "NanoCpus": 0,
+            "CgroupParent": "",
+            "BlkioWeight": 0,
+            "BlkioWeightDevice": null,
+            "BlkioDeviceReadBps": null,
+            "BlkioDeviceWriteBps": null,
+            "BlkioDeviceReadIOps": null,
+            "BlkioDeviceWriteIOps": null,
+            "CpuPeriod": 0,
+            "CpuQuota": 0,
+            "CpuRealtimePeriod": 0,
+            "CpuRealtimeRuntime": 0,
+            "CpusetCpus": "",
+            "CpusetMems": "",
+            "Devices": null,
+            "DeviceCgroupRules": null,
+            "DeviceRequests": null,
+            "KernelMemory": 0,
+            "KernelMemoryTCP": 0,
+            "MemoryReservation": 0,
+            "MemorySwap": 0,
+            "MemorySwappiness": null,
+            "OomKillDisable": false,
+            "PidsLimit": null,
+            "Ulimits": null,
+            "CpuCount": 0,
+            "CpuPercent": 0,
+            "IOMaximumIOps": 0,
+            "IOMaximumBandwidth": 0,
+            "MaskedPaths": [
+                "/proc/asound",
+                "/proc/acpi",
+                "/proc/kcore",
+                "/proc/keys",
+                "/proc/latency_stats",
+                "/proc/timer_list",
+                "/proc/timer_stats",
+                "/proc/sched_debug",
+                "/proc/scsi",
+                "/sys/firmware"
+            ],
+            "ReadonlyPaths": [
+                "/proc/bus",
+                "/proc/fs",
+                "/proc/irq",
+                "/proc/sys",
+                "/proc/sysrq-trigger"
+            ]
+        },
+        "GraphDriver": {
+            "Data": {
+                "LowerDir": "/var/lib/docker/overlay2/9753b7bed1fd9c58f490d36740b03192a6326be7fdfe6ea38dd2c38f231a1428-init/diff:/var/lib/docker/overlay2/f8ae57da4a22ecd8523de2575bcb89d24bb8fa470c9f2d0377ea1f9e867db962/diff:/var/lib/docker/overlay2/a118ddc021e23fe1c5a73fc0d85feaea4d72107eb39125f55761d65f7cb3db82/diff:/var/lib/docker/overlay2/90fb880199885e35a69ee3f9e752cb3773d00d3c7a18b8cccccea9790bbf54c5/diff:/var/lib/docker/overlay2/0b95c0674aab9d817f7679014252d94741d21e6e68be78adda078271f98be3db/diff:/var/lib/docker/overlay2/39c7c915a61167c256a76e9d02c9652ccf3a781045445681de3bca1ca39d1b58/diff:/var/lib/docker/overlay2/12c95016eaef20ced58f41cdb16bd1697c29cc8970f52367f25e5934be5fdf06/diff:/var/lib/docker/overlay2/cd6217c7ef0de0d5566280a59c2dfd56bf0129f1b488218c4f2f82545469847b/diff:/var/lib/docker/overlay2/21a060cd688cfddbed9b857fac451504e5a7f6dbd9bed456357cdd8bbff86454/diff:/var/lib/docker/overlay2/5ea6043aef32bf37686be9a85ee0efd23147238e6f6ee98149ac70520d49b7b3/diff:/var/lib/docker/overlay2/4ddf5d50f90770f84a9e5764e8e376a2cc3c7b762a064ebde49499b58f4a8453/diff:/var/lib/docker/overlay2/20ec1f566fcb5cbc6c7871b06146ae2945546d4e0bf49e1fada34ce527bcca5e/diff:/var/lib/docker/overlay2/e64f5e9972eabc919e9ac1463b244121f42570cd06b9a5b058d881c039d44848/diff",
+                "MergedDir": "/var/lib/docker/overlay2/9753b7bed1fd9c58f490d36740b03192a6326be7fdfe6ea38dd2c38f231a1428/merged",
+                "UpperDir": "/var/lib/docker/overlay2/9753b7bed1fd9c58f490d36740b03192a6326be7fdfe6ea38dd2c38f231a1428/diff",
+                "WorkDir": "/var/lib/docker/overlay2/9753b7bed1fd9c58f490d36740b03192a6326be7fdfe6ea38dd2c38f231a1428/work"
+            },
+            "Name": "overlay2"
+        },
+        "Mounts": [
+            {
+                "Type": "bind",
+                "Source": "/dockerdata/zabbix/db",
+                "Destination": "/var/lib/mysql",
+                "Mode": "rw",
+                "RW": true,
+                "Propagation": "rprivate"
+            },
+            {
+                "Type": "bind",
+                "Source": "/etc/localtime",
+                "Destination": "/etc/localtime",
+                "Mode": "rw",
+                "RW": true,
+                "Propagation": "rprivate"
+            }
+        ],
+        "Config": {
+            "Hostname": "ae506163854e",
+            "Domainname": "",
+            "User": "",
+            "AttachStdin": false,
+            "AttachStdout": true,
+            "AttachStderr": true,
+            "ExposedPorts": {
+                "3306/tcp": {},
+                "33060/tcp": {}
+            },
+            "Tty": false,
+            "OpenStdin": false,
+            "StdinOnce": false,
+            "Env": [
+                "MYSQL_PASSWORD=zabbix123",
+                "MYSQL_ROOT_PASSWORD=root123",
+                "MYSQL_DATABASE=zabbix",
+                "MYSQL_USER=zabbix",
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "GOSU_VERSION=1.12",
+                "MYSQL_MAJOR=8.0",
+                "MYSQL_VERSION=8.0.23-1debian10"
+            ],
+            "Cmd": [
+                "mysqld",
+                "--default-authentication-plugin=mysql_native_password",
+                "--character-set-server=utf8",
+                "--collation-server=utf8_bin"
+            ],
+            "Image": "mysql:8.0.23",
+            "Volumes": {
+                "/etc/localtime": {},
+                "/var/lib/mysql": {}
+            },
+            "WorkingDir": "",
+            "Entrypoint": [
+                "docker-entrypoint.sh"
+            ],
+            "OnBuild": null,
+            "Labels": {
+                "com.docker.compose.config-hash": "8841a9110235d3274f9dd41576b4363b1a34ff7d2a4ee751d74113a2912d1d88",
+                "com.docker.compose.container-number": "1",
+                "com.docker.compose.depends_on": "",
+                "com.docker.compose.image": "sha256:cbe8815cbea8fb86ce7d3169a82d05301e7dfe1a8d4228941f23f4f115a887f2",
+                "com.docker.compose.oneoff": "False",
+                "com.docker.compose.project": "zabbix",
+                "com.docker.compose.project.config_files": "/root/docker/zabbix/docker-compose.yml",
+                "com.docker.compose.project.working_dir": "/root/docker/zabbix",
+                "com.docker.compose.service": "zabbix-mysql",
+                "com.docker.compose.version": "2.5.0"
+            }
+        },
+        "NetworkSettings": {
+            "Bridge": "",
+            "SandboxID": "b2938505356551da7493f0d8671b315c728d4ec0a7fbaadc0a44ed517dc1053e",
+            "HairpinMode": false,
+            "LinkLocalIPv6Address": "",
+            "LinkLocalIPv6PrefixLen": 0,
+            "Ports": {
+                "3306/tcp": [
+                    {
+                        "HostIp": "0.0.0.0",
+                        "HostPort": "3306"
+                    },
+                    {
+                        "HostIp": "::",
+                        "HostPort": "3306"
+                    }
+                ],
+                "33060/tcp": null
+            },
+            "SandboxKey": "/var/run/docker/netns/b29385053565",
+            "SecondaryIPAddresses": null,
+            "SecondaryIPv6Addresses": null,
+            "EndpointID": "",
+            "Gateway": "",
+            "GlobalIPv6Address": "",
+            "GlobalIPv6PrefixLen": 0,
+            "IPAddress": "",
+            "IPPrefixLen": 0,
+            "IPv6Gateway": "",
+            "MacAddress": "",
+            "Networks": {
+                "zabbix_zabbix_net": {
+                    "IPAMConfig": null,
+                    "Links": null,
+                    "Aliases": [
+                        "zabbix-zabbix-mysql-1",
+                        "zabbix-mysql",
+                        "ae506163854e"
+                    ],
+                    "NetworkID": "7d9d9358e4ab0c45ae081ca945424eb92e8e300b554b3de8c25ebd29f320665f",
+                    "EndpointID": "706e078dad8214c37d36b6313d8a50be387a38af761cb07e46bb8d04c5677a40",
+                    "Gateway": "172.24.0.1",
+                    "IPAddress": "172.24.0.2",
+                    "IPPrefixLen": 16,
+                    "IPv6Gateway": "",
+                    "GlobalIPv6Address": "",
+                    "GlobalIPv6PrefixLen": 0,
+                    "MacAddress": "02:42:ac:18:00:02",
+                    "DriverOpts": null
+                }
+            }
+        }
+    }
+]
+```
+##### 方式一
+- [基于 Docker 安装 zabbix](https://www.cnblogs.com/lz1996/p/12625349.html)
+
+###### 下载镜像
+```
+# 1、下载载MySQL镜像mysql:5.7
+[root@manager1 ~]# docker pull mysql:5.7
+# 2、下载zabbix-server镜像，zabbix-server镜像分两种，支持MySQL数据库zabbix-server-mysql，支持支持PostgreSQL数据库zabbix/zabbix-server-pgsql。因为我的服务器是centos7版本，所以选择的是centos-latest版本。
+[root@manager1 ~]# docker pull zabbix/zabbix-server-mysql:centos-latest
+# 3、下载Zabbix web镜像，这里使用的是基于Nginx web服务器及支持MySQL数据库的Zabbix web接口zabbix/zabbix-web-nginx-mysql。
+[root@manager1 ~]# docker pull zabbix/zabbix-web-nginx-mysql:latest
+# 4、下载zabbix-java-gateway镜像， Zabbix本身不支持直接监控Java，而是使用zabbix-java-gateway监控jvm/tomcat性能
+[root@manager1 ~]# docker pull zabbix/zabbix-java-gateway:latest
+[root@manager1 ~]# docker image ls
+REPOSITORY                      TAG             IMAGE ID       CREATED      SIZE
+zabbix/zabbix-web-nginx-mysql   latest          67f384410b88   3 days ago   196MB
+zabbix/zabbix-server-mysql      centos-latest   2e63d22d3e2a   3 days ago   503MB
+zabbix/zabbix-java-gateway      latest          451175797d22   3 days ago   84.4MB
+mysql                           5.7             a3d35804fa37   3 days ago   462MB
+```
+###### 运行镜像
+1. 启动zabbix等镜像之前，需要先创建一个新的 Docker 网络。需要将后面的zabbix-server、mysql、web等容器都加入到此网络中，方便互相访问。在终端使用下面命令创建。
+```
+[root@manager1 ~]# docker network create --driver bridge zabbix_net
+b3980d5ceea361ff99eac31ecf92dea24d3b8d33dbfb43f58f0a2bffd827c2e6
+# 创建后，可以查看是否创建成功。
+[root@manager1 ~]# docker network ls 
+NETWORK ID     NAME              DRIVER    SCOPE
+b3980d5ceea3   zabbix_net        bridge    local
+```
+2. 运行mysql 镜像，创建mysql容器。
+    - -p 是将容器中的3306端口映射到服务器的3306端口
+    - --network zabbix_net是将容器加入到zabbix_net网络中，
+    - -v /etc/localtime:/etc/localtime是同步服务器和容器内部的时区，
+    - --restart always设置自启动，
+    - -e MYSQL_DATABASE="zabbix"，创建环境变量。
+        1. MYSQL_DATABASE="zabbix" 在msql中创建的数据库的名
+        1. MYSQL_USER="zabbix" 创建msql的登录账户名
+        1. MYSQL_PASSWORD="zabbix123" 设置创建msql的登录账户的密码
+        1. MYSQL_ROOT_PASSWORD="root123" 设置msql数据库root 的密码    
+    - --name zabbix-mysql，给容器命名。
+```
+[root@manager1 ~]# docker run -dit -p 3306:3306 --name zabbix-mysql --network zabbix_net --restart always -v /etc/localtime:/etc/localtime -e MYSQL_DATABASE="zabbix" -e MYSQL_USER="zabbix" -e MYSQL_PASSWORD="zabbix123" -e MYSQL_ROOT_PASSWORD="root123" mysql:5.7
+2c8d55a9119cddfc8a7f915ce7c89665850d612b139ae568b1862d0a56d957d8
+[root@manager1 ~]# ll /etc/localtime 
+lrwxrwxrwx. 1 root root 35 Sep  4  2021 /etc/localtime -> ../usr/share/zoneinfo/Asia/Shanghai
+```
+
+3. 运行zabbix-java-gateway镜像，创建zabbix-java-gateway容器。
+```
+[root@manager1 ~]# docker run -v /etc/localtime:/etc/localtime -dit --restart=always --name=zabbix-java-gateway --network zabbix_net zabbix/zabbix-java-gateway:latest
+1ebabb84cafa6382aba0dafda6ca84a1b6815364bb10b5c11f9105bcdf1c9cf0
+ERRO[0011] error waiting for container: context canceled 
+```
+4. 运行zabbix-server-mysql镜像，创建zabbix-server-mysql容器。
+```
+# 首先创建数据卷zabbix-server-vol，通过命令
+[root@manager1 ~]# docker volume create zabbix-server-vol
+zabbix-server-vol
+# 启动zabbix-server-mysql容器。
+[root@manager1 ~]# docker run -dit -p 10051:10051 --mount source=zabbix-server-vol,target=/etc/zabbix -v /etc/localtime:/etc/localtime -v /usr/lib/zabbix/alertscripts:/usr/lib/zabbix/alertscripts --name=zabbix-server-mysql --restart=always --network zabbix_net -e DB_SERVER_HOST="zabbix-mysql" -e MYSQL_DATABASE="zabbix" -e MYSQL_USER="zabbix" -e MYSQL_PASSWORD="zabbix123" -e MYSQL_ROOT_PASSWORD="root123" -e ZBX_JAVAGATEWAY="zabbix-java-gateway" zabbix/zabbix-server-mysql:centos-latest
+d0716bbd7f631807272b869ab1fb3dff4cdb47e370a0b1d4665c6414c4f99060
+ERRO[0008] error waiting for container: context canceled 
+```
+5. 运行zabbix-web-nginx-mysql镜像，创建zabbix-web-nginx-mysql容器。
+```
+[root@manager1 ~]# docker run -dit -p 8080:8080 -v /etc/localtime:/etc/localtime --name zabbix-web-nginx-mysql --restart=always --network zabbix_net -e DB_SERVER_HOST="zabbix-mysql" -e MYSQL_DATABASE="zabbix" -e MYSQL_USER="zabbix" -e MYSQL_PASSWORD="zabbix123" -e MYSQL_ROOT_PASSWORD="root123" -e ZBX_SERVER_HOST="zabbix-server-mysql" zabbix/zabbix-web-nginx-mysql:latest
+34a278e54019398a65103a12a3f71a2d701f70c94a42a67f41a5b73c561ddd4e
+[root@manager1 ~]# docker ps
+CONTAINER ID   IMAGE                                      COMMAND                  CREATED              STATUS                         PORTS                                                  NAMES
+34a278e54019   zabbix/zabbix-web-nginx-mysql:latest       "docker-entrypoint.sh"   About a minute ago   Up 52 seconds                  0.0.0.0:8080->8080/tcp, :::8080->8080/tcp, 8443/tcp    zabbix-web-nginx-mysql
+d0716bbd7f63   zabbix/zabbix-server-mysql:centos-latest   "/usr/bin/tini -- /u…"   6 minutes ago        Restarting (1) 9 seconds ago                                                          zabbix-server-mysql
+1ebabb84cafa   zabbix/zabbix-java-gateway:latest          "docker-entrypoint.s…"   18 minutes ago       Up 17 minutes                  10052/tcp                                              zabbix-java-gateway
+2c8d55a9119c   mysql:5.7                                  "docker-entrypoint.s…"   25 minutes ago       Up 25 minutes                  0.0.0.0:3306->3306/tcp, :::3306->3306/tcp, 33060/tcp   zabbix-mysql
+```
+6. 在浏览器中输入http://IP/zabbix，打开zabbix首页，其中用户名密码分别是admin/zabbix。
+    - http://192.168.217.3:8080/zabbix
+        - admin/zabbix
 ####  FastDFS
 ##### 参考
 - [官方网站](https://github.com/happyfish100/)
@@ -6459,6 +8581,80 @@ Importing GPG key 0x621E9F35:
  Fingerprint: 060a 61c5 1b55 8a7f 742b 77aa c52f eb6b 621e 9f35
  From       : https://mirrors.aliyun.com/docker-ce/linux/centos/gpg
 Is this ok [y/N]: y
+```
+
+- 方式二
+```{3,13,40}
+[root@CentOS-7 ~]# curl -fsSL https://get.docker.com | bash -s docker --mirror Aliyun
+# Executing docker install script, commit: 614d05e0e669a0577500d055677bb6f71e822356
++ sh -c 'yum install -y -q yum-utils'
+Delta RPMs disabled because /usr/bin/applydeltarpm not installed.
+warning: /var/cache/yum/x86_64/7/base/packages/yum-utils-1.1.31-54.el7_8.noarch.rpm: Header V3 RSA/SHA256 Signature, key ID f4a80eb5: NOKEY
+Public key for yum-utils-1.1.31-54.el7_8.noarch.rpm is not installed
+Public key for libxml2-python-2.9.1-6.el7_9.6.x86_64.rpm is not installed
+Importing GPG key 0xF4A80EB5:
+ Userid     : "CentOS-7 Key (CentOS 7 Official Signing Key) <security@centos.org>"
+ Fingerprint: 6341 ab27 53d7 8a78 a7c2 7bb1 24c6 a8a7 f4a8 0eb5
+ Package    : centos-release-7-9.2009.0.el7.centos.x86_64 (@anaconda)
+ From       : /etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
++ sh -c 'yum-config-manager --add-repo https://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo'
+Loaded plugins: fastestmirror
+adding repo from: https://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
+grabbing file https://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo to /etc/yum.repos.d/docker-ce.repo
+repo saved to /etc/yum.repos.d/docker-ce.repo
++ '[' stable '!=' stable ']'
++ sh -c 'yum makecache'
+Loaded plugins: fastestmirror
+Loading mirror speeds from cached hostfile
+ * base: mirrors.ustc.edu.cn
+ * extras: mirrors.aliyun.com
+ * updates: mirrors.aliyun.com
+base                                                                                                                                                                                                                                                  | 3.6 kB  00:00:00     
+docker-ce-stable                                                                                                                                                                                                                                      | 3.5 kB  00:00:00     
+extras                                                                                                                                                                                                                                                | 2.9 kB  00:00:00     
+updates                                                                                                                                                                                                                                               | 2.9 kB  00:00:00     
+(1/10): docker-ce-stable/7/x86_64/updateinfo                                                                                                                                                                                                          |   55 B  00:00:00     
+(2/10): base/7/x86_64/other_db                                                                                                                                                                                                                        | 2.6 MB  00:00:01     
+(3/10): docker-ce-stable/7/x86_64/primary_db                                                                                                                                                                                                          |  78 kB  00:00:00     
+(4/10): extras/7/x86_64/other_db                                                                                                                                                                                                                      | 147 kB  00:00:00     
+(5/10): docker-ce-stable/7/x86_64/other_db                                                                                                                                                                                                            | 124 kB  00:00:00     
+(6/10): docker-ce-stable/7/x86_64/filelists_db                                                                                                                                                                                                        |  32 kB  00:00:01     
+(7/10): updates/7/x86_64/other_db                                                                                                                                                                                                                     | 1.0 MB  00:00:00     
+(8/10): base/7/x86_64/filelists_db                                                                                                                                                                                                                    | 7.2 MB  00:00:01     
+(9/10): extras/7/x86_64/filelists_db                                                                                                                                                                                                                  | 277 kB  00:00:00     
+(10/10): updates/7/x86_64/filelists_db                                                                                                                                                                                                                | 8.2 MB  00:00:04     
+Metadata Cache Created
++ sh -c 'yum install -y -q docker-ce docker-ce-cli containerd.io docker-scan-plugin docker-compose-plugin docker-ce-rootless-extras'
+warning: /var/cache/yum/x86_64/7/docker-ce-stable/packages/docker-ce-20.10.16-3.el7.x86_64.rpm: Header V4 RSA/SHA512 Signature, key ID 621e9f35: NOKEY
+Public key for docker-ce-20.10.16-3.el7.x86_64.rpm is not installed
+Importing GPG key 0x621E9F35:
+ Userid     : "Docker Release (CE rpm) <docker@docker.com>"
+ Fingerprint: 060a 61c5 1b55 8a7f 742b 77aa c52f eb6b 621e 9f35
+ From       : https://mirrors.aliyun.com/docker-ce/linux/centos/gpg
+
+================================================================================
+
+To run Docker as a non-privileged user, consider setting up the
+Docker daemon in rootless mode for your user:
+
+    dockerd-rootless-setuptool.sh install
+
+Visit https://docs.docker.com/go/rootless/ to learn about rootless mode.
+
+
+To run the Docker daemon as a fully privileged service, but granting non-root
+users access, refer to https://docs.docker.com/go/daemon-access/
+
+WARNING: Access to the remote API on a privileged Docker daemon is equivalent
+         to root access on the host. Refer to the 'Docker daemon attack surface'
+         documentation for details: https://docs.docker.com/go/attack-surface/
+
+================================================================================
+
+[root@manager1 ~]# find / -name docker-compose 
+/usr/libexec/docker/cli-plugins/docker-compose
+[root@manager1 cli-plugins]# docker compose version
+Docker Compose version v2.5.0
 ```
 ##### 2.5 Docker的启动与停止
 ```
