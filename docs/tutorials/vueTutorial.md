@@ -1387,7 +1387,475 @@ position: absolute;
 
 
 ## 2 Vue项目
-## 3 Vue Devtools调试工具
+## 3 Vue-devtools调试工具
+- [手抓手带你使用vue devtools](https://zhuanlan.zhihu.com/p/196757661)
+
 - [Vue-Devtools](https://cn.vuejs.org/v2/guide/installation.html#Vue-Devtools)
-	- https://github.com/vuejs/devtools#vue-devtools
-		- [Vue Devtools Guide](https://devtools.vuejs.org/guide/installation.html#settings)
+	- https://devtools.vuejs.org/
+		- https://github.com/vuejs/devtools#vue-devtools
+			- [Vue Devtools Guide](https://devtools.vuejs.org/guide/installation.html#settings)
+
+> 以 _ 或 \$ 开头的属性 不会 被 Vue 实例代理，因为它们可能和 Vue 内置的属性、API 方法冲突。你可以使用例如 vm.$data._property 的方式访问这些属性。
+
+- 相关代码
+	- basicGrammar-part1-1\07.简易计算器案例.html
+	- basicGrammar-part1-2\04.生命周期函数.html
+	- basicGrammar-part1-2\02.过滤器的基本使用.html
+	- basicGrammar-part1-2\03.品牌列表-自定义指令.html
+	- basicGrammar-part1-3\03.组件-创建全局组件方式3.html
+	- basicGrammar-part1-4\08.使用wath监听URL地址的改变.html
+	- basicGrammar-part1-4\10.计算属性的get和set.html
+	- basicGrammar-part1-3\14.使用ref属性获取页面上的组件.html
+	- basicGrammar-part1-3\12.评论列表案例.html
+	- basicGrammar-part1-3\10.父组件向子组件传递function2.html
+	- basicGrammar-part1-3\23.路由中使用props获取参数.html
+	- basicGrammar-part1-3\23.路由中使用props获取参数.html
+
+### 安装
+```
+E:\iEnviroment\development\projects\ideaProjects\VueDemo>git clone git@github.com:TosinJia/devtools.git
+Cloning into 'devtools'...
+remote: Enumerating objects: 18627, done.
+remote: Counting objects: 100% (1474/1474), done.
+remote: Compressing objects: 100% (637/637), done.
+remote: Total 18627 (delta 879), reused 1404 (delta 827), pack-reused 17153R
+Receiving objects: 100% (18627/18627), 13.58 MiB | 4.03 MiB/s, done.
+Resolving deltas: 100% (12363/12363), done.
+
+E:\iEnviroment\development\projects\ideaProjects\VueDemo\devtools>yarn install
+User@WIN10-0009 MINGW64 /e/iEnviroment/development/projects/ideaProjects/VueDemo/devtools (main)
+$ yarn run build
+```
+- chrome 更多工具->扩展程序
+	1. 开启开发者模式
+	2. 加载已解压的扩展程序（packages\shell-chrome）
+
+### 界面功能
+#### Inspector
+##### Componets
+
+###### 左侧 app
+- 顶部工具栏
+	- Find apps..
+```
+# basicGrammar-part1-3\03.组件-创建全局组件方式3.html
+```
+###### 中部 component
+- 顶部工具栏
+	- Find components... 
+
+> 每个组件实例都有一个变量，当前选中的组件是\$vm 或 \$vm0，~~其余组件从上到下升序赋值(\$vm1、\$vm2、\$vm3...)~~，其余组件按选中的先后顺序倒序赋值（\$vm1、\$vm2、\$vm3...），控制台直接打印$vm0可以直接看到这个实例。
+```
+$vm==$vm0
+	true
+# $vm0-9和查看的次序有关，0当前查看的对象，1 前1次查看的对象，2 前2次查看的对象...
+console.log($vm0, $vm1, $vm2, $vm3, $vm4, $vm5, $vm6, $vm7, $vm8, $vm9);
+```
+
+1. new Vue
+	- data
+
+1. Transition transition
+	- props [properties]
+1. TransitionGroup transition-group
+
+1. RouterLink router-link
+```
+$vm0.$props
+	{…}
+		activeClass: undefined
+		append: false
+		ariaCurrentValue: "page"
+		custom: false
+		event: "click"
+		exact: false
+		exactActiveClass: undefined
+		exactPath: false
+		replace: false
+		tag: "span"
+		to: "/login"
+```
+1.  router-view 
+	- <组件名|Anonymous Component> router-view:path1
+		- <组件名|Anonymous Component> router-view:path1/path11
+```
+$vm0.$route
+	{name: undefined, meta: {…}, path: '/login', hash: '', query: {…}, …}
+		fullPath: "/login"
+		hash: ""
+		matched: Array(1)
+			0: {path: '/login', regex: /^\/login(?:\/(?=$))?$/i, components: {…}, alias: Array(0), instances: {…}, …}
+		length: 1
+		[[Prototype]]: Array(0)
+		meta: {}
+		name: undefined
+		params: {}
+		path: "/login"
+		query: {}
+```
+
+###### 右侧 state
+- 顶部工具栏
+	- Filter state...
+	- Scroll to component
+	- Show render code
+	- Inspect DOM
+	- Open ... in editor
+
+> 面板内可以看到我们定义的一系列组件，选中相应的组件后，右侧面板可以看到组件内的```data```、```props```、```computed```、attrs属性，```$refs```，```route```。
+
+- data属性是可以编辑的，编辑后页面也会实时改变
+
+###### Force Refresh 强制刷新
+###### [S] Select componet in the page
+- Click on a componet on the page to select it
+###### ...
+1. Component names:
+	- Original 原始
+	- PascalCase Pascal命名法 大驼峰式命名法
+	- kebab-case 短横线分割
+
+##### Routes
+- 展示路由相关信息
+##### Vuex
+- 展示Vuex相关信息
+#### Timeline
+
+##### Mouse
+##### Keyboard
+##### Component events 组件事件
+- 展示组件事件调用相关信息
+##### Performance
+##### Router Navigations
+
+
+### 开发者工具
+- Inspector -> Componets component窗口选中需要查看的组件
+#### Console
+1. el
+```
+# basicGrammar-part1-1\07.简易计算器案例.html
+
+// 自带属性方法以$、_开头
+$vm0
+$vm0.$el.id
+$vm0.$options.el
+```
+1. data
+```
+# basicGrammar-part1-1\07.简易计算器案例.html
+
+$vm0.$data
+$vm0._data
+$vm0.$data===$vm0._data
+	true
+
+$vm0.data中数据名
+
+$vm0.$data.data中数据名===$vm0.data中数据名
+	true
+```
+1. methods
+```
+# basicGrammar-part1-1\07.简易计算器案例.html
+
+# [[FunctionLocation]]:  点击跳转 DOM未渲染 源码位置
+$vm0.$options.methods
+
+$vm0.methods中方法名 点击跳转 DOM未渲染 源码位置
+$vm0.$options.methods.methods中方法名 点击跳转 DOM未渲染 源码位置
+
+# 执行方法
+$vm0.methods中方法名()
+$vm0.$options.methods.methods中方法名()
+```
+1. 生命周期函数
+```
+# basicGrammar-part1-2\04.生命周期函数.html
+
+# 点击跳转 DOM未渲染 源码位置
+$vm0.$options.beforeCreate[$vm0.$options.beforeCreate.length-1]
+$vm0.$options.created[$vm0.$options.created.length-1]
+
+$vm0.$options.beforeMount[$vm0.$options.beforeMount.length-1]
+$vm0.$options.mounted[$vm0.$options.mounted.length-1]
+
+$vm0.$options.beforeUpdate[$vm0.$options.beforeUpdate.length-1]
+$vm0.$options.updated[$vm0.$options.updated.length-1]
+
+$vm0.$options.beforeDestroyed[$vm0.$options.beforeDestroyed.length-1]
+$vm0.$options.destroyed[$vm0.$options.destroyed.length-1]
+```
+- 过滤器
+```
+# basicGrammar-part1-2\02.过滤器的基本使用.html
+$vm0.$options.filters
+	{addStr: ƒ, strFormat: ƒ} 私有过滤器
+		addStr: ƒ (data) 私有过滤器
+		strFormat: ƒ (data)
+		[[Prototype]]: Object
+			strFormat: ƒ (data, str="XE") 全局过滤器
+
+# 点击跳转 DOM未渲染 源码位置
+$vm0.$options.filters.私有过滤器名字 
+```
+
+- 指令
+```
+# basicGrammar-part1-2\03.品牌列表-自定义指令.html
+
+# 指令 指令名.[[FunctionLocation]] 源码位置
+$vm0.$options.directives
+	{bold: {…}, italic: {…}, italic1: {…}} 私有指令
+		bold: {bind: ƒ}
+		italic: {bind: ƒ, update: ƒ}
+		italic1: {bind: ƒ, update: ƒ}
+		[[Prototype]]: Object
+			color: {bind: ƒ} 全局指令
+			focus: {bind: ƒ, inserted: ƒ, update: ƒ, componentUpdated: ƒ, unbind: ƒ} 全局指令
+			model: {inserted: ƒ, componentUpdated: ƒ}
+			show: {bind: ƒ, update: ƒ, unbind: ƒ}
+# 点击跳转 DOM未渲染 源码位置
+$vm0.$options.directives.私有指令名字
+```
+
+- components 组件
+```
+# basicGrammar-part1-3\03.组件-创建全局组件方式3.html
+
+$vm0.$options.components
+	{mycom4: {…}}
+		mycom4: {template: '<h6> 03.组件-创建全局组件方式3.html 这是定义的私有组件</h6>', _Ctor: {…}} 私有组件
+		[[Prototype]]: Object
+			KeepAlive: {name: 'keep-alive', abstract: true, props: {…}, methods: {…}, created: ƒ, …}
+			Transition: {name: 'transition', props: {…}, abstract: true, render: ƒ}
+			TransitionGroup: {props: {…}, methods: {…}, beforeMount: ƒ, render: ƒ, updated: ƒ}
+			mycom3: ƒ VueComponent(options) 全局组件构造函数
+
+# 查找源码 Search【Ctrl+Shif+F】
+```
+- watch
+```
+# basicGrammar-part1-4\08.使用wath监听URL地址的改变.html
+
+$vm0.$options.watch
+# 点击跳转 DOM未渲染 源码位置
+$vm0.$options.watch.要监听的数据
+$vm.$options.watch["要监听的数据"]
+```
+- computed 计算属性
+```
+# basicGrammar-part1-4\10.计算属性的get和set.html
+
+$vm0.$options.computed
+# 点击跳转 DOM未渲染 源码位置
+$vm0.$options.computed['computed中数据名']
+	.get
+	.set
+$vm0.computed中数据名
+
+$vm0.$options.computed
+	{fullname: {…}}
+		fullname:
+			get: ƒ ()
+			set: ƒ (val)
+
+$vm0._computedWatchers
+	{fullname: Watcher}
+		fullname: Watcher
+			active: true
+			before: undefined
+			cb: ƒ noop(a, b, c)
+			deep: false
+			depIds: Set(2) {3, 4}
+			deps: (2) [Dep, Dep]
+			dirty: false
+			expression: "function(){    // get 表示外界要引用 fullname 的值 //$vm0.$options.computed['fullname'].get\n                        console.log('computed fullname get');\n                        return this.firstname + '-' + this.lastname;\n                    }"
+			getter: ƒ ()
+				arguments: null
+				caller: null
+				length: 0
+				name: "get"
+				prototype: {constructor: ƒ}
+				[[FunctionLocation]]: 10.计算属性的get和set.html:32
+				[[Prototype]]: ƒ ()
+				[[Scopes]]: Scopes[2]
+			id: 1
+			lazy: true
+			newDepIds: Set(0) {size: 0}
+			newDeps: []
+			sync: false
+			user: false
+			value: "-"
+			vm: Vue {_uid: 0, _isVue: true, $options: {…}, _renderProxy: Proxy, _self: Vue, …}
+```
+
+- ref
+```
+# basicGrammar-part1-3\14.使用ref属性获取页面上的组件.html
+
+$vm0.$refs
+	{ref_btn: input, ref_com1: VueComponent, ref_h3: h3#id_h3}
+		ref_btn: input
+		ref_com1: VueComponent {_uid: 1, _isVue: true, $options: {…}, _renderProxy: Proxy, _self: VueComponent, …}
+		ref_h3: h3#id_h3
+
+$vm0.$refs.ref_com1===$vm1
+	true
+```
+
+组件
+- 基础数据
+```
+# basicGrammar-part1-3\12.评论列表案例.html
+
+# 选中Root，选中cmt-box，选中Root
+# 子对象实例
+$vm0.$children[0]===$vm1
+true
+
+$vm1.$options._componentTag
+	'cmt-box'
+```
+- template
+```
+$vm0.$options.template
+```
+- 事件绑定 属性绑定
+```
+
+# day3 basicGrammar-part1-3\10.父组件向子组件传递function2.html
+
+//<com1 v-on:func="show" v-bind:func1="show" v-on:func3="show3"></com1>
+$vm0._events
+	{func: Array(1), func3: Array(1), hook:beforeDestroy: Array(1)}
+		func: [ƒ]
+		func3: [ƒ]
+
+$vm0._props
+	{}
+		func1: ƒ ()
+$vm0.$props
+	{}
+		func1: ƒ ()
+```
+- props
+```
+# basicGrammar-part1-3\23.路由中使用props获取参数.html
+
+# 值内容
+$vm.$props===$vm0._props
+true
+
+$vm.$props.props元素名
+
+$vm.$props.props元素名===$vm0.$options.propsData.props元素名
+	true
+
+$vm0.$props
+	{}
+		id: "100"
+		name: "tosin"
+$vm0._props
+	{}
+		id: "100"
+		name: "tosin"
+
+# 配置
+$vm0.$options.props
+	{name: {…}, id: {…}}
+		id: {type: null}
+		name: {type: null}
+
+$vm0.$options.propsData
+	{name: 'tosin', id: '100'}
+		id: "100"
+		name: "tosin"
+
+
+# transition basicGrammar-part1-2\14.动画-使用JS动画生命周期函数.html
+
+$vm0
+	VueComponent {_uid: 1, _isVue: true, $options: {…}, _renderProxy: Proxy, _self: VueComponent, …}
+$vm0.$props
+	{…}
+		appear: (...)
+		appearActiveClass: (...)
+		appearClass: (...)
+		appearToClass: (...)
+		css: (...)
+		duration: (...)
+		enterActiveClass: (...)
+		enterClass: (...)
+		enterToClass: (...)
+		leaveActiveClass: (...)
+		leaveClass: (...)
+		leaveToClass: (...)
+		mode: (...)
+		name: (...)
+		type: (...)
+# transition-group basicGrammar-part1-2\15.动画-列表过渡.html
+
+$vm0
+	VueComponent {_uid: 1, _isVue: true, $options: {…}, _renderProxy: Proxy, _self: VueComponent, …}
+vm0.$props
+	{…}
+		...
+		moveClass: (...)
+
+```
+##### 路由
+``` 
+# basicGrammar-part1-3\23.路由中使用props获取参数.html
+
+# 选中挂载路由的vm实例
+$vm0.$router===$vm0._router
+	true
+$vm0.$router===$vm0.$options.router
+	true
+
+$vm0.$router.options.routes
+$vm0._router.options.routes
+$vm0.$options.router.options.routes
+
+$vm0._router.options
+	{routes: Array(4)}
+		routes: Array(4)
+			0: {path: '/', redirect: '/login'}
+			1: {path: '/login', component: {…}}
+			2: {path: '/login/:id/:name', component: {…}, props: true}
+			3: {path: '/reg', component: {…}}
+			length: 4
+
+# 选中 router-view 中
+$vm0.$router===$vm1.$router
+	true
+$vm0.$router===$vm0._router
+	false
+$vm0._router
+	undefined
+
+// <router-link to="/login?id=10">登录1</router-link>
+$vm0.$route.query
+	{id: '10'}
+
+//<router-link to="/login/100/tosin">登录2</router-link>
+//{path: '/login/:id/:name', component: login2, props: true},
+$vm0.$route.params
+	{id: '100', name: 'tosin'}
+```
+
+##### vuex
+```
+$vm0.$store
+$vm0.$store.state
+$vm0.$store._modulesNamespaceMap
+$vm0.$store._mutations
+$vm0.$store._actions
+```
+
+#### Elements
+- 渲染后
+#### Sources
+- 未渲染
+- 执行过程中可打断点

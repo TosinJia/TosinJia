@@ -17,9 +17,14 @@ module.exports =[
             {text: 'Linux教程', link:"/tutorials/linuxTutorial"},
             {text: 'Git教程', link:"/tutorials/gitTutorial"},
             {text: 'Vue教程', link:"/tutorials/vueTutorial"},
+            {text: 'Thymeleaf教程', link:"/tutorials/thymeleaf"},
             {text: 'Docker教程', link:"/tutorials/docker"},
             {text: '虚拟机', link:"/tutorials/virtualMachine"},
     ]},
+    {text: 'WORK', 
+        items:[
+            {text: '整车销售', link:"/work/TruckSell"},
+    ]},    
     {text: '数据库', 
         items:[
             {text: '设计', 

@@ -74,6 +74,15 @@ module.exports = {
         ]
       },
     ],
+    '/work/': [
+      {
+        title:'相关技术',
+        collapsable: false,
+        children:[
+          'TruckSell',
+        ]
+      },
+    ],
     '/database/': [
       {
         title: '设计',

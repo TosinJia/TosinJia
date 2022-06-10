@@ -66,6 +66,10 @@ shift+F4 | 关闭Workspace
             - UpperCaseOnly
 - Generate Database.. 导出sql
 - Apply Model Changes to Database... 
+- Update Model from Database... 
+    - 【Database Reverse Engineering Options】
+        - Using script files
+        - Using a data source
 
 - Execute SQL... 【Execute SQL Query】
 
@@ -350,12 +354,26 @@ Option   Explicit
           Next   
     end   sub
 ```
+#### Display Preferences... 【Display Preferences】
+
+##### General Settings
+###### Diagram
+- Show page delimiter 去掉背景中的黑色网格线
+##### Reference
+###### Content
+- Center
+###### Format
+- Modify.. -> Line Style
+##### Table
 #### Model Options... 【Model Options】
+
+
 - Model Settings
-    - 点击Reference, 
-        - 把"Auto-migrate columns"这个checkbox的勾去掉 （PowerDesigner删除外键关系,而不删除外键列）
-
-
+    - Reference
+        - Auto-migrate columns unselected （PowerDesigner删除外键关系,而不删除外键列）
+        - Default link on creation:
+            - Primary Key
+            - User-defined
 
 
 ### Help

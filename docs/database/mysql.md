@@ -249,6 +249,30 @@ Starting MySQL.. SUCCESS!
 - [MySQL如何在linux中重新启动](https://www.php.cn/mysql-tutorials-480982.html)
 
 ### 日常操作
+#### 查询数据库中各表的主键、自增标识
+```
+-- 所有表主键 mysql查询数据库中各表的主键、自增标识
+SELECT
+  t.TABLE_NAME,
+  c.COLUMN_NAME,
+  ts.AUTO_INCREMENT
+FROM
+  INFORMATION_SCHEMA.TABLE_CONSTRAINTS AS t,
+  information_schema.TABLES AS ts,
+  information_schema.KEY_COLUMN_USAGE AS c
+WHERE
+  t.TABLE_NAME = ts.TABLE_NAME
+  AND ts.TABLE_NAME  = c.TABLE_NAME
+  AND t.TABLE_SCHEMA = 'truck_sell_test'
+  AND t.CONSTRAINT_TYPE = 'PRIMARY KEY'
+  ORDER BY ts.`AUTO_INCREMENT` DESC;
+```
+
+#### 版本查看
+```
+select version();
+```
+
 #### NULL判断
 ```
 -- SQL 错误 [1052] [23000]: Column 'phone' in field list is ambiguous
