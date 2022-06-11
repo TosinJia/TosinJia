@@ -1,13 +1,7 @@
 module.exports = {
 
-  '/work/': [
-    {
-      title : '整车销售',
-      collapsable: true,
-      children:[
-        'TruckSell',
-      ]
-    },
+  '/work/TruckSell/': [
+    'SystemFunctions',
   ],
 
     '/softwareArchitecture/openSourceFramework/ruoyi/ruoyi-cloud-ow/' : [{

@@ -23,8 +23,8 @@ module.exports =[
     ]},
     {text: 'WORK', 
         items:[
-            {text: '整车销售', link:"/work/TruckSell"},
-    ]},    
+            {text: '整车销售', items:[{text:'系统功能', link:"/work/TruckSell/SystemFunctions"}] },
+    ]}, 
     {text: '数据库', 
         items:[
             {text: '设计', 
