@@ -4292,15 +4292,14 @@ URI_E_20220531201933843: /report/billRecivablesReport, time: 1059,
 	|--reponse: "report/report_base_recivables" 
 
 ```
-#### 24 车辆回款表
+#### 24 车款回款表 车辆回款表
 ##### 本部车款回款表
 
-- http://127.0.0.1:8081/report/repayMoneyDetail?pageNum=4&pageSize=10&truckTypeId=59&vin=LJRD1338XN8000154&serialNumber=N8000154&manufactorId=33&status=7&startTime=&endTime=&tailStartTime=2022-02-01&tailEndTime=
-    - com.clgg.modules.system.controller.ReportController#RepayMoneyDetail
-        - return "report/report_repay_money_base";
-
-
+###### 查询
 ```
+URI_S_20220610102321556: http://127.0.0.1:8082/report/repayMoneyDetail,method: GET, IP: 127.0.0.1-127.0.0.1, 
+	|-- params: {"pageNum":[""],"pageSize":["10"],"truckTypeId":[""],"vin":[""],"serialNumber":["N8000138"],"manufactorId":[""],"status":[""],"startTime":[""],"endTime":[""],"tailStartTime":[""],"tailEndTime":[""]}, body: null
+        //获取下拉框内容
 -- 获取经销商信息（提报方）
 select id, agency_name, agency_simple_name, father, agency_code, type, type_address, status, phone, address, postcode, remark, tax_number, bank_name, bank_account, bank_account_phone, bank_account_address, create_time, create_user,agency_code_ours,bank_code,bank_fullName from sys_agency WHERE status ='0' and status = "0" ;
 -- Parameters: 0(String)
@@ -4321,9 +4320,74 @@ select id, name, status, create_user, create_date, update_user, update_data from
 select id, name, status, create_user, create_date, update_user, update_data from truck_type where status = '0' ;
 --  Parameters: 0(String)
 
-SELECT count(0) FROM (SELECT ot.truck_type_name truckTypeName, ot.truck_type_id truckTypeId, ot.product_type_name productTypeName, ot.product_type_id productTypeId, ot.id truckId, ii.vin, ii.serial_number serialNumber, mf.company_name manufactor, ot.`status` truckStatus, pli.bh_order_no manufactorOrderNo, sum(brd.invoice_money) manufactorPrice, sa.agency_name subcompany, sa.agency_code_ours agencyCode FROM order_truck ot LEFT JOIN incoming_info ii ON ii.truck_id = ot.id LEFT JOIN planning_info pli ON pli.truck_id = ot.id LEFT JOIN bill_register_detail brd ON brd.serial_number = ii.serial_number LEFT JOIN manufactor mf ON mf.id = ot.manufactor_id LEFT JOIN order_info oi ON oi.id = ot.order_id LEFT JOIN sys_agency sa ON sa.agency_code_ours = oi.agency_code LEFT JOIN write_off wo ON wo.truck_id = ot.id LEFT JOIN write_off_detail wod ON wod.truck_id = ot.id LEFT JOIN capital_inflow ci ON ci.id = wod.inflow_id WHERE ot.truck_type_id = ? AND ot.status = ? AND ii.serial_number LIKE CONCAT('%', ?, '%') AND ii.vin LIKE CONCAT('%', ?, '%') AND ot.manufactor_id = ? AND str_to_date(ci.payment_date, '%Y%m%d%H%i%s') >= str_to_date(concat(?, ' 00:00:00'), '%Y-%m-%d %H:%i:%s') AND wo.write_off_type <> "定金" AND ci.belong = "base" GROUP BY ii.vin, ii.serial_number) table_count 
--- Parameters: 59(Long), 7(String), N8000154(String), LJRD1338XN8000154(String), 33(Long), 2022-02-01(String)
 
+//查询         List<TruckRepayReportBaseVo> truckInfos = truckBusinessReportViewDao.selectTruckRepayInfos(searchVo);
+SELECT count(0) FROM (SELECT ot.truck_type_name truckTypeName, ot.truck_type_id truckTypeId, ot.product_type_name productTypeName, ot.product_type_id productTypeId, ot.id truckId, ii.vin, ii.serial_number serialNumber, mf.company_name manufactor, ot.`status` truckStatus, pli.bh_order_no manufactorOrderNo, sum(brd.invoice_money) manufactorPrice, sa.agency_name subcompany, sa.agency_code_ours agencyCode FROM order_truck ot LEFT JOIN incoming_info ii ON ii.truck_id = ot.id LEFT JOIN planning_info pli ON pli.truck_id = ot.id LEFT JOIN bill_register_detail brd ON brd.serial_number = ii.serial_number LEFT JOIN manufactor mf ON mf.id = ot.manufactor_id LEFT JOIN order_info oi ON oi.id = ot.order_id LEFT JOIN sys_agency sa ON sa.agency_code_ours = oi.agency_code WHERE ii.serial_number LIKE CONCAT('%', ?, '%') GROUP BY ii.vin, ii.serial_number) table_count 
+-- Parameters: N8000138(String)
+SELECT ot.truck_type_name truckTypeName,ot.truck_type_id truckTypeId,ot.product_type_name productTypeName,ot.product_type_id productTypeId,ot.id truckId, ii.vin,ii.serial_number serialNumber, mf.company_name manufactor,ot.`status` truckStatus, pli.bh_order_no manufactorOrderNo,sum(brd.invoice_money) manufactorPrice, sa.agency_name subcompany,sa.agency_code_ours agencyCode FROM order_truck ot LEFT JOIN incoming_info ii on ii.truck_id = ot.id left join planning_info pli on pli.truck_id = ot.id left join bill_register_detail brd on brd.serial_number = ii.serial_number LEFT JOIN manufactor mf on mf.id = ot.manufactor_id LEFT JOIN order_info oi on oi.id = ot.order_id LEFT JOIN sys_agency sa on sa.agency_code_ours = oi.agency_code WHERE ii.serial_number like CONCAT('%', 'N8000138', '%') GROUP BY ii.vin,ii.serial_number ORDER BY oi.create_time DESC limit 0,10; 
+-- Parameters: N8000138(String), 0(Integer), 10(Integer)
+
+TruckRepayReportBaseVo
+
+    @ExcelProperty(value = {"采购信息", "车辆状态"}, index = 6)
+    private String truckStatus;
+    @ExcelProperty(value = {"子公司终端客户销售信息", "销售状态"}, index = 22)
+    private String customerTruckStatus;
+    @ExcelProperty(value = {"销售信息", "销售状态"}, index = 15)
+    private String subcompanyTruckStatus;
+	
+//         truckAddWriteOffInfo(truckInfos);
+//批量查询        List<InvoiceInfoVo> invoiceInfosList = invoiceApplyDetailMapper.batchSelectInvoiceInfos(truckIdList, serialNumList);
+SELECT sum( tmp.invoice_money ) AS invoiceMoney, tmp.invoice_date AS invoiceDate, tmp.serial_number AS serialNumber, tmp.truck_id AS truckId FROM ( SELECT tem.invoice_money AS invoice_money, tem.invoice_date AS invoice_date, tem.truck_id, iaci.serial_number FROM ( SELECT iad.*, iac.truck_id FROM invoice_apply_detail iad LEFT JOIN invoice_apply_content iac ON iac.apply_no = iad.apply_no WHERE 1 = 1 AND iac.truck_id IN ( 11010 ) ) tem LEFT JOIN incoming_info ii ON ii.truck_id = tem.truck_id LEFT JOIN invoice_apply_content_invoice iaci ON ii.serial_number = iaci.serial_number AND tem.invoice_no = iaci.invoice_no WHERE 1 = 1 AND iaci.serial_number IN ( 'N8000138' ) GROUP BY iaci.serial_number,iaci.invoice_no ) tmp GROUP BY tmp.serial_number; 
+-- Parameters: 11010(Long), N8000138(String)
+
+    @ExcelProperty(value = {"销售信息", "销售价格"}, index = 16)
+    private String subcompanyPrice;
+	
+        // 本部销售核销信息 List<WriteOffDetailVo> writeOffDetailVosList = truckBusinessReportViewDao.batchGetBaseWriteOffByTruckId(Lists.newArrayList(Constants.AGENCY_CODE_BASE), truckIdList);
+SELECT wo.truck_id truckId,wo.write_off_type writeOffType,SUM(wod.used_amount) writeOffMoney,STR_TO_DATE(ci.payment_date,'%Y%m%d') writeOffDate,ci.payment_client paymentClient,ci.belong AS agencyCode from write_off wo LEFT JOIN write_off_detail wod on wod.write_off_id = wo.id LEFT JOIN capital_inflow ci on ci.id = wod.inflow_id where 1 = 1 AND ci.belong IN ( 'base' ) AND wo.truck_id IN ( 11010 ) GROUP BY wo.truck_id,wo.write_off_type; 
+-- Parameters: base(String), 11010(Long)
+
+    @ExcelProperty(value = {"销售信息", "客户已付定金"}, index = 17)
+    private String subcompanyDownPrice;
+    @ExcelProperty(value = {"销售信息", "定金支付日期"}, index = 18)
+    private String subcompanyDownPriceDate;
+
+    @ExcelProperty(value = {"销售信息", "客户尾款"}, index = 19)
+    private String subcompanyTailPrice;
+    @ExcelProperty(value = {"销售信息", "回款日期"}, index = 20)
+    private String subcompanyTailPriceDate;
+
+        // 子公司销售核销信息
+SELECT sum(tmp.invoice_money) as salesInvoiceMoney,tmp.invoice_date as salesInvoiceDate,tmp.invoice_for_company as salesInvoiceCompay, tmp.serial_number as serialNumber,tmp.truck_id as truckId from ( SELECT tem.invoice_money ,tem.invoice_date,stci.serial_number,tem.invoice_for_company,tem.truck_id FROM( select strd.* ,strc.truck_id,str.invoice_for_company from sales_ticket_register_detail strd LEFT JOIN sales_ticket_register_content strc on strc.apply_no = strd.apply_no LEFT JOIN sales_ticket_register str on str.apply_no = strd.apply_no where 1 = 1 AND strc.truck_id IN ( 11010 ) )tem LEFT JOIN incoming_info ii on ii.truck_id = tem.truck_id LEFT JOIN sales_ticket_content_invoice stci on ii.serial_number = stci.serial_number and tem.invoice_no = stci.invoice_no where 1 = 1 AND stci.serial_number IN ( 'N8000138' ) GROUP BY stci.serial_number,stci.invoice_no ) tmp GROUP BY tmp.serial_number; 
+-- Parameters: 11010(Long), N8000138(String)
+    @ExcelProperty(value = {"子公司终端客户销售信息", "销售方"}, index = 21)
+    private String customer;
+	@ExcelProperty(value = {"子公司终端客户销售信息", "销售单价"}, index = 23)
+    private String customerPrice;
+
+
+SELECT wo.truck_id truckId,wo.write_off_type writeOffType,SUM(wod.used_amount) writeOffMoney,STR_TO_DATE(ci.payment_date,'%Y%m%d') writeOffDate,ci.payment_client paymentClient,ci.belong AS agencyCode from write_off wo LEFT JOIN write_off_detail wod on wod.write_off_id = wo.id LEFT JOIN capital_inflow ci on ci.id = wod.inflow_id where 1 = 1 AND ci.belong IN ( 'base' ) AND wo.truck_id IN ( 11010 ) GROUP BY wo.truck_id,wo.write_off_type; 
+-- Parameters: base(String), 11010(Long)
+
+    @ExcelProperty(value = {"子公司终端客户销售信息", "客户已付定金"}, index = 24)
+    private String customerDownPrice;
+    @ExcelProperty(value = {"子公司终端客户销售信息", "定金支付日期"}, index = 25)
+    private String customerDownPriceDate;
+	
+    @ExcelProperty(value = {"子公司终端客户销售信息", "客户尾款"}, index = 26)
+    private String customerTailPrice;
+    @ExcelProperty(value = {"子公司终端客户销售信息", "回款日期"}, index = 27)
+    private String customerTailPriceDate;
+
+URI_E_20220610102321556: http://127.0.0.1:8082/report/repayMoneyDetail, time: 55, 
+	|--reponse: "report/report_repay_money_base" 
+```
+
+- http://127.0.0.1:8081/report/repayMoneyDetail?pageNum=4&pageSize=10&truckTypeId=59&vin=LJRD1338XN8000154&serialNumber=N8000154&manufactorId=33&status=7&startTime=&endTime=&tailStartTime=2022-02-01&tailEndTime=
+    - com.clgg.modules.system.controller.ReportController#RepayMoneyDetail
+        - return "report/report_repay_money_base";
+```
 select
 	ot.truck_type_name truckTypeName,
 	ot.truck_type_id truckTypeId,
@@ -4376,10 +4440,23 @@ order by
 oi.create_time desc
 limit 0,10; 
 --  Parameters: 59(Long), 7(String), N8000154(String), LJRD1338XN8000154(String), 33(Long), 2022-02-01(String), 0(Integer), 10(Integer)
-2022-05-30 16:39:25.413 DEBUG 3480 --- [nio-8081-exec-5] c.c.m.s.d.T.selectTruckRepayInfos        : <==      Total: 1
-
--- truckAddWriteOffInfo
 ```
+
+###### 导出
+
+```
+URI_S_20220611094529040: http://127.0.0.1:8082/report/doExportRepayMoney,method: GET, IP: 127.0.0.1-127.0.0.1, 
+	|-- params: {}, body: null
+
+SELECT ot.truck_type_name truckTypeName,ot.truck_type_id truckTypeId,ot.product_type_name productTypeName,ot.product_type_id productTypeId,ot.id truckId, ii.vin,ii.serial_number serialNumber, mf.company_name manufactor,ot.`status` truckStatus, pli.bh_order_no manufactorOrderNo,sum(brd.invoice_money) manufactorPrice, sa.agency_name subcompany,sa.agency_code_ours agencyCode FROM order_truck ot LEFT JOIN incoming_info ii on ii.truck_id = ot.id left join planning_info pli on pli.truck_id = ot.id left join bill_register_detail brd on brd.serial_number = ii.serial_number LEFT JOIN manufactor mf on mf.id = ot.manufactor_id LEFT JOIN order_info oi on oi.id = ot.order_id LEFT JOIN sys_agency sa on sa.agency_code_ours = oi.agency_code GROUP BY ii.vin,ii.serial_number ORDER BY oi.create_time DESC 
+-- Parameters: 
+
+         truckAddWriteOffInfo(truckInfos); 参考查询
+URI_S_20220611094529040: http://127.0.0.1:8082/report/doExportRepayMoney, time: 19282, 
+	|--reponse: null 
+```
+
+
 ##### 子公司回款表
 - http://127.0.0.1:8081/report/repayMoneySubDetail?pageNum=&pageSize=10&agencyCode=&truckTypeId=&vin=&serialNumber=&manufactorId=&status=&startTime=&endTime=&tailStartTime=&tailEndTime=
     - com.clgg.modules.system.controller.ReportController#repayMoneySubDetail

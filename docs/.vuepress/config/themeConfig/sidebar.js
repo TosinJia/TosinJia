@@ -1,5 +1,14 @@
 module.exports = {
 
+  '/work/': [
+    {
+      title : '整车销售',
+      collapsable: true,
+      children:[
+        'TruckSell',
+      ]
+    },
+  ],
 
     '/softwareArchitecture/openSourceFramework/ruoyi/ruoyi-cloud-ow/' : [{
         title : '文档',
@@ -74,15 +83,7 @@ module.exports = {
         ]
       },
     ],
-    '/work/': [
-      {
-        title:'相关技术',
-        collapsable: false,
-        children:[
-          'TruckSell',
-        ]
-      },
-    ],
+
     '/database/': [
       {
         title: '设计',
