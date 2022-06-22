@@ -6733,6 +6733,9 @@ d0716bbd7f63   zabbix/zabbix-server-mysql:centos-latest   "/usr/bin/tini -- /u�
 6. 在浏览器中输入http://IP/zabbix，打开zabbix首页，其中用户名密码分别是admin/zabbix。
     - http://192.168.217.3:8080/zabbix
         - admin/zabbix
+
+
+
 ####  FastDFS
 ##### 参考
 - [官方网站](https://github.com/happyfish100/)
@@ -7435,9 +7438,21 @@ storage
 [root@Docker ~]# rm -rf /var/fdfs
 ```
 
+#### Maven私服
+- [使用Docker搭建Maven私服](https://blog.csdn.net/u012943767/article/details/79475718)
+- [Maven脚手架最佳实践](https://blog.csdn.net/z69183787/article/details/104754411)
+- [Maven之自定义archetype生成项目骨架(构建脚手架项目)](https://blog.csdn.net/btt2013/article/details/125173893)
 
-
-
+```
+[root@Docker ~]# docker pull sonatype/nexus3
+ [root@Docker ~]# docker run -di -p 8081:8081 --name inexus -v /root/nexus-data:/var/nexus-data --restart=always sonatype/nexus3
+[root@Docker ~]# docker exec -it inexus bash
+bash-4.4$ cat /nexus-data/admin.password
+f903e086-5b33-4743-b038-e30a6c6a0804
+```
+- http://192.168.56.106:8081
+    - admin f903e086-5b33-4743-b038-e30a6c6a0804
+    - admin admin
 ### 四 Docker 最常用的镜像命令和容器命令
 - 2021最新Docker入门到精通视频 14-28
 - [Docker 最常用的镜像命令和容器命令](https://www.cnblogs.com/mrhelloworld/p/docker4.html)

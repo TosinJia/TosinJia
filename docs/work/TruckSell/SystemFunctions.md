@@ -18,6 +18,33 @@ select * from submission;
 select u.id, u.user_name, u.account, u.password, u.salt, u.status, u.agency_code, u.create_time, u.create_user, u.update_time, u.update_user,u.phone, r.id roleId,r.role_name, r.type roleType, r.status roleStatus, m.id menuId, m.parent_id, m.menu_name, m.menu_url, m.perms, m.type menuType, m.icon, m.order_num, m.system_type from sys_user u left join sys_role_user ru on ru.user_id = u.id left join sys_role r on r.id = ru.role_id left join sys_user_menu mu on mu.user_id = u.id left join sys_menu m on mu.menu_id = m.id where u.user_name = 'admin' and u.`status` = '0' order by m.order_num asc ;
 SELECT id, parent_id parentId, menu_name menuName, menu_url menuUrl, perms, type, icon, order_num orderNum, system_type systemType FROM sys_menu where system_type <> 2 order by order_num asc ;
 ```
+### 相关
+- 各子公司超管账号
+```
+select
+	su.user_name,
+	su.account,
+	sos.agency_name,
+	sr.role_name 
+from
+	sys_user su
+left join sys_org_user sou on
+	su.id = sou.user_id
+left join sys_org_structure sos on
+	sou.org_id = sos.id
+left join sys_role_user sru on 
+	sru.user_id =su.id 
+left join sys_role sr on 
+	sru.role_id = sr.id 
+	
+where
+-- 	su.account ='张旭涛'
+	sos.agency_name like '%新疆%'
+-- 	su.account like '%系统操作员%'
+	and sos.status = 0
+order by
+	sos.id, su.id;
+```
 
 ## 采购管理
 ### 提报单列表
@@ -134,6 +161,122 @@ URI_E_20220531124407669: /order/list, time: 153,
 	|--reponse: "order/list" 
 
 ```
+
+#### 查询
+```
+URI_S_20220611140605650: http://127.0.0.1:8082/order/list,method: GET, IP: 127.0.0.1-127.0.0.1, 
+	|-- params: {"pageNum":[""],"pageSize":["10"],"agencyCode":["base"],"productTypeId":["60"],"platetTypeId":["7"],"isOnAccount":[""],"submissionNo":["T20220324004"],"truckCode":["V3ET"],"serialNumber":["MA004632"],"contactNo":["FSCM-JT-SD-XS-202203-0006"],"startTime":["2022-03-24"],"endTime":["2022-03-25"],"orderStatus":["2"]}, body: null
+
+-- 提报方 提报方
+select id, agency_name, agency_simple_name, father, agency_code, type, type_address, status, phone, address, postcode, remark, tax_number, bank_name, bank_account, bank_account_phone, bank_account_address, create_time, create_user,agency_code_ours,bank_code,bank_fullName from sys_agency WHERE status = '0' and status = "0" 
+-- Parameters: 0(String)
+
+-- 产品型谱
+select id, name, status, create_user, create_date, update_user, update_data from product_type WHERE status = '0' order by name 
+-- Parameters: 0(String)
+
+-- 车辆类别 
+select id, name, status, create_user, create_date, update_user, update_data from plate_type WHERE status = '0' order by name 
+-- Parameters: 0(String)
+
+SELECT count(0) FROM (SELECT DISTINCT oi.id, oi.submission_id, oi.submission_no, oi.order_no, oi.contact_no, oi.numbers, oi.contract_price, oi.single_price, oi.total_price, oi.down_price, oi.down_price_cancel, oi.down_price_leave, oi.final_payment_contract, oi.final_payment, oi.final_payment_leave, oi.final_payment_credit, oi.status, oi.product_type_name, oi.product_type_id, oi.platet_type_name, oi.platet_type_id, oi.truck_code, oi.truck_type_name, oi.truck_type_id, oi.public_type, oi.submit_client, oi.work_flow_node, oi.agency_code, oi.current_step, oi.current_check_user, oi.basic_config_name, oi.submit_time, oi.create_time, sm.submission_type, oi.order_strategy FROM order_info oi LEFT JOIN submission sm ON sm.submission_no = oi.submission_no LEFT JOIN order_truck_sell_info otsi ON otsi.order_id = oi.id LEFT JOIN order_truck ot ON ot.id = otsi.truck_id LEFT JOIN incoming_info ii ON ii.truck_id = ot.id WHERE oi.submission_no = ? AND oi.contact_no = ? AND oi.agency_code = ? AND oi.product_type_id = ? AND oi.platet_type_id = ? AND oi.truck_code = ? AND ii.serial_number LIKE concat(concat('%', ?), '%') AND oi.create_time >= str_to_date(concat(?, ' 00:00:00'), '%Y-%m-%d %H:%i:%s') AND oi.create_time <= str_to_date(concat(?, ' 23:59:59'), '%Y-%m-%d %H:%i:%s') AND ot.status IN (?)) table_count 
+-- Parameters: T20220324004(String), FSCM-JT-SD-XS-202203-0006(String), base(String), 60(Long), 7(Long), V3ET(String), MA004632(String), 2022-03-24(String), 2022-03-25(String), 2(String)
+
+select DISTINCT oi.id, oi.submission_id, oi.submission_no, oi.order_no, oi.contact_no, oi.numbers, oi.contract_price, oi.single_price, oi.total_price, oi.down_price, oi.down_price_cancel, oi.down_price_leave, oi.final_payment_contract, oi.final_payment, oi.final_payment_leave, oi.final_payment_credit, oi.status, oi.product_type_name, oi.product_type_id, oi.platet_type_name, oi.platet_type_id, oi.truck_code, oi.truck_type_name, oi.truck_type_id, oi.public_type, oi.submit_client, oi.work_flow_node, oi.agency_code, oi.current_step, oi.current_check_user, oi.basic_config_name, oi.submit_time, oi.create_time, sm.submission_type, oi.order_strategy from order_info oi LEFT JOIN submission sm ON sm.submission_no = oi.submission_no LEFT JOIN order_truck_sell_info otsi ON otsi.order_id = oi.id LEFT JOIN order_truck ot ON ot.id = otsi.truck_id LEFT JOIN incoming_info ii ON ii.truck_id = ot.id WHERE oi.submission_no = 'T20220324004' and oi.contact_no = 'FSCM-JT-SD-XS-202203-0006' and oi.agency_code = 'base' and oi.product_type_id = 60 and oi.platet_type_id = 7 and oi.truck_code = 'V3ET' and ii.serial_number like concat(concat('%','MA004632'), '%') and oi.create_time >= str_to_date(concat('2022-03-24', ' 00:00:00'), '%Y-%m-%d %H:%i:%s') and oi.create_time <= str_to_date(concat('2022-03-25', ' 23:59:59'), '%Y-%m-%d %H:%i:%s') and ot.status in (2) order by oi.create_time desc, oi.order_no desc limit 0,10
+--  Parameters: T20220324004(String), FSCM-JT-SD-XS-202203-0006(String), base(String), 60(Long), 7(Long), V3ET(String), MA004632(String), 2022-03-24(String), 2022-03-25(String), 2(String), 0(Integer), 10(Integer)
+
+
+select DISTINCT oi.id, oi.submission_id, oi.submission_no, oi.order_no, oi.contact_no, oi.numbers, oi.contract_price, oi.single_price, oi.total_price, oi.down_price, oi.down_price_cancel, oi.down_price_leave, oi.final_payment_contract, oi.final_payment, oi.final_payment_leave, oi.final_payment_credit, oi.status, oi.product_type_name, oi.product_type_id, oi.platet_type_name, oi.platet_type_id, oi.truck_code, oi.truck_type_name, oi.truck_type_id, oi.public_type, oi.submit_client, oi.work_flow_node, oi.agency_code, oi.current_step, oi.current_check_user, oi.basic_config_name, oi.submit_time, oi.create_time, sm.submission_type, oi.order_strategy from order_info oi LEFT JOIN submission sm ON sm.submission_no = oi.submission_no LEFT JOIN order_truck_sell_info otsi ON otsi.order_id = oi.id LEFT JOIN order_truck ot ON ot.id = otsi.truck_id LEFT JOIN incoming_info ii ON ii.truck_id = ot.id WHERE oi.submission_no = 'T20220324004' and oi.contact_no = 'FSCM-JT-SD-XS-202203-0006' and oi.agency_code = 'base' and oi.product_type_id = 60 and oi.platet_type_id = 7 and oi.truck_code = 'V3ET' and ii.serial_number like concat(concat('%','MA004632'), '%') and oi.create_time >= str_to_date(concat('2022-03-24', ' 00:00:00'), '%Y-%m-%d %H:%i:%s') and oi.create_time <= str_to_date(concat('2022-03-25', ' 23:59:59'), '%Y-%m-%d %H:%i:%s') and ot.status in ( '0' , '1' , '2' , '4' , '6' , '7' ) order by oi.create_time desc, oi.order_no desc limit 0,10
+-- Parameters: T20220324004(String), FSCM-JT-SD-XS-202203-0006(String), base(String), 60(Long), 7(Long), V3ET(String), MA004632(String), 2022-03-24(String), 2022-03-25(String), 0(String), 1(String), 2(String), 4(String), 6(String), 7(String), 0(Integer), 10(Integer)
+
+
+URI_E_20220611140605650: http://127.0.0.1:8082/order/list, time: 40, 
+	|--reponse: "order/list" 
+```
+#### 收缩/展开
+```
+URI_S_20220611140758145: http://127.0.0.1:8082/order/getTruckListByOrderId,method: GET, IP: 127.0.0.1-127.0.0.1, 
+	|-- params: {"orderId":["1441"]}, body: [1441]
+	
+select t.id, t.order_id, t.name, t.product_type_name, t.product_type_id, t.platet_type_name, t.platet_type_id, t.truck_code, t.version, t.market_type, t.truck_type_name, t.truck_type_id, t.public_type, t.engine_type, t.horsepower, t.wheel_base, t.cab_type, t.speed_changing_box, t.frame, t.front_axle, t.behand_axle, t.front_spring, t.behand_spring, t.fuel_tank, t.tyre_type, t.status, t.create_user, t.create_date, t.update_user, t.update_data, t.remark, t.manufactor_id, t.order_strategy, s.single_price, s.down_price, s.down_price_cancel, s.down_price_leave, s.tail_money, s.tail_money_wait_cancel, s.tail_money_cancel, s.is_on_account, on_account_leave, s.on_account_cancel, s.logistics_status, s.others, s.sub_single_price, s.sub_on_account, s.sub_on_account_cancel, s.sub_down_price, s.sub_down_price_cancel, s.sub_down_price_leave, s.sub_tail_money, s.sub_tail_money_wait_cancel, s.sub_tail_money_cancel, sm.submission_type, s.sub_client_id, ii.truck_id bindingTruckId, ii.vin, s.truck_status, pi.plan_time from order_truck_sell_info s LEFT JOIN order_truck t on t.id = s.truck_id LEFT JOIN order_info o ON o.id = s.order_id LEFT JOIN incoming_info ii ON ii.truck_id = t.id LEFT JOIN submission sm ON sm.submission_no = o.submission_no LEFT JOIN planning_info pi on pi.truck_id = s.truck_id WHERE s.order_id = 1441 
+-- Parameters: 1441(Long)
+
+select i.id, os.truck_id, i.order_id, i.incoming_time, i.vin, i.serial_number, i.engine_number, i.create_time, i.create_user, os.down_price, os.tail_money, pi.bh_order_no, pi.manufactor_contact_no, pi.manufactor_contact_price, pi.manufactor_name from order_truck_sell_info os left join incoming_info i on os.truck_id = i.truck_id left join planning_info pi on pi.truck_id = os.truck_id where os.truck_id = 11110 or os.truck_id = 11111 or os.truck_id = 11112 or os.truck_id = 11113 
+-- Parameters: 11110(Long), 11111(Long), 11112(Long), 11113(Long)
+
+SELECT
+	prt.truck_id truckId,
+	prt.original_price originalPrice,
+	sum(prtd.price) revisionPrice,
+	prt.price endPrice
+FROM
+	price_revision_truck prt
+LEFT JOIN price_revision_truck_detail prtd on
+	prtd.truck_id = prt.truck_id
+	and prtd.apply_no = prt.apply_no
+LEFT JOIN price_revision_apply pra on
+	pra.apply_no = prt.apply_no
+where
+	( prt.truck_id = 11110
+		or prt.truck_id = 11111
+		or prt.truck_id = 11112
+		or prt.truck_id = 11113 )
+	and pra.status = '审核通过'
+GROUP BY
+	prt.truck_id 
+-- Parameters: 11110(Long), 11111(Long), 11112(Long), 11113(Long)
+
+URI_E_20220611140758145: http://127.0.0.1:8082/order/getTruckListByOrderId, time: 35, 
+	|--reponse: {"code":0,"truckIds":[11110,11111,11112,11113],"data":[{"behandAxle":"13T北奔双减桥","behandSpring":"/","cabType":"/","createDate":1648107372000,"createUser":81,"engineType":"WP13NG460E61","frame":"/","frontAxle":"/","frontSpring":"/","fuelTank":"1000L（LNG气瓶）","horsepower":"460","id":11110,"incomingInfo":{"createUser":0,"truckId":11110,"vin":"LBZ44DEB7LA011868"},"manufactorId":45,"marketType":"/","name":"北奔6x4","orderId":1441,"orderStrategy":"0","planningInfo":{"createUser":0,"planTime":1647273600000},"platetTypeId":7,"platetTypeName":"LNG牵引车","productTypeId":60,"productTypeName":"北奔","publicType":"ND4250BG6J7Z01","remark":"牵引车-复合;6×4/2;变速箱：16JSDX240TA（铝）；发动机：WP13NG460E61；12R22.5-18PR;13T北奔双减桥/4.2（ABS+轮间差速锁）;1350L（LNG气瓶）;智能包1（多功能方向盘+10.2寸彩色显示屏+蓝牙）;50#单向鞍座（90鞍座）;无;无选装包;顶部及侧部导流罩;无;加强副梁;3/4;D50;7.5吨;11.00;钢轮辋;FHB400缓速器","sellInfo":{"downPrice":0.00,"downPriceCancel":0.00,"downPriceLeave":0.00,"isOnAccount":false,"logisticsStatus":"","onAccountCancel":0.00,"onAccountLeave":0.00,"others":"","singlePrice":360000.00,"subDownPrice":0.00,"subDownPriceCancel":0.00,"subDownPriceLeave":0.00,"subOnAccount":0.00,"subOnAccountCancel":0.00,"subSinglePrice":0.00,"subTailMoney":0.00,"subTailMoneyCancel":0.00,"subTailMoneyWaitCancel":0.00,"tailMoney":360000.00,"tailMoneyCancel":0.00,"tailMoneyWaitCancel":360000.00,"truckStatus":0},"speedChangingBox":"16JSDX240TA（铝）","status":"2","submissionType":"0","truckCode":"V3ET","truckNational":0,"truckTypeId":59,"truckTypeName":"64QY","tyreType":"12R22.5-18PR","updateUser":170,"version":"复合版","wheelBase":"/"},{"behandAxle":"13T北奔双减桥","behandSpring":"/","cabType":"/","createDate":1648107372000,"createUser":81,"engineType":"WP13NG460E61","frame":"/","frontAxle":"/","frontSpring":"/","fuelTank":"1000L（LNG气瓶）","horsepower":"460","id":11111,"incomingInfo":{"createUser":0,"truckId":11111,"vin":"LBZ44DEB7MA004632"},"manufactorId":45,"marketType":"/","name":"北奔6x4","orderId":1441,"orderStrategy":"0","planningInfo":{"createUser":0,"planTime":1647273600000},"platetTypeId":7,"platetTypeName":"LNG牵引车","productTypeId":60,"productTypeName":"北奔","publicType":"ND4250BG6J7Z01","remark":"牵引车-复合;6×4/2;变速箱：16JSDX240TA（铝）；发动机：WP13NG460E61；12R22.5-18PR;13T北奔双减桥/4.2（ABS+轮间差速锁）;1350L（LNG气瓶）;智能包1（多功能方向盘+10.2寸彩色显示屏+蓝牙）;50#单向鞍座（90鞍座）;无;无选装包;顶部及侧部导流罩;无;加强副梁;3/4;D50;7.5吨;11.00;钢轮辋;FHB400缓速器","sellInfo":{"downPrice":0.00,"downPriceCancel":0.00,"downPriceLeave":0.00,"isOnAccount":false,"logisticsStatus":"","onAccountCancel":0.00,"onAccountLeave":0.00,"others":"","singlePrice":360000.00,"subDownPrice":0.00,"subDownPriceCancel":0.00,"subDownPriceLeave":0.00,"subOnAccount":0.00,"subOnAccountCancel":0.00,"subSinglePrice":0.00,"subTailMoney":0.00,"subTailMoneyCancel":0.00,"subTailMoneyWaitCancel":0.00,"tailMoney":360000.00,"tailMoneyCancel":0.00,"tailMoneyWaitCancel":360000.00,"truckStatus":0},"speedChangingBox":"16JSDX240TA（铝）","status":"2","submissionType":"0","truckCode":"V3ET","truckNational":0,"truckTypeId":59,"truckTypeName":"64QY","tyreType":"12R22.5-18PR","updateUser":170,"version":"复合版","wheelBase":"/"},{"behandAxle":"13T北奔双减桥","behandSpring":"/","cabType":"/","createDate":1648107372000,"createUser":81,"engineType":"WP13NG460E61","frame":"/","frontAxle":"/","frontSpring":"/","fuelTank":"1000L（LNG气瓶）","horsepower":"460","id":11112,"incomingInfo":{"createUser":0,"truckId":11112,"vin":"LBZ44DEB9MA004633"},"manufactorId":45,"marketType":"/","name":"北奔6x4","orderId":1441,"orderStrategy":"0","planningInfo":{"createUser":0,"planTime":1647273600000},"platetTypeId":7,"platetTypeName":"LNG牵引车","productTypeId":60,"productTypeName":"北奔","publicType":"ND4250BG6J7Z01","remark":"牵引车-复合;6×4/2;变速箱：16JSDX240TA（铝）；发动机：WP13NG460E61；12R22.5-18PR;13T北奔双减桥/4.2（ABS+轮间差速锁）;1350L（LNG气瓶）;智能包1（多功能方向盘+10.2寸彩色显示屏+蓝牙）;50#单向鞍座（90鞍座）;无;无选装包;顶部及侧部导流罩;无;加强副梁;3/4;D50;7.5吨;11.00;钢轮辋;FHB400缓速器","sellInfo":{"downPrice":0.00,"downPriceCancel":0.00,"downPriceLeave":0.00,"isOnAccount":false,"logisticsStatus":"","onAccountCancel":0.00,"onAccountLeave":0.00,"others":"","singlePrice":360000.00,"subDownPrice":0.00,"subDownPriceCancel":0.00,"subDownPriceLeave":0.00,"subOnAccount":0.00,"subOnAccountCancel":0.00,"subSinglePrice":0.00,"subTailMoney":0.00,"subTailMoneyCancel":0.00,"subTailMoneyWaitCancel":0.00,"tailMoney":360000.00,"tailMoneyCancel":0.00,"tailMoneyWaitCancel":360000.00,"truckStatus":0},"speedChangingBox":"16JSDX240TA（铝）","status":"2","submissionType":"0","truckCode":"V3ET","truckNational":0,"truckTypeId":59,"truckTypeName":"64QY","tyreType":"12R22.5-18PR","updateUser":170,"version":"复合版","wheelBase":"/"},{"behandAxle":"13T北奔双减桥","behandSpring":"/","cabType":"/","createDate":1648107372000,"createUser":81,"engineType":"WP13NG460E61","frame":"/","frontAxle":"/","frontSpring":"/","fuelTank":"1000L（LNG气瓶）","horsepower":"460","id":11113,"incomingInfo":{"createUser":0,"truckId":11113,"vin":"LBZ44DEB0MA004634"},"manufactorId":45,"marketType":"/","name":"北奔6x4","orderId":1441,"orderStrategy":"0","planningInfo":{"createUser":0,"planTime":1647273600000},"platetTypeId":7,"platetTypeName":"LNG牵引车","productTypeId":60,"productTypeName":"北奔","publicType":"ND4250BG6J7Z01","remark":"牵引车-复合;6×4/2;变速箱：16JSDX240TA（铝）；发动机：WP13NG460E61；12R22.5-18PR;13T北奔双减桥/4.2（ABS+轮间差速锁）;1350L（LNG气瓶）;智能包1（多功能方向盘+10.2寸彩色显示屏+蓝牙）;50#单向鞍座（90鞍座）;无;无选装包;顶部及侧部导流罩;无;加强副梁;3/4;D50;7.5吨;11.00;钢轮辋;FHB400缓速器","sellInfo":{"downPrice":0.00,"downPriceCancel":0.00,"downPriceLeave":0.00,"isOnAccount":false,"logisticsStatus":"","onAccountCancel":0.00,"onAccountLeave":0.00,"others":"","singlePrice":360000.00,"subDownPrice":0.00,"subDownPriceCancel":0.00,"subDownPriceLeave":0.00,"subOnAccount":0.00,"subOnAccountCancel":0.00,"subSinglePrice":0.00,"subTailMoney":0.00,"subTailMoneyCancel":0.00,"subTailMoneyWaitCancel":0.00,"tailMoney":360000.00,"tailMoneyCancel":0.00,"tailMoneyWaitCancel":360000.00,"truckStatus":0},"speedChangingBox":"16JSDX240TA（铝）","status":"2","submissionType":"0","truckCode":"V3ET","truckNational":0,"truckTypeId":59,"truckTypeName":"64QY","tyreType":"12R22.5-18PR","updateUser":170,"version":"复合版","wheelBase":"/"}],"success":true,"truckInfo":{11110:{"bhOrderNo":"/","createTime":1648114215000,"createUser":81,"downPrice":"0.00","engineNumber":"/","id":7752,"incomingTime":1647273600000,"manufactorContactNo":"2022-03-0005","manufactorContactPrice":"360000","manufactorName":"包头市瑞顺吉贸易有限责任公司","orderId":"D20220324003","serialNumber":"LA011868","tailMoney":"360000.00","truckId":11110,"vin":"LBZ44DEB7LA011868"},11111:{"bhOrderNo":"/","createTime":1648114215000,"createUser":81,"downPrice":"0.00","engineNumber":"/","id":7753,"incomingTime":1647273600000,"manufactorContactNo":"2022-03-0005","manufactorContactPrice":"360000","manufactorName":"包头市瑞顺吉贸易有限责任公司","orderId":"D20220324003","serialNumber":"MA004632","tailMoney":"360000.00","truckId":11111,"vin":"LBZ44DEB7MA004632"},11112:{"bhOrderNo":"/","createTime":1648114215000,"createUser":81,"downPrice":"0.00","engineNumber":"/","id":7754,"incomingTime":1647273600000,"manufactorContactNo":"2022-03-0005","manufactorContactPrice":"360000","manufactorName":"包头市瑞顺吉贸易有限责任公司","orderId":"D20220324003","serialNumber":"MA004633","tailMoney":"360000.00","truckId":11112,"vin":"LBZ44DEB9MA004633"},11113:{"bhOrderNo":"/","createTime":1648114215000,"createUser":81,"downPrice":"0.00","engineNumber":"/","id":7755,"incomingTime":1647273600000,"manufactorContactNo":"2022-03-0005","manufactorContactPrice":"360000","manufactorName":"包头市瑞顺吉贸易有限责任公司","orderId":"D20220324003","serialNumber":"MA004634","tailMoney":"360000.00","truckId":11113,"vin":"LBZ44DEB0MA004634"}},"revisionInfo":{}} 
+
+```
+#### 查看订单
+```
+URI_S_20220611140908995: http://127.0.0.1:8082/order/goDetail,method: GET, IP: 127.0.0.1-127.0.0.1, 
+	|-- params: {"id":["1441"]}, body: [1441,{}]
+
+select DISTINCT oi.id, oi.submission_id, oi.submission_no, oi.order_no, oi.contact_no, oi.numbers, oi.contract_price, oi.single_price, oi.total_price, ( SELECT manufactor_contact_no FROM planning_info WHERE truck_id = null) AS manufactor_contact_no, ( SELECT manufactor_name FROM planning_info WHERE truck_id = null) AS manufactor_name, oi.down_price, oi.down_price_cancel, oi.down_price_leave, oi.final_payment_contract, oi.final_payment, oi.final_payment_leave, oi.final_payment_credit, oi.status, oi.product_type_name, oi.product_type_id, oi.platet_type_name, oi.platet_type_id, oi.truck_code, oi.truck_type_name, oi.truck_type_id, oi.public_type, oi.submit_client, oi.work_flow_node, oi.agency_code, oi.current_step, oi.current_check_user, oi.basic_config_name, oi.submit_time, oi.create_time, sm.submission_type, oi.order_strategy from order_info oi left join submission sm on sm.submission_no = oi.submission_no left join allot_info ai on ai.apply_no = oi.submission_no WHERE oi.id = 1441 order by oi.create_time desc, oi.order_no desc;
+-- Parameters: null, null, 1441(Long)
+
+SELECT ii.serial_number serialNumber, oi.submit_client submitClient, rci.house_name houseName, rci.address address, rci.receive_name receiveName, rci.receive_phone receivePhone, pli.manufactor_name manufactorName, pli.bh_order_no bhOrderNo, pli.manufactor_contact_no manufactorContactNo from order_info oi LEFT JOIN order_truck ot on ot.order_id = oi.id LEFT JOIN repertory_info ri on ot.id = ri.truck_id LEFT JOIN incoming_info ii on ii.truck_id = ot.id LEFT JOIN receive_info rci on rci.id = ri.receive_id LEFT JOIN planning_info pli on pli.truck_id = ot.id where oi.id = 1441 
+-- Parameters: 1441(Long)
+
+select id, submission_no, name, product_type_name, product_type_id, platet_type_name, platet_type_id, truck_code, version, market_type, truck_type_name, truck_type_id, public_type, engine_type, horsepower, wheel_base, cab_type, speed_changing_box, frame, front_axle, behand_axle, front_spring, behand_spring, fuel_tank, tyre_type, number, standard_price, adjust_price, price, total_price, end_price, down_price, remark, status, create_user, create_date, update_user, update_date, work_flow_node, agency_code, current_step, current_check_user, basic_config_name, matching_information, contact_total_price, contact_single_price, current_flow_position,intention_no, source,intention_id,is_reform,choose_config,discount_rate,discount_price,agency_client_id, sub_single_price,sub_down_price,sub_total_price,manufactor_id,order_strategy,so_type,reform_price,fare,submission_type,cab_color from submission where submission_no = 'T20220324004' LIMIT 1 
+-- Parameters: T20220324004(String)
+-- 提报附件
+select DISTINCT file_path from file_repository where apply_no='T20220324004' and subject_type = '8' 
+-- Parameters: T20220324004(String), 8(String)
+
+URI_E_20220611140908995: http://127.0.0.1:8082/order/goDetail, time: 57, 
+	|--reponse: "order/detail" 
+```
+
+#### 查看提报单
+```
+URI_S_20220611141022984: http://127.0.0.1:8082/submission/viewByNo,method: GET, IP: 127.0.0.1-127.0.0.1, 
+	|-- params: {"submissionNo":["T20220324004"]}, body: ["T20220324004",null,{}]
+
+-- 提报订单消息
+select id, submission_no, name, product_type_name, product_type_id, platet_type_name, platet_type_id, truck_code, version, market_type, truck_type_name, truck_type_id, public_type, engine_type, horsepower, wheel_base, cab_type, speed_changing_box, frame, front_axle, behand_axle, front_spring, behand_spring, fuel_tank, tyre_type, number, standard_price, adjust_price, price, total_price, end_price, down_price, remark, status, create_user, create_date, update_user, update_date, work_flow_node, agency_code, current_step, current_check_user, basic_config_name, matching_information, contact_total_price, contact_single_price, current_flow_position,intention_no, source,intention_id,is_reform,choose_config,discount_rate,discount_price,agency_client_id, sub_single_price,sub_down_price,sub_total_price,manufactor_id,order_strategy,so_type,reform_price,fare,submission_type,cab_color from submission where submission_no = 'T20220324004' LIMIT 1 
+-- Parameters: T20220324004(String)
+
+-- 提报附件
+select DISTINCT file_path from file_repository where apply_no='T20220324004' and subject_type = '8' 
+-- Parameters: T20220324004(String), 8(String)
+
+-- 【提报单改价】
+select id, submission_no, order_no, reason, original_price, price, create_user, create_time from price_revision_submission where submission_no = 'T20220324004' 
+-- Parameters: T20220324004(String)
+
+-- 选配信息
+select s.id, s.selection_id, s.selection_detail_id, s.submission_no, s.selection_price,bs.project_name,bd.selection_content,bd.selection_unit,bd.remark from submission_selection s left join basic_config_selection bs on bs.id = s.selection_id left join basic_config_selection_detail bd on bd.id = s.selection_detail_id where s.submission_no = 'T20220324004' 
+-- Parameters: T20220324004(String)
+
+URI_E_20220611141022984: http://127.0.0.1:8082/submission/viewByNo, time: 76, 
+	|--reponse: "submission/view" 
+```
+
+
 ### 排产登记
 
 #### 待排产列表
@@ -1404,20 +1547,100 @@ URI_E_20220531110454035: /onAccount/applyList, time: 77,
 
 ### 应收车款挂账申请列表
 #### 全部
-- http://127.0.0.1:8081/onAccount/checkList?pageNum=&pageSize=&currentCheckStatus=&listType=1&applyNo=&serialNumber=&startDate=&endDate=&jumpNumber=
-```
-URI_S_20220531110108343: /onAccount/checkList,method: GET, IP: 127.0.0.1-127.0.0.1, 
-	|-- params: {"pageNum":[""],"pageSize":[""],"currentCheckStatus":[""],"listType":["1"],"applyNo":[""],"serialNumber":[""],"startDate":[""],"endDate":[""],"jumpNumber":[""]}, body: null
-==>  Preparing: SELECT count(0) FROM (SELECT oa.id, oa.apply_no, oa.vehicle_count, oa.apply_status, oa.create_user, oa.create_time, oa.deal_user, oa.agency_code, oa.submit_client, oa.on_account_date, oa.total_on_account_money, oa.total_contract_money, oa.day_number, oa.remark, contact_no, oa.current_step_order, oa.current_check_user, oa.current_position, oa.current_check_status, oa.apply_type, oa.apply_to FROM on_account_apply oa LEFT JOIN on_account_apply_detail oaad ON oaad.apply_no = oa.apply_no LEFT JOIN incoming_info ii ON ii.truck_id = oaad.truck_id WHERE oa.apply_to = ? GROUP BY oa.apply_no) table_count 
-==> Parameters: 0(String)
-<==      Total: 1
-==>  Preparing: select oa.id, oa.apply_no, oa.vehicle_count, oa.apply_status, oa.create_user, oa.create_time, oa.deal_user, oa.agency_code, oa.submit_client, oa.on_account_date, oa.total_on_account_money, oa.total_contract_money, oa.day_number, oa.remark,contact_no, oa.current_step_order, oa.current_check_user, oa.current_position, oa.current_check_status,oa.apply_type,oa.apply_to from on_account_apply oa left join on_account_apply_detail oaad on oaad.apply_no = oa.apply_no left join incoming_info ii on ii.truck_id = oaad.truck_id WHERE oa.apply_to = ? group by oa.apply_no order by oa.create_time desc limit ?,? 
-==> Parameters: 0(String), 0(Integer), 10(Integer)
-<==      Total: 10
-URI_E_20220531110108343: /onAccount/checkList, time: 57, 
-	|--reponse: "onAccount/checkList" 
 
+##### 查询
 ```
+URI_S_20220613155813261: http://127.0.0.1:8082/onAccount/checkList,method: GET, IP: 127.0.0.1-127.0.0.1, 
+	|-- params: {"pageNum":[""],"pageSize":[""],"currentCheckStatus":[""],"listType":["1"],"applyNo":["GZ1648459151239"],"serialNumber":["MX102662"],"startDate":["2022-03-28"],"endDate":["2022-03-29"],"jumpNumber":[""]}, body: null
+
+SELECT count(0) FROM (SELECT oa.id, oa.apply_no, oa.vehicle_count, oa.apply_status, oa.create_user, oa.create_time, oa.deal_user, oa.agency_code, oa.submit_client, oa.on_account_date, oa.total_on_account_money, oa.total_contract_money, oa.day_number, oa.remark, contact_no, oa.current_step_order, oa.current_check_user, oa.current_position, oa.current_check_status, oa.apply_type, oa.apply_to FROM on_account_apply oa LEFT JOIN on_account_apply_detail oaad ON oaad.apply_no = oa.apply_no LEFT JOIN incoming_info ii ON ii.truck_id = oaad.truck_id WHERE oa.apply_no = ? AND ii.serial_number LIKE concat(concat('%', ?), '%') AND oa.create_time >= str_to_date(concat(?, ' 00:00:00'), '%Y-%m-%d %H:%i:%s') AND oa.create_time <= str_to_date(concat(?, ' 23:59:59'), '%Y-%m-%d %H:%i:%s') AND oa.apply_to = ? GROUP BY oa.apply_no) table_count 
+-- Parameters: GZ1648459151239(String), MX102662(String), 2022-03-28(String), 2022-03-29(String), 0(String)
+
+select
+	oa.id,
+	oa.apply_no,
+	oa.vehicle_count,
+	oa.apply_status,
+	oa.create_user,
+	oa.create_time,
+	oa.deal_user,
+	oa.agency_code,
+	oa.submit_client,
+	oa.on_account_date,
+	oa.total_on_account_money,
+	oa.total_contract_money,
+	oa.day_number,
+	oa.remark,
+	contact_no,
+	oa.current_step_order,
+	oa.current_check_user,
+	oa.current_position,
+	oa.current_check_status,
+	oa.apply_type,
+	oa.apply_to
+from
+	on_account_apply oa
+left join on_account_apply_detail oaad on
+	oaad.apply_no = oa.apply_no
+left join incoming_info ii on
+	ii.truck_id = oaad.truck_id
+WHERE
+	oa.apply_no = 'GZ1648459151239'
+	and ii.serial_number like concat(concat('%','MX102662'), '%')
+	and oa.create_time >= str_to_date(concat('2022-03-28', ' 00:00:00'),
+	'%Y-%m-%d %H:%i:%s')
+	and oa.create_time <= str_to_date(concat('2022-03-29', ' 23:59:59'),
+	'%Y-%m-%d %H:%i:%s')
+	and oa.apply_to = '0'
+group by
+	oa.apply_no
+order by
+	oa.create_time desc
+limit 0,10
+-- Parameters: GZ1648459151239(String), MX102662(String), 2022-03-28(String), 2022-03-29(String), 0(String), 0(Integer), 10(Integer)
+
+URI_E_20220613155813261: http://127.0.0.1:8082/onAccount/checkList, time: 20, 
+	|--reponse: "onAccount/checkList" 
+```
+
+##### 查看挂账申请
+```
+URI_S_20220613155933813: http://127.0.0.1:8082/onAccount/getInfoByApplyNo,method: GET, IP: 127.0.0.1-127.0.0.1, 
+	|-- params: {"applyNo":["GZ1648459151239"]}, body: ["GZ1648459151239"]
+
+-- 合格证申请详细信息
+select id, apply_no, truck_id, deal_time, deal_user, is_reject,on_account_money from on_account_apply_detail where apply_no = 'GZ1648459151239' 
+--  Parameters: GZ1648459151239(String)
+
+-- 合格证申请
+select id, apply_no, vehicle_count, apply_status, create_user, create_time, deal_user, agency_code, submit_client, on_account_date, total_on_account_money, total_contract_money, day_number, remark,contact_no, current_step_order, current_check_user, current_position, current_check_status,apply_type,apply_to from on_account_apply where apply_no = 'GZ1648459151239' 
+-- Parameters: GZ1648459151239(String)
+
+SELECT SUM(down_price_cancel) FROM on_account_apply_detail oaad LEFT JOIN order_truck_sell_info otsi on otsi.truck_id = oaad.truck_id where oaad.apply_no ='GZ1648459151239' and otsi.agency_code = 'base' 
+-- Parameters: GZ1648459151239(String), base(String)
+
+-- 【附件仓库】
+select DISTINCT file_path from file_repository where apply_no='GZ1648459151239' and subject_type = '4' 
+-- Parameters: GZ1648459151239(String), 4(String)
+
+SELECT ot.product_type_name productTypeName, ot.platet_type_name platetTypeName, ot.truck_code truckCode, ot.truck_type_name truckTypeName, otsi.single_price singlePrice, ii.serial_number serialNumber, ii.vin, ii.engine_number engineNumber, ii.truck_id truckId, oi.in_parent_price inParentPrice, oi.in_parent_date inParentDate, otsi.sub_down_price downPrice, otsi.sub_tail_money tailMoney, otsi.sub_client_id subClientId FROM order_truck ot LEFT JOIN order_truck_sell_info otsi ON ot.id = otsi.truck_id LEFT JOIN incoming_info ii ON ii.truck_id = ot.id left join order_truck_invertory_info oi on oi.truck_id = ot.id where ( ot.id = 11125 or ot.id = 11126 or ot.id = 11127 or ot.id = 11128 or ot.id = 11129 or ot.id = 11130 or ot.id = 11131 or ot.id = 11132 or ot.id = 11133 or ot.id = 11134 ) and otsi.manufactor_id = 1
+-- Parameters: 11125(Long), 11126(Long), 11127(Long), 11128(Long), 11129(Long), 11130(Long), 11131(Long), 11132(Long), 11133(Long), 11134(Long)
+
+URI_E_20220613155933813: http://127.0.0.1:8082/onAccount/getInfoByApplyNo, time: 26, 
+	|--reponse: {"code":0,"success":true,"onAccountVos":[{"downPrice":"0.00","engineNumber":"/","platetTypeName":"牵引车","productTypeName":"陕重汽","serialNumber":"MX102662","singlePrice":"215000.00","subClientId":1402,"tailMoney":"0.00","truckCode":"SX4258GV324","truckId":11125,"truckTypeName":"陕重汽M3000S","vin":"LZGJLGV49MX102662"},{"downPrice":"0.00","engineNumber":"/","platetTypeName":"牵引车","productTypeName":"陕重汽","serialNumber":"MX102669","singlePrice":"215000.00","subClientId":1402,"tailMoney":"0.00","truckCode":"SX4258GV324","truckId":11126,"truckTypeName":"陕重汽M3000S","vin":"LZGJLGV41MX102669"},{"downPrice":"0.00","engineNumber":"/","platetTypeName":"牵引车","productTypeName":"陕重汽","serialNumber":"MX102671","singlePrice":"215000.00","subClientId":1402,"tailMoney":"0.00","truckCode":"SX4258GV324","truckId":11127,"truckTypeName":"陕重汽M3000S","vin":"LZGJLGV4XMX102671"},{"downPrice":"0.00","engineNumber":"/","platetTypeName":"牵引车","productTypeName":"陕重汽","serialNumber":"MX102685","singlePrice":"215000.00","subClientId":1402,"tailMoney":"0.00","truckCode":"SX4258GV324","truckId":11128,"truckTypeName":"陕重汽M3000S","vin":"LZGJLGV4XMX102685"},{"downPrice":"0.00","engineNumber":"/","platetTypeName":"牵引车","productTypeName":"陕重汽","serialNumber":"MX102691","singlePrice":"215000.00","subClientId":1402,"tailMoney":"0.00","truckCode":"SX4258GV324","truckId":11129,"truckTypeName":"陕重汽M3000S","vin":"LZGJLGV45MX102691"},{"downPrice":"0.00","engineNumber":"/","platetTypeName":"牵引车","productTypeName":"陕重汽","serialNumber":"MX102695","singlePrice":"215000.00","subClientId":1402,"tailMoney":"0.00","truckCode":"SX4258GV324","truckId":11130,"truckTypeName":"陕重汽M3000S","vin":"LZGJLGV42MX102695"},{"downPrice":"0.00","engineNumber":"/","platetTypeName":"牵引车","productTypeName":"陕重汽","serialNumber":"MX102697","singlePrice":"215000.00","subClientId":1402,"tailMoney":"0.00","truckCode":"SX4258GV324","truckId":11131,"truckTypeName":"陕重汽M3000S","vin":"LZGJLGV46MX102697"},{"downPrice":"0.00","engineNumber":"/","platetTypeName":"牵引车","productTypeName":"陕重汽","serialNumber":"MX102699","singlePrice":"215000.00","subClientId":1402,"tailMoney":"0.00","truckCode":"SX4258GV324","truckId":11132,"truckTypeName":"陕重汽M3000S","vin":"LZGJLGV4XMX102699"},{"downPrice":"0.00","engineNumber":"/","platetTypeName":"牵引车","productTypeName":"陕重汽","serialNumber":"MX102700","singlePrice":"215000.00","subClientId":1402,"tailMoney":"0.00","truckCode":"SX4258GV324","truckId":11133,"truckTypeName":"陕重汽M3000S","vin":"LZGJLGV42MX102700"},{"downPrice":"0.00","engineNumber":"/","platetTypeName":"牵引车","productTypeName":"陕重汽","serialNumber":"MX102702","singlePrice":"215000.00","subClientId":1402,"tailMoney":"0.00","truckCode":"SX4258GV324","truckId":11134,"truckTypeName":"陕重汽M3000S","vin":"LZGJLGV46MX102702"}],"onAccountApply":{"agencyCode":"base","applyNo":"GZ1648459151239","applyStatus":"1","applyTo":"0","applyType":"0","createTime":1648459151000,"createUser":81,"currentCheckStatus":"已完成","currentCheckUser":"","currentPosition":"1","currentStepOrder":"4","dayNumber":90,"id":1318,"onAccountDate":"2022年06月26日","remark":"","submitClient":"上海远行供应链管理（集团）有限公司","totalContractMoney":"2150000","totalOnAccountMoney":"2150000","vehicleCount":"10"},"onAccountApplyDetailList":[{"applyNo":"GZ1648459151239","dealTime":1648459151000,"dealUser":81,"id":5962,"isReject":"0","onAccountMoney":"215000","truckId":11125},{"applyNo":"GZ1648459151239","dealTime":1648459151000,"dealUser":81,"id":5963,"isReject":"0","onAccountMoney":"215000","truckId":11126},{"applyNo":"GZ1648459151239","dealTime":1648459151000,"dealUser":81,"id":5964,"isReject":"0","onAccountMoney":"215000","truckId":11127},{"applyNo":"GZ1648459151239","dealTime":1648459151000,"dealUser":81,"id":5965,"isReject":"0","onAccountMoney":"215000","truckId":11128},{"applyNo":"GZ1648459151239","dealTime":1648459151000,"dealUser":81,"id":5966,"isReject":"0","onAccountMoney":"215000","truckId":11129},{"applyNo":"GZ1648459151239","dealTime":1648459151000,"dealUser":81,"id":5967,"isReject":"0","onAccountMoney":"215000","truckId":11130},{"applyNo":"GZ1648459151239","dealTime":1648459151000,"dealUser":81,"id":5968,"isReject":"0","onAccountMoney":"215000","truckId":11131},{"applyNo":"GZ1648459151239","dealTime":1648459151000,"dealUser":81,"id":5969,"isReject":"0","onAccountMoney":"215000","truckId":11132},{"applyNo":"GZ1648459151239","dealTime":1648459151000,"dealUser":81,"id":5970,"isReject":"0","onAccountMoney":"215000","truckId":11133},{"applyNo":"GZ1648459151239","dealTime":1648459151000,"dealUser":81,"id":5971,"isReject":"0","onAccountMoney":"215000","truckId":11134}],"totalDownPrice":0,"filePaths":[]} 
+```
+##### 查看审核记录
+```
+URI_S_20220613160012322: http://127.0.0.1:8082/approval/getRecordByNo,method: GET, IP: 127.0.0.1-127.0.0.1, 
+	|-- params: {"recordNo":["GZ1648459151239"]}, body: ["GZ1648459151239"]
+
+select st.id, st.record_no, st.approval_step_id, st.approval_name_id, st.approval_time, st.role_code, st.approval_type, st.table_id, st.approval_status, st.remark, aps.step_name, sa.type, sa.agency_code_ours, su.account, sr.role_name from approval_step_record st left join approval_step aps on aps.id = st.approval_step_id left join approval_name an on an.id = st.approval_name_id left join sys_agency sa on sa.agency_code_ours = an.agency_code left join sys_user su on su.id = st.role_code left join sys_role_user sru on sru.user_id = st.role_code left join sys_role sr on sr.id = sru.role_id where st.record_no = 'GZ1648459151239' order by st.approval_time asc
+--  Parameters: GZ1648459151239(String)
+
+URI_E_20220613160012322: http://127.0.0.1:8082/approval/getRecordByNo, time: 358, 
+	|--reponse: {"code":0,"data":[{"agency":{"agencyCodeOurs":"base"},"approvalNameId":9,"approvalStatus":"0","approvalStep":{"stepName":"首节点"},"approvalStepId":29,"approvalTime":1648459151000,"approvalType":"挂账流程","id":26674,"recordNo":"GZ1648459151239","remark":"新增","role":{"roleName":"马兰-计划"},"roleCode":81,"tableId":1318,"user":{"account":"马兰","icon":"userIcon","text":"马兰"}},{"agency":{"agencyCodeOurs":"base"},"approvalNameId":9,"approvalStatus":"1","approvalStep":{"stepName":"计划审核"},"approvalStepId":384,"approvalTime":1648459162000,"approvalType":"挂账流程","id":26675,"recordNo":"GZ1648459151239","remark":"","role":{"roleName":"马兰-计划"},"roleCode":81,"tableId":1318,"user":{"account":"马兰","icon":"userIcon","text":"马兰"}},{"agency":{"agencyCodeOurs":"base"},"approvalNameId":9,"approvalStatus":"1","approvalStep":{"stepName":"业务负责人审核"},"approvalStepId":30,"approvalTime":1648459740000,"approvalType":"挂账流程","id":26681,"recordNo":"GZ1648459151239","remark":"","role":{"roleName":"业务负责人"},"roleCode":170,"tableId":1318,"user":{"account":"狄青","icon":"userIcon","text":"狄青"}},{"agency":{"agencyCodeOurs":"base"},"approvalNameId":9,"approvalStatus":"1","approvalStep":{"stepName":"总经理审核"},"approvalStepId":173,"approvalTime":1648460952000,"approvalType":"挂账流程","id":26688,"recordNo":"GZ1648459151239","remark":"","role":{"roleName":"公司领导"},"roleCode":79,"tableId":1318,"user":{"account":"张旭涛","icon":"userIcon","text":"张旭涛"}}],"success":true} 
+```
+
 #### 待审核
 - http://127.0.0.1:8081/onAccount/checkList?pageNum=&pageSize=&currentCheckStatus=%E5%BE%85%E5%AE%A1%E6%A0%B8&listType=1&applyNo=&serialNumber=&startDate=&endDate=&jumpNumber=
 ```

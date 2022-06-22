@@ -939,6 +939,13 @@ end;
 ### RuoYi
 - [项目地址](https://gitee.com/y_project/RuoYi)
 
+```
+[root@SystemFramework ~]# systemctl start mysqld 
+[root@SystemFramework ~]# docker start iredis
+
+start RuoYiApplicaiton
+E:\iEnviroment\development\projects\ideaProjects\Demo\system-framework\RuoYi-Vue\ruoyi-ui>npm run dev
+```
 
 ```
 mysql> CREATE DATABASE IF NOT EXISTS RuoYi DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci; 
@@ -1182,3 +1189,6 @@ if (!port) {
 ## vue-manage-system 前端
 - https://gitee.com/lin-xin/vue-manage-system
     - https://lin-xin.gitee.io/example/work/#/login
+
+# System Analysis
+- [TruckSell](/work/TruckSell/SystemFunctions)
