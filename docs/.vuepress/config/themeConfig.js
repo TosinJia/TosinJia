@@ -11,4 +11,12 @@ module.exports = {
     // sidebarOpen: true, // 初始状态是否打开侧边栏，默认true
     displayAllHeaders: true, // 默认值：false
 
+    encrypt: {
+        config: {
+          // 这会加密整个 guide 目录，并且两个密码都是可用的
+          "/work/": ["1401", "23"],
+          // 这只会加密 config/page.html
+        //   "/config/page.html": "1234",
+        },
+      },
 }

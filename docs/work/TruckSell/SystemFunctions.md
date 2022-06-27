@@ -24,6 +24,7 @@ SELECT id, parent_id parentId, menu_name menuName, menu_url menuUrl, perms, type
 select
 	su.user_name,
 	su.account,
+	su.agency_code,
 	sos.agency_name,
 	sr.role_name 
 from
@@ -39,8 +40,8 @@ left join sys_role sr on
 	
 where
 -- 	su.account ='张旭涛'
-	sos.agency_name like '%新疆%'
--- 	su.account like '%系统操作员%'
+-- 	sos.agency_name like '%新疆%'
+	su.account like '%系统操作员%'
 	and sos.status = 0
 order by
 	sos.id, su.id;
