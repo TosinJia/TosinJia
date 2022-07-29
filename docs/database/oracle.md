@@ -596,7 +596,11 @@ ALTER TABLE TOSIN_EQUIPMENT_INFO ADD CONSTRAINT UNQ_TOSIN_EQUIPMENT_INFO UNIQUE(
 ----重命名
 ALTER TABLE TOSIN_EQUIPMENT_INFO RENAME CONSTRAINT UNQ_TOSIN_EQUIPMENT_INFO TO UNQ_TOSIN_EQUIPMENT_CLSBHM;
 ```
-
+### 约束
+```
+ALTER TABLE "TXJ"."kpi_interview" ADD CONSTRAINT "SYS_C0016442" CHECK ("interview_at" IS NOT NULL) NOT DEFERRABLE INITIALLY IMMEDIATE NORELY VALIDATE;
+ALTER TABLE "kpi_interview" DROP CONSTRAINT SYS_C0016442;
+```
 
 ## 字符集
 ```
@@ -908,6 +912,53 @@ DROP INDEX TTEL_EVENT_TIME;
 ```
 
 ### 字段
+#### 默认值
+```
+ALTER TABLE "kpi_interview" MODIFY "interview_at" CHAR(10) DEFAULT NULL;
+```
+
+#### 可为空/非空切换
+```
+-- 将字段修改为非空 重复执行 SQL 错误 [1442] [72000]: ORA-01442: 要修改为 NOT NULL 的列已经是 NOT NULL
+ALTER TABLE "kpi_interview" MODIFY "interview_at" CHAR(10) NOT NULL;
+-- 将字段修改为可为空 重复执行 SQL 错误 [1451] [72000]: ORA-01451: 要修改为 NULL 的列无法修改为 NULL
+ALTER TABLE "kpi_interview" MODIFY "interview_at" CHAR(10) NULL;
+-- 不会修改 非空/可为空状态
+ALTER TABLE "kpi_interview" MODIFY "interview_at" CHAR(10);
+
+-- 注意：查询结果中，字段非空是 ‘N’，可为空是 ‘Y’
+SELECT 
+  a.TABLE_NAME 表名, 
+  a.COLUMN_NAME 列名, 
+  a.DATA_TYPE 数据类型, 
+  a.DATA_LENGTH 长度, 
+--  a.NULLABLE 非空, 
+  (CASE WHEN a.NULLABLE = 'N' THEN '非空' ELSE '可为空' END) 非空,
+  a.DATA_DEFAULT, 
+  b.COMMENTS 注释
+FROM user_tab_columns a
+LEFT JOIN user_col_comments b ON a.TABLE_NAME = b.TABLE_NAME AND a.COLUMN_NAME = b.COLUMN_NAME
+WHERE a.TABLE_NAME = 'kpi_interview' AND a.COLUMN_NAME='interview_at'
+ORDER BY a.COLUMN_ID
+
+SELECT 
+  a.OWNER 模式,
+  a.TABLE_NAME 表名, 
+  a.COLUMN_NAME 列名, 
+  a.DATA_TYPE 数据类型, 
+  a.DATA_LENGTH 长度, 
+--  a.NULLABLE 非空, 
+  (CASE WHEN a.NULLABLE = 'N' THEN '非空' ELSE '可为空' END) 非空,  
+  a.DATA_DEFAULT,  
+  a.DATA_DEFAULT, 
+  b.COMMENTS 注释
+FROM all_tab_columns a
+LEFT JOIN all_col_comments b ON a.OWNER = b.OWNER AND a.TABLE_NAME = b.TABLE_NAME AND a.COLUMN_NAME = b.COLUMN_NAME
+WHERE a.OWNER = 'TXJ' AND a.TABLE_NAME = 'kpi_interview' AND a.COLUMN_NAME='interview_at'
+ORDER BY a.TABLE_NAME, a.COLUMN_ID
+```
+
+
 #### 数据类型
 ##### DATE和TIMESTAMP区别
 ###### DATE
@@ -1833,3 +1884,571 @@ CREATE Table TEMP_TS_20210523
   FIELD10       DATE
 );
 ```
+
+## 整库备份还原
+
+> 备注：执行导出导入命令的机器要安装oracle客户端。
+
+- [oracle 备份与还原](https://blog.csdn.net/yztezhl/article/details/80451046)
+- [oracle数据库备份与还原完整版](https://blog.csdn.net/qq_34967770/article/details/105983053)
+
+- Docker安装Oracle环境
+```
+[oracle@3c0ae5a124fe ~]$ vi .bash_profile
+...
+PATH=$PATH:$HOME/bin
+
+export PATH
+ORACLE_BASE=/home/oracle/app/oracle;export ORACLE_BASE
+ORACLE_HOME=$ORACLE_BASE/product/11.2.0/dbhome_2;export ORACLE_HOME
+ORACLE_SID=helowin;export ORACLE_SID
+ORACLE_TERM=xterm;export ORACLE_TERM
+PATH=/usr/sbin:$PATH; export PATH
+PATH=$ORACLE_HOME/bin:$PATH; export PATH
+LD_LIBRARY_PATH=$ORACLE_HOME/lib:/lib:/usr/lib; export LD_LIBRARY_PATH
+CLASSPATH=$ORACLE_HOME/JRE:$ORACLE_HOME/jlib:$ORACLE_HOME/rdbms/jlib;
+export CLASSPATH
+export ORACLE_HOME
+export PATH
+[oracle@3c0ae5a124fe ~]$ source .bash_profile 
+```
+### 备份 exp
+```
+[oracle@3c0ae5a124fe ~]$ exp 'TXJ/pm2022@10.1.180.77/pman' owner=TXJ file=/home/oracle/backup/TXJ2022070402.dmp buffer=10240 
+\
+Export: Release 11.2.0.1.0 - Production on һ 7 11:24:38 2022
+
+Copyright (c) 1982, 2009, Oracle and/or its affiliates.  All rights reserved.
+
+
+Connected to: Oracle Database 11g Enterprise Edition Release 11.2.0.1.0 - 64bit Production
+With the Partitioning, OLAP, Data Mining and Real Application Testing options
+Export done in ZHS16GBK character set and AL16UTF16 NCHAR character set
+
+About to export specified users ...
+. exporting pre-schema procedural objects and actions
+. exporting foreign function library names for user TXJ 
+. exporting PUBLIC type synonyms
+. exporting private type synonyms
+. exporting object type definitions for user TXJ 
+About to export TXJ's objects ...
+. exporting database links
+. exporting sequence numbers
+. exporting cluster definitions
+. about to export TXJ's tables via Conventional Path ...
+. . exporting table                        article          0 rows exported
+. . exporting table               article_category          0 rows exported
+. . exporting table                     attachment        153 rows exported
+. . exporting table            goal_cor_item_month          0 rows exported
+. . exporting table             goal_cor_item_year         11 rows exported
+. . exporting table          goal_cor_measure_year         33 rows exported
+. . exporting table                goal_item_month       3476 rows exported
+. . exporting table                 goal_item_year        518 rows exported
+. . exporting table              goal_measure_temp          0 rows exported
+. . exporting table              goal_measure_year        525 rows exported
+. . exporting table                       integral          0 rows exported
+. . exporting table                            job          0 rows exported
+. . exporting table                        kpi_cor          0 rows exported
+. . exporting table                  kpi_interview        448 rows exported
+. . exporting table                            log          8 rows exported
+. . exporting table                   measure_data          0 rows exported
+. . exporting table        measure_data_attendance          0 rows exported
+. . exporting table             measure_data_queue          0 rows exported
+. . exporting table           measure_data_special       1368 rows exported
+. . exporting table                    measure_lib        284 rows exported
+. . exporting table                        message       4353 rows exported
+. . exporting table                   organization         90 rows exported
+. . exporting table              organization_user          0 rows exported
+. . exporting table                     permission         98 rows exported
+. . exporting table                        profile         99 rows exported
+. . exporting table               profile_property         56 rows exported
+. . exporting table         profile_property_value       5544 rows exported
+. . exporting table                           role         10 rows exported
+. . exporting table                role_permission        747 rows exported
+. . exporting table                      role_user          0 rows exported
+. . exporting table                  transfer_post          0 rows exported
+. . exporting table                  user_relation         81 rows exported
+. exporting synonyms
+. exporting views
+. exporting stored procedures
+. exporting operators
+. exporting referential integrity constraints
+. exporting triggers
+. exporting indextypes
+. exporting bitmap, functional and extensible indexes
+. exporting posttables actions
+. exporting materialized views
+. exporting snapshot logs
+. exporting job queues
+. exporting refresh groups and children
+. exporting dimensions
+. exporting post-schema procedural objects and actions
+. exporting statistics
+Export terminated successfully without warnings.
+
+```
+#### 异常
+```
+[oracle@3c0ae5a124fe ~]$ exp 'TXJ/pm2022@10.1.180.77/pman' owner=TXJ file=/home/oracle/backup/TXJ2022070401.dmp buffer=10240 full=y
+
+Export: Release 11.2.0.1.0 - Production on Mon Jul 4 10:25:49 2022
+
+Copyright (c) 1982, 2009, Oracle and/or its affiliates.  All rights reserved.
+
+
+Connected to: Oracle Database 11g Enterprise Edition Release 11.2.0.1.0 - 64bit Production
+With the Partitioning, OLAP, Data Mining and Real Application Testing options
+EXP-00026: conflicting modes specified
+EXP-00000: Export terminated unsuccessfully
+```
+#### 空表
+> 是因为在oracle11G中有新特性，当表无数据时，不分配segment，以节省空间。而使用exp命令时，无segment的表不会被导出。
+
+
+```
+select 'alter table '||table_name||' allocate extent;' from user_tables where num_rows=0;
+select 'alter table "'||table_name||'" allocate extent;' from user_tables where num_rows=0;
+alter table "article" allocate extent;
+
+
+--4、查询其分配的segment
+select segment_name,sum(bytes)/1024/1024 from user_extents group by segment_name;
+---- 查看那些表没有分配查询其分配的segment
+SELECT
+	table_name
+FROM
+	(
+	SELECT
+		table_name
+	FROM
+		user_tables
+	WHERE
+		num_rows = 0) tb_null
+WHERE
+	NOT EXISTS (
+	SELECT
+		segment_name
+	FROM
+		user_extents tb_not_null
+	WHERE
+		tb_null.table_name = tb_not_null.segment_name
+	GROUP BY
+		segment_name);
+```
+- [Oracle空表的分配segment](https://www.cnblogs.com/isme-zjh/p/11389690.html)
+- [oracle用exp命令导出数据时，有些表无法导出](https://blog.csdn.net/wang263334857/article/details/40781541)
+
+#### help
+```
+[oracle@3c0ae5a124fe ~]$ exp -?    
+template                IAS Template to be used
+silent          silent: display banner information, default is N
+metrics         metrics: display performance information, default is N
+userid          user/password to connect to oracle: no default
+recordlength            record length of file: optional, default is system dependent
+buffer          array fetch buffer size: default is EXUAFCH (4096)
+file            export file names: format is (file1, file2...) default is EXPDAT.DMP
+full            export entire database: default is N
+grants          export grants option: default is Y
+rows            export rows option: default is Y
+compress                compact extents option: default is Y
+trace           trace option: enable sql_trace and timed_stat, default is N
+resumable               enable resumable session : default is N
+resumable_timeout               resumable_timeout: wait time for resumable
+resumable_name          resumable string: SQL statements to be resumable
+owner           users to export: format is '(user1, user2, .., userN)'
+tables          tables to export: format is '(table1, table2, ..., tableN)'
+parfile         parameter file: name of file that contains parameter specifications
+indexes         export indexes option: default is Y
+inctype         incremental export option: (incremental, cumulative or complete)
+record          option to record incremental/cumulative export: default is Y
+constraints             export table constraints option: default is Y
+consistent              provide read-consistency for the entire export: default is N
+help            help: display descriptions on export parameters, default is N
+log             log export messages to specified file
+statistics              analyze option: (estimate, cumulative, none)
+feedback                feedback in rows default is EXUFDB
+direct          direct path option: default is N
+point_in_time_recover           point-in-time recover option: default is N
+tts_full_check          TTS perform strict test for objects in recovery set: default is N
+tablespaces             tablespaces to transport or recover: format is '(ts1, ts2, ..., tsN)'
+query           query used to select a subset of rows for a table
+filesize                file size: the size of export dump files
+volsize         volume size: the size of each volume
+transport_tablespace            transportable tablespace option: default is N
+triggers                export triggers option: default is Y
+impparfile              file to create as paramfile for IMP for transportable tablespaces
+file_format             format of export file names
+flashback_time          database time to be used for flashback export: no default
+flashback_scn           system change number to be used for flashback export: no default
+object_consistent               Provides consistency for registered objects during execution of procedureal callback: default is N
+
+Export: Release 11.2.0.1.0 - Production on Mon Jul 4 09:37:56 2022
+
+Copyright (c) 1982, 2009, Oracle and/or its affiliates.  All rights reserved.
+```
+### 导入还原 imp
+```
+[oracle@3c0ae5a124fe ~]$ sqlplus /nolog
+
+SQL*Plus: Release 11.2.0.1.0 Production on Mon Jul 4 10:37:30 2022
+
+Copyright (c) 1982, 2009, Oracle.  All rights reserved.
+
+SQL> conn /as sysdba
+Connected.
+SQL> ^Z^Z      
+SQL> drop user DYJX cascade;
+drop user DYJX cascade
+*
+ERROR at line 1:
+ORA-01940: cannot drop a user that is currently connected
+
+
+SQL> drop user DYJX cascade;
+
+User dropped.
+
+SQL> create user DYJX identified by 123456;
+
+User created.
+
+SQL> grant connect,resource,dba to DYJX;
+
+Grant succeeded.
+```
+- imp
+```
+[oracle@3c0ae5a124fe ~]$ imp 'root/123456@127.0.0.1/helowin' fromuser=TXJ touser=DYJX file=/home/oracle/backup/TXJ2022070402.dmp  log=/home/oracle/backup/TXJ2022070402.log ignore=y;  
+
+Import: Release 11.2.0.1.0 - Production on һ 7 11:44:15 2022
+
+Copyright (c) 1982, 2009, Oracle and/or its affiliates.  All rights reserved.
+
+
+Connected to: Oracle Database 11g Enterprise Edition Release 11.2.0.1.0 - 64bit Production
+With the Partitioning, OLAP, Data Mining and Real Application Testing options
+
+Export file created by EXPORT:V11.02.00 via conventional path
+
+Warning: the objects were exported by TXJ, not by you
+
+import done in ZHS16GBK character set and AL16UTF16 NCHAR character set
+. importing TXJ's objects into DYJX
+. . importing table                      "article"          0 rows imported
+. . importing table             "article_category"          0 rows imported
+. . importing table                   "attachment"        153 rows imported
+. . importing table          "goal_cor_item_month"          0 rows imported
+. . importing table           "goal_cor_item_year"         11 rows imported
+. . importing table        "goal_cor_measure_year"         33 rows imported
+. . importing table              "goal_item_month"       3476 rows imported
+. . importing table               "goal_item_year"        518 rows imported
+. . importing table            "goal_measure_temp"          0 rows imported
+. . importing table            "goal_measure_year"        525 rows imported                                                                                                                                   
+. . importing table                     "integral"          0 rows imported
+. . importing table                          "job"          0 rows imported
+. . importing table                      "kpi_cor"          0 rows imported
+. . importing table                "kpi_interview"        448 rows imported
+. . importing table                          "log"          8 rows imported
+. . importing table                 "measure_data"          0 rows imported
+. . importing table      "measure_data_attendance"          0 rows imported
+. . importing table           "measure_data_queue"          0 rows imported
+. . importing table         "measure_data_special"       1368 rows imported
+. . importing table                  "measure_lib"        284 rows imported
+. . importing table                      "message"       4353 rows imported
+. . importing table                 "organization"         90 rows imported
+. . importing table            "organization_user"          0 rows imported
+. . importing table                   "permission"         98 rows imported
+. . importing table                      "profile"         99 rows imported
+. . importing table             "profile_property"         56 rows imported
+. . importing table       "profile_property_value"       5544 rows imported
+. . importing table                         "role"         10 rows imported
+. . importing table              "role_permission"        747 rows imported
+. . importing table                    "role_user"          0 rows imported
+. . importing table                "transfer_post"          0 rows imported
+. . importing table                "user_relation"         81 rows imported
+About to enable constraints...
+Import terminated successfully without warnings.
+
+```
+
+#### 异常
+```
+[oracle@e63af26799ac ~]$ imp 'DYJX/123456@127.0.0.1/helowin' fromuser=TXJ touser=DYJX file=/home/oracle/backup/TXJ20220726-P.dmp  log=/home/oracle/backup/TXJ20220726-P.log ignore=y;  
+
+Import: Release 11.2.0.1.0 - Production on 星期二 7月 26 16:08:51 2022
+
+Copyright (c) 1982, 2009, Oracle and/or its affiliates.  All rights reserved.
+
+
+Connected to: Oracle Database 11g Enterprise Edition Release 11.2.0.1.0 - 64bit Production
+With the Partitioning, OLAP, Data Mining and Real Application Testing options
+
+Export file created by EXPORT:V11.02.00 via conventional path
+
+Warning: the objects were exported by TXJ, not by you
+
+import done in AL32UTF8 character set and AL16UTF16 NCHAR character set
+. . importing table              "_kpi_attendance"          0 rows imported
+. . importing table         "_profile_bak20201111"          0 rows imported
+IMP-00017: following statement failed with ORACLE error 959:
+ "CREATE TABLE "article" ("id" NUMBER NOT NULL ENABLE, "category_id" NUMBER N"
+ "OT NULL ENABLE, "title" VARCHAR2(255 CHAR) NOT NULL ENABLE, "content" CLOB "
+ "NOT NULL ENABLE, "user_id" NUMBER NOT NULL ENABLE, "created_at" DATE NOT NU"
+ "LL ENABLE, "updated_at" DATE NOT NULL ENABLE, "deleted_at" DATE)  PCTFREE 1"
+ "0 PCTUSED 40 INITRANS 1 MAXTRANS 255 STORAGE(INITIAL 131072 NEXT 1048576 MI"
+ "NEXTENTS 1 FREELISTS 1 FREELIST GROUPS 1 BUFFER_POOL DEFAULT) TABLESPACE "T"
+ "XJ" LOGGING NOCOMPRESS LOB ("content") STORE AS BASICFILE  (TABLESPACE "TXJ"
+ "" ENABLE STORAGE IN ROW CHUNK 8192 RETENTION  NOCACHE LOGGING  STORAGE(INIT"
+ "IAL 65536 NEXT 1048576 MINEXTENTS 1 FREELISTS 1 FREELIST GROUPS 1 BUFFER_PO"
+ "OL DEFAULT))"
+IMP-00003: ORACLE error 959 encountered
+ORA-00959: 表空间 'TXJ' 不存在
+. . importing table             "article_category"          0 rows imported
+. . importing table                   "attachment"        148 rows imported
+. . importing table          "goal_cor_item_month"          0 rows imported
+. . importing table           "goal_cor_item_year"         11 rows imported
+. . importing table        "goal_cor_measure_year"         33 rows imported
+. . importing table              "goal_item_month"       4084 rows imported
+. . importing table               "goal_item_year"        518 rows imported
+. . importing table            "goal_measure_temp"          0 rows imported
+. . importing table            "goal_measure_year"        528 rows imported
+. . importing table                     "integral"          0 rows imported
+. . importing table                          "job"          0 rows imported
+. . importing table                      "kpi_cor"          0 rows imported
+IMP-00017: following statement failed with ORACLE error 959:
+ "CREATE TABLE "kpi_interview" ("id" NUMBER NOT NULL ENABLE, "year" NUMBER NO"
+ "T NULL ENABLE, "month" NUMBER NOT NULL ENABLE, "work_number" VARCHAR2(50 CH"
+ "AR) NOT NULL ENABLE, "org_name" VARCHAR2(255 CHAR), "job_name" VARCHAR2(255"
+ " CHAR), "leader_work_number" VARCHAR2(50 CHAR), "interview_at" CHAR(10), "p"
+ "lace" VARCHAR2(255), "type" NUMBER, "con_result" CHAR(1 CHAR), "con_highlig"
+ "ht" VARCHAR2(4000 CHAR), "con_work_need_up" VARCHAR2(4000 CHAR), "con_agree"
+ "ment" NUMBER, "con_plan" VARCHAR2(4000 CHAR), "con_help" VARCHAR2(4000 CHAR"
+ "), "status" NUMBER NOT NULL ENABLE, "status_description" VARCHAR2(1000 CHAR"
+ "), "leader_confirmed_date" DATE, "created_at" DATE NOT NULL ENABLE, "update"
+ "d_at" DATE NOT NULL ENABLE, "deleted_at" DATE, "transfer_mark" VARCHAR2(4) "
+ "NOT NULL ENABLE, "con_description" CLOB)  PCTFREE 10 PCTUSED 40 INITRANS 1 "
+ "MAXTRANS 255 STORAGE(INITIAL 655360 NEXT 1048576 MINEXTENTS 1 FREELISTS 1 F"
+ "REELIST GROUPS 1 BUFFER_POOL DEFAULT) TABLESPACE "TXJ" LOGGING NOCOMPRESS L"
+ "OB ("con_description") STORE AS BASICFILE  (TABLESPACE "TXJ" ENABLE STORAGE"
+ " IN ROW CHUNK 8192 RETENTION  NOCACHE LOGGING  STORAGE(INITIAL 65536 NEXT 1"
+ "048576 MINEXTENTS 1 FREELISTS 1 FREELIST GROUPS 1 BUFFER_POOL DEFAULT))"
+IMP-00003: ORACLE error 959 encountered
+ORA-00959: 表空间 'TXJ' 不存在
+IMP-00017: following statement failed with ORACLE error 959:
+ "CREATE TABLE "kpi_interview_bak220701" ("id" NUMBER NOT NULL ENABLE, "year""
+ " NUMBER NOT NULL ENABLE, "month" NUMBER NOT NULL ENABLE, "work_number" VARC"
+ "HAR2(50 CHAR) NOT NULL ENABLE, "org_name" VARCHAR2(255 CHAR), "job_name" VA"
+ "RCHAR2(255 CHAR), "leader_work_number" VARCHAR2(50 CHAR), "interview_at" CH"
+ "AR(10 CHAR) NOT NULL ENABLE, "place" VARCHAR2(255 CHAR) NOT NULL ENABLE, "t"
+ "ype" NUMBER NOT NULL ENABLE, "con_result" CHAR(1 CHAR), "con_highlight" VAR"
+ "CHAR2(4000 CHAR), "con_work_need_up" VARCHAR2(4000 CHAR), "con_agreement" N"
+ "UMBER, "con_plan" VARCHAR2(4000 CHAR), "con_help" VARCHAR2(4000 CHAR), "sta"
+ "tus" NUMBER NOT NULL ENABLE, "status_description" VARCHAR2(1000 CHAR), "lea"
+ "der_confirmed_date" DATE, "created_at" DATE NOT NULL ENABLE, "updated_at" D"
+ "ATE NOT NULL ENABLE, "deleted_at" DATE, "transfer_mark" VARCHAR2(4) NOT NUL"
+ "L ENABLE, "con_description" CLOB)  PCTFREE 10 PCTUSED 40 INITRANS 1 MAXTRAN"
+ "S 255 STORAGE(INITIAL 589824 NEXT 1048576 MINEXTENTS 1 FREELISTS 1 FREELIST"
+ " GROUPS 1 BUFFER_POOL DEFAULT) TABLESPACE "TXJ" LOGGING NOCOMPRESS LOB ("co"
+ "n_description") STORE AS BASICFILE  (TABLESPACE "TXJ" ENABLE STORAGE IN ROW"
+ " CHUNK 8192 PCTVERSION 10 NOCACHE LOGGING  STORAGE(INITIAL 65536 NEXT 10485"
+ "76 MINEXTENTS 1 FREELISTS 1 FREELIST GROUPS 1 BUFFER_POOL DEFAULT))"
+IMP-00003: ORACLE error 959 encountered
+ORA-00959: 表空间 'TXJ' 不存在
+IMP-00017: following statement failed with ORACLE error 959:
+ "CREATE TABLE "log" ("id" NUMBER NOT NULL ENABLE, "ip" VARCHAR2(255 CHAR) NO"
+ "T NULL ENABLE, "module" VARCHAR2(4000 CHAR) NOT NULL ENABLE, "action" VARCH"
+ "AR2(255 CHAR) NOT NULL ENABLE, "description" CLOB NOT NULL ENABLE, "created"
+ "_at" DATE NOT NULL ENABLE, "updated_at" DATE NOT NULL ENABLE, "work_number""
+ " VARCHAR2(50))  PCTFREE 10 PCTUSED 40 INITRANS 1 MAXTRANS 255 STORAGE(INITI"
+ "AL 14680064 NEXT 1048576 MINEXTENTS 1 FREELISTS 1 FREELIST GROUPS 1 BUFFER_"
+ "POOL DEFAULT) TABLESPACE "TXJ" LOGGING NOCOMPRESS LOB ("description") STORE"
+ " AS BASICFILE  (TABLESPACE "TXJ" ENABLE STORAGE IN ROW CHUNK 8192 RETENTION"
+ "  NOCACHE LOGGING  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 FREELIST"
+ "S 1 FREELIST GROUPS 1 BUFFER_POOL DEFAULT))"
+IMP-00003: ORACLE error 959 encountered
+ORA-00959: 表空间 'TXJ' 不存在
+. . importing table                 "measure_data"          0 rows imported
+. . importing table      "measure_data_attendance"          0 rows imported
+. . importing table           "measure_data_queue"          0 rows imported
+. . importing table         "measure_data_special"       1811 rows imported
+. . importing table                  "measure_lib"        285 rows imported
+. . importing table                      "message"       4988 rows imported
+. . importing table                 "organization"         90 rows imported
+. . importing table            "organization_user"          0 rows imported
+. . importing table                   "permission"         98 rows imported
+. . importing table                      "profile"         99 rows imported
+. . importing table             "profile_property"         56 rows imported
+. . importing table       "profile_property_value"       5544 rows imported
+. . importing table                         "role"         10 rows imported
+. . importing table              "role_permission"        747 rows imported
+. . importing table                    "role_user"          0 rows imported
+. . importing table                "transfer_post"          0 rows imported
+. . importing table                "user_relation"         80 rows imported
+About to enable constraints...
+Import terminated successfully with warnings.
+```
+- 解决问题
+```
+SQL> drop user TXJ cascade;                                                                                                                                              
+User dropped.
+SQL> drop user DYJX cascade;
+User dropped.
+[oracle@e63af26799ac ~]$ mkdir -p /home/oracle/oradata/DYJX
+SQL> create tablespace DYJX logging datafile'/home/oracle/oradata/DYJX/DYJX.dbf' size 1024m autoextend on next 100m maxsize 10240m extent management local;
+Tablespace created.
+SQL> create user DYJX identified by 123456 default tablespace DYJX;
+User created.
+SQL> grant connect,resource,dba to DYJX;
+Grant succeeded.
+
+create table test1
+ (id number(8),
+  work clob
+  )
+ LOB (work) STORE AS
+     (
+   TABLESPACE DYJX
+   STORAGE (
+            INITIAL 10M
+            NEXT 10M
+                   )
+     NOCACHE NOLOGGING
+            );
+SELECT * FROM test1;
+INSERT INTO test1 VALUES(1, '123');
+
+[oracle@e63af26799ac ~]$ imp 'system/system@127.0.0.1/helowin' fromuser=TXJ touser=DYJX file=/home/oracle/backup/TXJ20220726-P.dmp  log=/home/oracle/backup/TXJ20220726-P.log ignore=y;
+```
+
+
+
+### 乱码
+```
+-- TEST   SIMPLIFIED CHINESE_CHINA.ZHS16GBK
+-- 本地库 SIMPLIFIED CHINESE_CHINA.AL32UTF8
+select userenv('language') from dual;
+```
+
+#### 修改字符集
+##### 修改服务器字符集
+```
+[oracle@3c0ae5a124fe ~]$ vi .bash_profile 
+...
+export NLS_LANG="SIMPLIFIED CHINESE_CHINA.ZHS16GBK"
+[oracle@3c0ae5a124fe ~]$ source .bash_profile 
+
+[oracle@3c0ae5a124fe ~]$ echo $NLS_LANG
+SIMPLIFIED CHINESE_CHINA.ZHS16GBK
+```
+###### 问题 EXP-00091: Exporting questionable statistics.
+```
+[oracle@e63af26799ac ~]$ exp 'TXJ/pm2022@10.1.180.77/pman' owner=TXJ file=/home/oracle/backup/TXJ20220726-T.dmp buffer=10240      
+
+Export: Release 11.2.0.1.0 - Production on Tue Jul 26 14:33:03 2022
+
+Copyright (c) 1982, 2009, Oracle and/or its affiliates.  All rights reserved.
+
+
+Connected to: Oracle Database 11g Enterprise Edition Release 11.2.0.1.0 - 64bit Production
+With the Partitioning, OLAP, Data Mining and Real Application Testing options
+Export done in US7ASCII character set and AL16UTF16 NCHAR character set
+server uses ZHS16GBK character set (possible charset conversion)
+
+About to export specified users ...
+. exporting pre-schema procedural objects and actions
+. exporting foreign function library names for user TXJ 
+. exporting PUBLIC type synonyms
+. exporting private type synonyms
+. exporting object type definitions for user TXJ 
+About to export TXJ's objects ...
+. exporting database links
+. exporting sequence numbers
+. exporting cluster definitions
+. about to export TXJ's tables via Conventional Path ...
+. . exporting table                        article          0 rows exported
+EXP-00091: Exporting questionable statistics.
+
+```
+- 分析解决
+```
+TEST SIMPLIFIED CHINESE_CHINA.ZHS16GBK
+LOCAL SIMPLIFIED CHINESE_CHINA.AL32UTF8
+[oracle@e63af26799ac ~]$ export NLS_LANG="SIMPLIFIED CHINESE_CHINA.ZHS16GBK"
+
+[oracle@e63af26799ac ~]$ vi .bash_profile
+[oracle@e63af26799ac ~]$ source .bash_profile 
+[oracle@e63af26799ac ~]$ echo $NLS_LANG              
+SIMPLIFIED CHINESE_CHINA.ZHS16GBK
+
+-- 数据库字符集并未改变
+select userenv('language') from dual;
+SIMPLIFIED CHINESE_CHINA.AL32UTF8
+```
+
+##### 修改本地库字符集
+```
+[oracle@3c0ae5a124fe ~]$ sqlplus /nolog
+
+SQL*Plus: Release 11.2.0.1.0 Production on һ 7 11:38:18 2022
+
+Copyright (c) 1982, 2009, Oracle.  All rights reserved.
+
+SQL> conn /as sysdba
+Connected.
+SQL> shutdown immediate
+Database closed.
+Database dismounted.
+ORACLE instance shut down.
+SQL> STARTUP MOUNT
+ORACLE instance started.
+
+Total System Global Area 1603411968 bytes
+Fixed Size                  2213776 bytes
+Variable Size             738199664 bytes
+Database Buffers          855638016 bytes
+Redo Buffers                7360512 bytes
+Database mounted.
+SQL> ALTER SYSTEM ENABLE RESTRICTED SESSION;
+
+System altered.
+
+SQL> ALTER SYSTEM SET JOB_QUEUE_PROCESSES=0;
+
+System altered.
+
+SQL> ALTER SYSTEM SET AQ_TM_PROCESSES=0;
+
+System altered.
+
+SQL> ALTER DATABASE OPEN;
+
+Database altered.
+
+SQL> ALTER DATABASE CHARACTER SET ZHS16GBK;
+ALTER DATABASE CHARACTER SET ZHS16GBK
+*
+ERROR at line 1:
+ORA-12712: Ϊ
+若出现上面的错误，使用下面的办法进行修改，使用INTERNAL_USE可以跳过超集的检查：
+
+SQL> ALTER DATABASE CHARACTER SET INTERNAL_USE ZHS16GBK;
+
+Database altered.
+
+SQL> SHUTDOWN IMMEDIATE;
+Database closed.
+Database dismounted.
+ORACLE instance shut down.
+SQL> STARTUP
+ORACLE instance started.
+
+Total System Global Area 1603411968 bytes
+Fixed Size                  2213776 bytes
+Variable Size             738199664 bytes
+Database Buffers          855638016 bytes
+Redo Buffers                7360512 bytes
+Database mounted.
+Database opened.
+```
+- [ORACLE如何修改字符集](https://blog.csdn.net/shouhuxiancheng/article/details/82769040)

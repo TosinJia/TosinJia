@@ -14,6 +14,79 @@
 - https://cli.vuejs.org/config/#devserver-proxy
 
 
+## 新增模块
+### 1. 新增模块
+1. 创建文件夹 `\ruoyi-english`
+2. 创建pom.xml `\ruoyi-english\pom.xml`
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>ruoyi</artifactId>
+        <groupId>com.ruoyi</groupId>
+        <version>3.8.1</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>ruoyi-english</artifactId>
+
+    <description>
+        english模块
+    </description>
+
+    <dependencies>
+
+        <!-- 通用工具-->
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>ruoyi-common</artifactId>
+        </dependency>
+
+    </dependencies>
+
+</project>
+```
+### 2. 修改父级pom.xml
+1. 修改父级pom.xml `\pom.xml`
+```
+    <!-- 依赖声明 -->
+    <dependencyManagement>
+        <dependencies>
+            ...
+            <dependency>
+                <groupId>com.ruoyi</groupId>
+                <artifactId>ruoyi-english</artifactId>
+                <version>${ruoyi.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <modules>
+        ...
+        <module>ruoyi-english</module>
+    </modules>
+```
+2. Maven窗口 Reload All Maven Projects，识别模块
+
+### 3. 使用新建模块
+1. src目录中 添加main中相关代码
+2. Maven窗口 Reload All Maven Projects，识别代码
+3. 启动项目pom.xml中配置
+```
+    <dependencies>
+
+        ...
+        
+        <!-- english模块-->
+        <dependency>
+            <groupId>com.ruoyi</groupId>
+            <artifactId>ruoyi-english</artifactId>
+        </dependency>
+    </dependencies>
+```
+
 ## 代码生成
 1. generator.yml
 ```
@@ -27,6 +100,61 @@ gen:
   autoRemovePre: false
   # 表前缀（生成类名不会包含表前缀，多个用逗号分隔）
   tablePrefix: tst_
+```
+
+### 实操
+```
+E:\iEnviroment\英语学习\开发\ruoyi>tree /F
+卷 新加卷 的文件夹 PATH 列表
+卷序列号为 3448-8611
+E:.
+│  dic_word_bizMenu.sql
+│
+├─main
+│  ├─java
+│  │  └─com
+│  │      └─ruoyi
+│  │          └─english
+│  │              ├─controller
+│  │              │      DictWordInfoController.java
+│  │              │
+│  │              ├─domain
+│  │              │      DictWordInfo.java
+│  │              │
+│  │              ├─mapper
+│  │              │      DictWordInfoMapper.java
+│  │              │
+│  │              └─service
+│  │                  │  IDictWordInfoService.java
+│  │                  │
+│  │                  └─impl
+│  │                          DictWordInfoServiceImpl.java
+│  │
+│  └─resources
+│      └─mapper
+│          └─english_mod
+│                  DictWordInfoMapper.xml
+│
+└─vue
+    ├─api
+    │  └─english_mod
+    │          dic_word_biz.js
+    │
+    └─views
+        └─english_mod
+            └─dic_word_biz
+                    index.vue
+```
+1. 执行 dic_word_bizMenu.sql
+
+1. 覆盖文件夹
+```
+RuoYi-Vue\ruoyi-admin\src\main
+main
+
+RuoYi-Vue\ruoyi-ui\src
+
+vue\
 ```
 ### oralce版
 

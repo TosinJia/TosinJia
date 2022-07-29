@@ -10,10 +10,57 @@
         - https://dev.mysql.com/doc/refman/5.7/en/date-and-time-functions.html
             - https://dev.mysql.com/doc/refman/5.7/en/date-and-time-functions.html#function_str-to-date
         - [MySQL :: MySQL 5.7 Reference Manual :: 11 Data Types](https://dev.mysql.com/doc/refman/5.7/en/data-types.html)
+		- [MySQL :: MySQL 5.7 Reference Manual :: 13.1.21 CREATE VIEW Statement](https://dev.mysql.com/doc/refman/5.7/en/create-view.html)
+		- [MySQL :: MySQL 5.7 Reference Manual :: 13.2.9 SELECT Statement](https://dev.mysql.com/doc/refman/5.7/en/select.html)
     - [MySQL 5.1 中文参考手册 - 目录](http://www.mysqlab.net/docs/view/refman-5.1-zh/chapter/index.html)
     - [MySQL 中文文档 | MySQL 中文网](https://www.mysqlzh.com/)
 
+#### select statement
+- [MySQL 通配符学习小结](https://www.cnblogs.com/hrhguanli/p/3826218.html)
+- [MySQL :: MySQL 5.7 Reference Manual :: 12.8.2 Regular Expressions](https://dev.mysql.com/doc/refman/5.7/en/regexp.html)
+
+```
+select id, word, ipa_phonetic_symbol, pronunciation, audio, meaning, update_time, create_time from dict_word_info WHERE word like concat('%', 'a_', '%')
+select id, word, ipa_phonetic_symbol, pronunciation, audio, meaning, update_time, create_time from dict_word_info WHERE word rlike '^[abc]+$'
+select id, word, ipa_phonetic_symbol, pronunciation, audio, meaning, update_time, create_time from dict_word_info WHERE word regexp '^[abc]+$' 
+```
+#### 表
+##### 添加字段
+```
+ALTER TABLE `ry-vue`.dict_word_info ADD meaning varchar(1024) NULL COMMENT '含义';
+ALTER TABLE `ry-vue`.dict_word_info CHANGE meaning meaning varchar(1024) NULL COMMENT '含义' AFTER audio;
+```
+#### 视图
+```
+create [or replace] view view_outdict_query_info as
+select
+	dwi.word query_word,
+	dwi.word,
+	dwi.ipa_phonetic_symbol,
+	dwi.pronunciation
+from
+	dict_word_info dwi
+union all
+select
+	oi.query_word,
+	dwi.word,
+	dwi.ipa_phonetic_symbol,
+	dwi.pronunciation
+from
+	outdict_info oi
+left join dict_word_info dwi on
+	oi.word = dwi.word
+where
+	oi.dict_type = '1'
+```
+##### 问题
+1. SQL 错误 [1064] [42000]: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'union all
+```
+create view view_outdict_query_info as( select  dwi.word query_word,  dwi.word,  dwi.pronunciation from  dict_word_info dwi union all select  oi.query_word,  dwi.word,  dwi.pronunciation from  outdict_info oi left join dict_word_info dwi on  oi.word = dwi.word where  oi.dict_type = '1')
+```
 #### 函数
+
+- [MySQL :: MySQL 5.7 Reference Manual :: 12.7 Date and Time Functions](https://dev.mysql.com/doc/refman/5.7/en/date-and-time-functions.html)
 
 select current_timestamp(), now(), curdate();
 ```
@@ -34,6 +81,7 @@ select current_timestamp(), now(), curdate();
 ### mysqldump
 - [MySQL5.7 --- mysqldump 备份与恢复](https://blog.csdn.net/mashuai720/article/details/83347029)
 
+- 软件开发/database/工具/DBeaver
 #### 整库备份还原
 
 
@@ -373,6 +421,19 @@ show variables like 'collation%';
 -- 建库脚本
 CREATE DATABASE test DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
 ```
+- 样例脚本
+```
+DROP DATABASE IF EXISTS `ry-vue`;
+
+CREATE DATABASE `ry-vue` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+
+SET NAMES utf8mb4;
+SET FOREIGN_KEY_CHECKS = 0;
+
+USE `ry-vue`;
+```
+
+
 ## 存储过程
 - [面向MySQL存储过程编程（详细）](https://juejin.cn/post/6844904185725468685)
 

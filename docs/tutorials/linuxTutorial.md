@@ -378,6 +378,10 @@ SCSI/SATA/USB硬盘 | /dev/sd[a-p]
 2019年 05月 05日 星期日 08:34:24 CST
 [root@localhost ~]# ll | grep test.txt
 -rw-r--r--.   1 root root        5 5月   5 08:34 test.txt
+
+[root@SystemFramework RuoYi-Vue]# ll --time-style=+"%Y-%m-%d %H:%M:%S" 
+total 68
+-rw-r--r--. 1 root root 11985 2022-02-16 09:05:10 quartz.sql
 ```
 
 #### 1.2 目录处理命令
@@ -1023,6 +1027,27 @@ x | 执行 | 可以执行文件 | 可以进入目录（cd）
         * $bunzip2 -k test.bz2
         * $tar -xjf test.tar.bz2
 
+1. 名称：rar
+    - [Linux下如何解压rar文件](https://www.cnblogs.com/yangzhaon/p/12861627.html)
+        - https://www.rarlab.com/download.htm
+            - https://www.rarlab.com/rar/rarlinux-x64-612.tar.gz
+```
+# wget http://www.rarlab.com/rar/rarlinux-x64-5.0.0.tar.gz
+# tar -zxvf rarlinux-x64-5.0.0.tar.gz
+# cd cd rar/
+# make && make install
+
+#解压（会在当前解压目录内产生一个以压缩包名字命名的目录，目录内是解压内容，推荐使用）
+# unrar x uploadPath.rar uploadPath
+#解压（会在把当前压缩包内容解压到当前目录内，容易造成解压内容和当前目录原文件混合 覆盖，不容易区分，不建议使用）
+# unrar e uploadPath.rar ./
+
+# https://blog.csdn.net/qq_39679699/article/details/113150186
+[root@instance-20210815-1205 jar]# rar
+-bash: /usr/local/bin/rar: No such file or directory
+[root@instance-20210815-1205 jar]# yum install ld-linux.so.2
+[root@instance-20210815-1205 jar]# yum install -y libstdc++.so.6
+```
 
 ### 7 网络命令
 1. 指令名称：write
@@ -1320,9 +1345,12 @@ MAILTO=root
 #### cal
 ### 10. 其他
 1. scp命令
+
 选项 | 说明
 ---|---
 -r | 以递归方式复制
+
+
 ```
 [root@bd-10-00 ~]# scp /etc/hosts bd-10-02:/etc/
 [root@bd-01-01 ~]# scp -r /opt/* bd-01-02:/opt/

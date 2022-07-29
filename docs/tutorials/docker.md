@@ -28,6 +28,313 @@
     - https://www.docker.com/products/docker-toolbox
 
 ## 常见问题
+### 修改对外暴露的端口
+- [教你如何修改运行中的docker容器的端口映射的三种方式](https://blog.csdn.net/weixin_43865008/article/details/122111611)
+```
+[root@SystemFramework ~]# docker run -di --name iredis-u -p 6379:6379 -p 6378:6379 -p 6377:6379 redis
+b0d6ad82ddb6eb06ff17c60e5b794342ac805e4af9415c35cd79db7589310a3e
+[root@SystemFramework ~]# docker ps
+CONTAINER ID   IMAGE     COMMAND                  CREATED         STATUS         PORTS                                                                                                                             NAMES
+b0d6ad82ddb6   redis     "docker-entrypoint.s…"   5 seconds ago   Up 3 seconds   0.0.0.0:6379->6379/tcp, :::6379->6379/tcp, 0.0.0.0:6377->6379/tcp, 0.0.0.0:6378->6379/tcp, :::6377->6379/tcp, :::6378->6379/tcp   iredis-u
+[root@SystemFramework ~]# docker inspect iredis-u
+[
+    {
+        "Id": "b0d6ad82ddb6eb06ff17c60e5b794342ac805e4af9415c35cd79db7589310a3e",
+        "Created": "2022-07-26T03:52:19.941484646Z",
+        "Path": "docker-entrypoint.sh",
+        "Args": [
+            "redis-server"
+        ],
+        "State": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 3143,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2022-07-26T03:52:20.671954015Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+        },
+        "Image": "sha256:7614ae9453d1d87e740a2056257a6de7135c84037c367e1fffa92ae922784631",
+        "ResolvConfPath": "/var/lib/docker/containers/b0d6ad82ddb6eb06ff17c60e5b794342ac805e4af9415c35cd79db7589310a3e/resolv.conf",
+        "HostnamePath": "/var/lib/docker/containers/b0d6ad82ddb6eb06ff17c60e5b794342ac805e4af9415c35cd79db7589310a3e/hostname",
+        "HostsPath": "/var/lib/docker/containers/b0d6ad82ddb6eb06ff17c60e5b794342ac805e4af9415c35cd79db7589310a3e/hosts",
+        "LogPath": "/var/lib/docker/containers/b0d6ad82ddb6eb06ff17c60e5b794342ac805e4af9415c35cd79db7589310a3e/b0d6ad82ddb6eb06ff17c60e5b794342ac805e4af9415c35cd79db7589310a3e-json.log",
+        "Name": "/iredis-u",
+        "RestartCount": 0,
+        "Driver": "overlay2",
+        "Platform": "linux",
+        "MountLabel": "",
+        "ProcessLabel": "",
+        "AppArmorProfile": "",
+        "ExecIDs": null,
+        "HostConfig": {
+            "Binds": null,
+            "ContainerIDFile": "",
+            "LogConfig": {
+                "Type": "json-file",
+                "Config": {}
+            },
+            "NetworkMode": "default",
+            "PortBindings": {
+                "6379/tcp": [
+                    {
+                        "HostIp": "",
+                        "HostPort": "6379"
+                    },
+                    {
+                        "HostIp": "",
+                        "HostPort": "6378"
+                    },
+                    {
+                        "HostIp": "",
+                        "HostPort": "6377"
+                    }
+                ]
+            },
+            "RestartPolicy": {
+                "Name": "no",
+                "MaximumRetryCount": 0
+            },
+            "AutoRemove": false,
+            "VolumeDriver": "",
+            "VolumesFrom": null,
+            "CapAdd": null,
+            "CapDrop": null,
+            "CgroupnsMode": "host",
+            "Dns": [],
+            "DnsOptions": [],
+            "DnsSearch": [],
+            "ExtraHosts": null,
+            "GroupAdd": null,
+            "IpcMode": "private",
+            "Cgroup": "",
+            "Links": null,
+            "OomScoreAdj": 0,
+            "PidMode": "",
+            "Privileged": false,
+            "PublishAllPorts": false,
+            "ReadonlyRootfs": false,
+            "SecurityOpt": null,
+            "UTSMode": "",
+            "UsernsMode": "",
+            "ShmSize": 67108864,
+            "Runtime": "runc",
+            "ConsoleSize": [
+                0,
+                0
+            ],
+            "Isolation": "",
+            "CpuShares": 0,
+            "Memory": 0,
+            "NanoCpus": 0,
+            "CgroupParent": "",
+            "BlkioWeight": 0,
+            "BlkioWeightDevice": [],
+            "BlkioDeviceReadBps": null,
+            "BlkioDeviceWriteBps": null,
+            "BlkioDeviceReadIOps": null,
+            "BlkioDeviceWriteIOps": null,
+            "CpuPeriod": 0,
+            "CpuQuota": 0,
+            "CpuRealtimePeriod": 0,
+            "CpuRealtimeRuntime": 0,
+            "CpusetCpus": "",
+            "CpusetMems": "",
+            "Devices": [],
+            "DeviceCgroupRules": null,
+            "DeviceRequests": null,
+            "KernelMemory": 0,
+            "KernelMemoryTCP": 0,
+            "MemoryReservation": 0,
+            "MemorySwap": 0,
+            "MemorySwappiness": null,
+            "OomKillDisable": false,
+            "PidsLimit": null,
+            "Ulimits": null,
+            "CpuCount": 0,
+            "CpuPercent": 0,
+            "IOMaximumIOps": 0,
+            "IOMaximumBandwidth": 0,
+            "MaskedPaths": [
+                "/proc/asound",
+                "/proc/acpi",
+                "/proc/kcore",
+                "/proc/keys",
+                "/proc/latency_stats",
+                "/proc/timer_list",
+                "/proc/timer_stats",
+                "/proc/sched_debug",
+                "/proc/scsi",
+                "/sys/firmware"
+            ],
+            "ReadonlyPaths": [
+                "/proc/bus",
+                "/proc/fs",
+                "/proc/irq",
+                "/proc/sys",
+                "/proc/sysrq-trigger"
+            ]
+        },
+        "GraphDriver": {
+            "Data": {
+                "LowerDir": "/var/lib/docker/overlay2/87b89f733306a673e4084c60ab9d77f6521920157b4e0c644f2042385017eb7f-init/diff:/var/lib/docker/overlay2/d38475fe4fff0efa6a742393d15657b15412b38c364d983b6ab93f87d6d0c17d/diff:/var/lib/docker/overlay2/e212a716fdfe0c61f323cf56da4270c57a7a35a4cd88d9c36fcc4dd7530ed546/diff:/var/lib/docker/overlay2/5bfa01d84a5b825a25dc5388852aba37143f5879fd1795b741bad3c35473d6de/diff:/var/lib/docker/overlay2/c9f70de67f3844264bf87fa249c74a3aefc1f1b48e539db465a5beb05b8035e3/diff:/var/lib/docker/overlay2/088897e90c21f9b7cdb3d22a4029f0d7191a95d39bc2278c4ea4c46e569ee906/diff:/var/lib/docker/overlay2/7ae25d5fd9fdc240277757acaf80374de4c240c13d01fcb5fd2f2818eaea5a18/diff",
+                "MergedDir": "/var/lib/docker/overlay2/87b89f733306a673e4084c60ab9d77f6521920157b4e0c644f2042385017eb7f/merged",
+                "UpperDir": "/var/lib/docker/overlay2/87b89f733306a673e4084c60ab9d77f6521920157b4e0c644f2042385017eb7f/diff",
+                "WorkDir": "/var/lib/docker/overlay2/87b89f733306a673e4084c60ab9d77f6521920157b4e0c644f2042385017eb7f/work"
+            },
+            "Name": "overlay2"
+        },
+        "Mounts": [
+            {
+                "Type": "volume",
+                "Name": "c43062a61838c8d1000078d4c31a61797176cc8f69e4539d9822b370f53365f2",
+                "Source": "/var/lib/docker/volumes/c43062a61838c8d1000078d4c31a61797176cc8f69e4539d9822b370f53365f2/_data",
+                "Destination": "/data",
+                "Driver": "local",
+                "Mode": "",
+                "RW": true,
+                "Propagation": ""
+            }
+        ],
+        "Config": {
+            "Hostname": "b0d6ad82ddb6",
+            "Domainname": "",
+            "User": "",
+            "AttachStdin": false,
+            "AttachStdout": false,
+            "AttachStderr": false,
+            "ExposedPorts": {
+                "6379/tcp": {}
+            },
+            "Tty": false,
+            "OpenStdin": true,
+            "StdinOnce": false,
+            "Env": [
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "GOSU_VERSION=1.12",
+                "REDIS_VERSION=6.2.6",
+                "REDIS_DOWNLOAD_URL=http://download.redis.io/releases/redis-6.2.6.tar.gz",
+                "REDIS_DOWNLOAD_SHA=5b2b8b7a50111ef395bf1c1d5be11e6e167ac018125055daa8b5c2317ae131ab"
+            ],
+            "Cmd": [
+                "redis-server"
+            ],
+            "Image": "redis",
+            "Volumes": {
+                "/data": {}
+            },
+            "WorkingDir": "/data",
+            "Entrypoint": [
+                "docker-entrypoint.sh"
+            ],
+            "OnBuild": null,
+            "Labels": {}
+        },
+        "NetworkSettings": {
+            "Bridge": "",
+            "SandboxID": "cb83cead9ad5721437c468c8179a8cf0c5bce1beb5fd09657a61252441ae7af5",
+            "HairpinMode": false,
+            "LinkLocalIPv6Address": "",
+            "LinkLocalIPv6PrefixLen": 0,
+            "Ports": {
+                "6379/tcp": [
+                    {
+                        "HostIp": "0.0.0.0",
+                        "HostPort": "6377"
+                    },
+                    {
+                        "HostIp": "::",
+                        "HostPort": "6377"
+                    },
+                    {
+                        "HostIp": "0.0.0.0",
+                        "HostPort": "6378"
+                    },
+                    {
+                        "HostIp": "::",
+                        "HostPort": "6378"
+                    },
+                    {
+                        "HostIp": "0.0.0.0",
+                        "HostPort": "6379"
+                    },
+                    {
+                        "HostIp": "::",
+                        "HostPort": "6379"
+                    }
+                ]
+            },
+            "SandboxKey": "/var/run/docker/netns/cb83cead9ad5",
+            "SecondaryIPAddresses": null,
+            "SecondaryIPv6Addresses": null,
+            "EndpointID": "aef0598eeaf2f2a4529672dc20213b2031e59271ee8f1faba292ed3982302963",
+            "Gateway": "172.17.0.1",
+            "GlobalIPv6Address": "",
+            "GlobalIPv6PrefixLen": 0,
+            "IPAddress": "172.17.0.2",
+            "IPPrefixLen": 16,
+            "IPv6Gateway": "",
+            "MacAddress": "02:42:ac:11:00:02",
+            "Networks": {
+                "bridge": {
+                    "IPAMConfig": null,
+                    "Links": null,
+                    "Aliases": null,
+                    "NetworkID": "7052d835be54442fdeb155f62f8d43b9252c322ef552c87f62abf9c40c028a25",
+                    "EndpointID": "aef0598eeaf2f2a4529672dc20213b2031e59271ee8f1faba292ed3982302963",
+                    "Gateway": "172.17.0.1",
+                    "IPAddress": "172.17.0.2",
+                    "IPPrefixLen": 16,
+                    "IPv6Gateway": "",
+                    "GlobalIPv6Address": "",
+                    "GlobalIPv6PrefixLen": 0,
+                    "MacAddress": "02:42:ac:11:00:02",
+                    "DriverOpts": null
+                }
+            }
+        }
+    }
+]
+[root@SystemFramework ~]# cd /var/lib/docker/containers/b0d6ad82ddb6eb06ff17c60e5b794342ac805e4af9415c35cd79db7589310a3e 
+[root@SystemFramework b0d6ad82ddb6eb06ff17c60e5b794342ac805e4af9415c35cd79db7589310a3e]# cp config.v2.json config.v2.json.bak
+[root@SystemFramework b0d6ad82ddb6eb06ff17c60e5b794342ac805e4af9415c35cd79db7589310a3e]# cp hostconfig.json hostconfig.json.bak
+# 容器启动停止状态 对应的 config.v2.json 不一样， hostconfig.json 一样。
+[root@SystemFramework b0d6ad82ddb6eb06ff17c60e5b794342ac805e4af9415c35cd79db7589310a3e]# cat config.v2.json
+{"StreamConfig":{},"State":{"Running":true,"Paused":false,"Restarting":false,"OOMKilled":false,"RemovalInProgress":false,"Dead":false,"Pid":3143,"ExitCode":0,"Error":"","StartedAt":"2022-07-26T03:52:20.671954015Z","FinishedAt":"0001-01-01T00:00:00Z","Health":null},"ID":"b0d6ad82ddb6eb06ff17c60e5b794342ac805e4af9415c35cd79db7589310a3e","Created":"2022-07-26T03:52:19.941484646Z","Managed":false,"Path":"docker-entrypoint.sh","Args":["redis-server"],"Config":{"Hostname":"b0d6ad82ddb6","Domainname":"","User":"","AttachStdin":false,"AttachStdout":false,"AttachStderr":false,"ExposedPorts":{"6379/tcp":{}},"Tty":false,"OpenStdin":true,"StdinOnce":false,"Env":["PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin","GOSU_VERSION=1.12","REDIS_VERSION=6.2.6","REDIS_DOWNLOAD_URL=http://download.redis.io/releases/redis-6.2.6.tar.gz","REDIS_DOWNLOAD_SHA=5b2b8b7a50111ef395bf1c1d5be11e6e167ac018125055daa8b5c2317ae131ab"],"Cmd":["redis-server"],"Image":"redis","Volumes":{"/data":{}},"WorkingDir":"/data","Entrypoint":["docker-entrypoint.sh"],"OnBuild":null,"Labels":{}},"Image":"sha256:7614ae9453d1d87e740a2056257a6de7135c84037c367e1fffa92ae922784631","NetworkSettings":{"Bridge":"","SandboxID":"cb83cead9ad5721437c468c8179a8cf0c5bce1beb5fd09657a61252441ae7af5","HairpinMode":false,"LinkLocalIPv6Address":"","LinkLocalIPv6PrefixLen":0,"Networks":{"bridge":{"IPAMConfig":null,"Links":null,"Aliases":null,"NetworkID":"7052d835be54442fdeb155f62f8d43b9252c322ef552c87f62abf9c40c028a25","EndpointID":"aef0598eeaf2f2a4529672dc20213b2031e59271ee8f1faba292ed3982302963","Gateway":"172.17.0.1","IPAddress":"172.17.0.2","IPPrefixLen":16,"IPv6Gateway":"","GlobalIPv6Address":"","GlobalIPv6PrefixLen":0,"MacAddress":"02:42:ac:11:00:02","DriverOpts":null,"IPAMOperational":false}},"Service":null,"Ports":{"6379/tcp":[{"HostIp":"0.0.0.0","HostPort":"6377"},{"HostIp":"::","HostPort":"6377"},{"HostIp":"0.0.0.0","HostPort":"6378"},{"HostIp":"::","HostPort":"6378"},{"HostIp":"0.0.0.0","HostPort":"6379"},{"HostIp":"::","HostPort":"6379"}]},"SandboxKey":"/var/run/docker/netns/cb83cead9ad5","SecondaryIPAddresses":null,"SecondaryIPv6Addresses":null,"IsAnonymousEndpoint":false,"HasSwarmEndpoint":false},"LogPath":"/var/lib/docker/containers/b0d6ad82ddb6eb06ff17c60e5b794342ac805e4af9415c35cd79db7589310a3e/b0d6ad82ddb6eb06ff17c60e5b794342ac805e4af9415c35cd79db7589310a3e-json.log","Name":"/iredis-u","Driver":"overlay2","OS":"linux","MountLabel":"","ProcessLabel":"","RestartCount":0,"HasBeenStartedBefore":true,"HasBeenManuallyStopped":false,"MountPoints":{"/data":{"Source":"","Destination":"/data","RW":true,"Name":"c43062a61838c8d1000078d4c31a61797176cc8f69e4539d9822b370f53365f2","Driver":"local","Type":"volume","ID":"9c184a7c23ec7c2c8c96a17847aee3114352f0f3f0a9dcecf1683c222202c255","Spec":{},"SkipMountpointCreation":false}},"SecretReferences":null,"ConfigReferences":null,"AppArmorProfile":"","HostnamePath":"/var/lib/docker/containers/b0d6ad82ddb6eb06ff17c60e5b794342ac805e4af9415c35cd79db7589310a3e/hostname","HostsPath":"/var/lib/docker/containers/b0d6ad82ddb6eb06ff17c60e5b794342ac805e4af9415c35cd79db7589310a3e/hosts","ShmPath":"","ResolvConfPath":"/var/lib/docker/containers/b0d6ad82ddb6eb06ff17c60e5b794342ac805e4af9415c35cd79db7589310a3e/resolv.conf","SeccompProfile":"","NoNewPrivileges":false,"LocalLogCacheMeta":{"HaveNotifyEnabled":false}}
+[root@SystemFramework b0d6ad82ddb6eb06ff17c60e5b794342ac805e4af9415c35cd79db7589310a3e]# cat hostconfig.json
+{"Binds":null,"ContainerIDFile":"","LogConfig":{"Type":"json-file","Config":{}},"NetworkMode":"default","PortBindings":{"6379/tcp":[{"HostIp":"","HostPort":"6379"},{"HostIp":"","HostPort":"6378"},{"HostIp":"","HostPort":"6377"}]},"RestartPolicy":{"Name":"no","MaximumRetryCount":0},"AutoRemove":false,"VolumeDriver":"","VolumesFrom":null,"CapAdd":null,"CapDrop":null,"CgroupnsMode":"host","Dns":[],"DnsOptions":[],"DnsSearch":[],"ExtraHosts":null,"GroupAdd":null,"IpcMode":"private","Cgroup":"","Links":null,"OomScoreAdj":0,"PidMode":"","Privileged":false,"PublishAllPorts":false,"ReadonlyRootfs":false,"SecurityOpt":null,"UTSMode":"","UsernsMode":"","ShmSize":67108864,"Runtime":"runc","ConsoleSize":[0,0],"Isolation":"","CpuShares":0,"Memory":0,"NanoCpus":0,"CgroupParent":"","BlkioWeight":0,"BlkioWeightDevice":[],"BlkioDeviceReadBps":null,"BlkioDeviceWriteBps":null,"BlkioDeviceReadIOps":null,"BlkioDeviceWriteIOps":null,"CpuPeriod":0,"CpuQuota":0,"CpuRealtimePeriod":0,"CpuRealtimeRuntime":0,"CpusetCpus":"","CpusetMems":"","Devices":[],"DeviceCgroupRules":null,"DeviceRequests":null,"KernelMemory":0,"KernelMemoryTCP":0,"MemoryReservation":0,"MemorySwap":0,"MemorySwappiness":null,"OomKillDisable":false,"PidsLimit":null,"Ulimits":null,"CpuCount":0,"CpuPercent":0,"IOMaximumIOps":0,"IOMaximumBandwidth":0,"MaskedPaths":["/proc/asound","/proc/acpi","/proc/kcore","/proc/keys","/proc/latency_stats","/proc/timer_list","/proc/timer_stats","/proc/sched_debug","/proc/scsi","/sys/firmware"],"ReadonlyPaths":["/proc/bus","/proc/fs","/proc/irq","/proc/sys","/proc/sysrq-trigger"]}
+
+[root@SystemFramework b0d6ad82ddb6eb06ff17c60e5b794342ac805e4af9415c35cd79db7589310a3e]# docker ps
+CONTAINER ID   IMAGE     COMMAND                  CREATED          STATUS          PORTS                                                                                                                             NAMES
+b0d6ad82ddb6   redis     "docker-entrypoint.s…"   46 minutes ago   Up 46 minutes   0.0.0.0:6379->6379/tcp, :::6379->6379/tcp, 0.0.0.0:6377->6379/tcp, 0.0.0.0:6378->6379/tcp, :::6377->6379/tcp, :::6378->6379/tcp   iredis-u
+[root@SystemFramework b0d6ad82ddb6eb06ff17c60e5b794342ac805e4af9415c35cd79db7589310a3e]# docker stop iredis-u
+iredis-u
+[root@SystemFramework b0d6ad82ddb6eb06ff17c60e5b794342ac805e4af9415c35cd79db7589310a3e]# cat config.v2.json
+{"StreamConfig":{},"State":{"Running":false,"Paused":false,"Restarting":false,"OOMKilled":false,"RemovalInProgress":false,"Dead":false,"Pid":0,"ExitCode":0,"Error":"","StartedAt":"2022-07-26T03:52:20.671954015Z","FinishedAt":"2022-07-26T04:39:29.352881379Z","Health":null},"ID":"b0d6ad82ddb6eb06ff17c60e5b794342ac805e4af9415c35cd79db7589310a3e","Created":"2022-07-26T03:52:19.941484646Z","Managed":false,"Path":"docker-entrypoint.sh","Args":["redis-server"],"Config":{"Hostname":"b0d6ad82ddb6","Domainname":"","User":"","AttachStdin":false,"AttachStdout":false,"AttachStderr":false,"ExposedPorts":{"6379/tcp":{}},"Tty":false,"OpenStdin":true,"StdinOnce":false,"Env":["PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin","GOSU_VERSION=1.12","REDIS_VERSION=6.2.6","REDIS_DOWNLOAD_URL=http://download.redis.io/releases/redis-6.2.6.tar.gz","REDIS_DOWNLOAD_SHA=5b2b8b7a50111ef395bf1c1d5be11e6e167ac018125055daa8b5c2317ae131ab"],"Cmd":["redis-server"],"Image":"redis","Volumes":{"/data":{}},"WorkingDir":"/data","Entrypoint":["docker-entrypoint.sh"],"OnBuild":null,"Labels":{}},"Image":"sha256:7614ae9453d1d87e740a2056257a6de7135c84037c367e1fffa92ae922784631","NetworkSettings":{"Bridge":"","SandboxID":"cb83cead9ad5721437c468c8179a8cf0c5bce1beb5fd09657a61252441ae7af5","HairpinMode":false,"LinkLocalIPv6Address":"","LinkLocalIPv6PrefixLen":0,"Networks":{"bridge":{"IPAMConfig":null,"Links":null,"Aliases":null,"NetworkID":"7052d835be54442fdeb155f62f8d43b9252c322ef552c87f62abf9c40c028a25","EndpointID":"","Gateway":"","IPAddress":"","IPPrefixLen":0,"IPv6Gateway":"","GlobalIPv6Address":"","GlobalIPv6PrefixLen":0,"MacAddress":"","DriverOpts":null,"IPAMOperational":false}},"Service":null,"Ports":null,"SandboxKey":"/var/run/docker/netns/cb83cead9ad5","SecondaryIPAddresses":null,"SecondaryIPv6Addresses":null,"IsAnonymousEndpoint":false,"HasSwarmEndpoint":false},"LogPath":"/var/lib/docker/containers/b0d6ad82ddb6eb06ff17c60e5b794342ac805e4af9415c35cd79db7589310a3e/b0d6ad82ddb6eb06ff17c60e5b794342ac805e4af9415c35cd79db7589310a3e-json.log","Name":"/iredis-u","Driver":"overlay2","OS":"linux","MountLabel":"","ProcessLabel":"","RestartCount":0,"HasBeenStartedBefore":true,"HasBeenManuallyStopped":true,"MountPoints":{"/data":{"Source":"","Destination":"/data","RW":true,"Name":"c43062a61838c8d1000078d4c31a61797176cc8f69e4539d9822b370f53365f2","Driver":"local","Type":"volume","Spec":{},"SkipMountpointCreation":false}},"SecretReferences":null,"ConfigReferences":null,"AppArmorProfile":"","HostnamePath":"/var/lib/docker/containers/b0d6ad82ddb6eb06ff17c60e5b794342ac805e4af9415c35cd79db7589310a3e/hostname","HostsPath":"/var/lib/docker/containers/b0d6ad82ddb6eb06ff17c60e5b794342ac805e4af9415c35cd79db7589310a3e/hosts","ShmPath":"","ResolvConfPath":"/var/lib/docker/containers/b0d6ad82ddb6eb06ff17c60e5b794342ac805e4af9415c35cd79db7589310a3e/resolv.conf","SeccompProfile":"","NoNewPrivileges":false,"LocalLogCacheMeta":{"HaveNotifyEnabled":false}}
+[root@SystemFramework b0d6ad82ddb6eb06ff17c60e5b794342ac805e4af9415c35cd79db7589310a3e]# cat hostconfig.json
+{"Binds":null,"ContainerIDFile":"","LogConfig":{"Type":"json-file","Config":{}},"NetworkMode":"default","PortBindings":{"6379/tcp":[{"HostIp":"","HostPort":"6379"},{"HostIp":"","HostPort":"6378"},{"HostIp":"","HostPort":"6377"}]},"RestartPolicy":{"Name":"no","MaximumRetryCount":0},"AutoRemove":false,"VolumeDriver":"","VolumesFrom":null,"CapAdd":null,"CapDrop":null,"CgroupnsMode":"host","Dns":[],"DnsOptions":[],"DnsSearch":[],"ExtraHosts":null,"GroupAdd":null,"IpcMode":"private","Cgroup":"","Links":null,"OomScoreAdj":0,"PidMode":"","Privileged":false,"PublishAllPorts":false,"ReadonlyRootfs":false,"SecurityOpt":null,"UTSMode":"","UsernsMode":"","ShmSize":67108864,"Runtime":"runc","ConsoleSize":[0,0],"Isolation":"","CpuShares":0,"Memory":0,"NanoCpus":0,"CgroupParent":"","BlkioWeight":0,"BlkioWeightDevice":[],"BlkioDeviceReadBps":null,"BlkioDeviceWriteBps":null,"BlkioDeviceReadIOps":null,"BlkioDeviceWriteIOps":null,"CpuPeriod":0,"CpuQuota":0,"CpuRealtimePeriod":0,"CpuRealtimeRuntime":0,"CpusetCpus":"","CpusetMems":"","Devices":[],"DeviceCgroupRules":null,"DeviceRequests":null,"KernelMemory":0,"KernelMemoryTCP":0,"MemoryReservation":0,"MemorySwap":0,"MemorySwappiness":null,"OomKillDisable":false,"PidsLimit":null,"Ulimits":null,"CpuCount":0,"CpuPercent":0,"IOMaximumIOps":0,"IOMaximumBandwidth":0,"MaskedPaths":["/proc/asound","/proc/acpi","/proc/kcore","/proc/keys","/proc/latency_stats","/proc/timer_list","/proc/timer_stats","/proc/sched_debug","/proc/scsi","/sys/firmware"],"ReadonlyPaths":["/proc/bus","/proc/fs","/proc/irq","/proc/sys","/proc/sysrq-trigger"]}
+
+# 首先关闭docker服务
+[root@SystemFramework b0d6ad82ddb6eb06ff17c60e5b794342ac805e4af9415c35cd79db7589310a3e]# systemctl stop docker.socket
+[root@SystemFramework b0d6ad82ddb6eb06ff17c60e5b794342ac805e4af9415c35cd79db7589310a3e]# docker ps
+Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?
+## 文件配置同 以上容器停止后的 配置一样
+[root@SystemFramework b0d6ad82ddb6eb06ff17c60e5b794342ac805e4af9415c35cd79db7589310a3e]# cat config.v2.json
+[root@SystemFramework b0d6ad82ddb6eb06ff17c60e5b794342ac805e4af9415c35cd79db7589310a3e]# cat hostconfig.json  
+
+# 修改主机配置 
+[root@SystemFramework b0d6ad82ddb6eb06ff17c60e5b794342ac805e4af9415c35cd79db7589310a3e]# vim hostconfig.json
+# 修改 ,{"HostIp":"","HostPort":"6377"} 为 ,{"HostIp":"","HostPort":"6376"}
+
+[root@SystemFramework b0d6ad82ddb6eb06ff17c60e5b794342ac805e4af9415c35cd79db7589310a3e]# docker ps
+CONTAINER ID   IMAGE     COMMAND                  CREATED       STATUS          PORTS                                                                                                                             NAMES
+b0d6ad82ddb6   redis     "docker-entrypoint.s…"   2 hours ago   Up 16 seconds   0.0.0.0:6379->6379/tcp, :::6379->6379/tcp, 0.0.0.0:6376->6379/tcp, 0.0.0.0:6378->6379/tcp, :::6376->6379/tcp, :::6378->6379/tcp   iredis-u
+```
+
 ### bash: ping: command not found
 ```
 apt-get update
@@ -5386,6 +5693,9 @@ registry.cn-hangzhou.aliyuncs.com/helowin/oracle_11g   latest    3fa112fd3642   
 [root@SystemFramework ~]# docker ps 
 CONTAINER ID   IMAGE                                                  COMMAND                  CREATED          STATUS         PORTS                                       NAMES
 3c0ae5a124fe   registry.cn-hangzhou.aliyuncs.com/helowin/oracle_11g   "/bin/sh -c '/home/o…"   57 seconds ago   Up 9 seconds   0.0.0.0:1521->1521/tcp, :::1521->1521/tcp   oracle11g
+
+# 进入Oracle容器创建用户：
+# 容器镜像系统用户root密码为 helowin
 [root@SystemFramework ~]# docker exec -it oracle11g /bin/bash
 [oracle@3c0ae5a124fe /]$ cd /home/oracle/
 [oracle@3c0ae5a124fe ~]$ source .bash_profile 

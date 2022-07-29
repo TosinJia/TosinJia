@@ -5227,12 +5227,10 @@ URI_E_20220531203700171: /api/system/basic/pdList, time: 2053,
 ```
 URI_S_20220531204232308: /price/list,method: GET, IP: 127.0.0.1-127.0.0.1, 
 	|-- params: {}, body: null
-==>  Preparing: SELECT count(0) FROM product_prices 
-==> Parameters: 
-<==      Total: 1
-==>  Preparing: select id, prices_name, product_type_name, product_type_id, platet_type_name, platet_type_id, truck_type_name, truck_type_id, truck_code, money, useful_time, unuseful_time, status, create_user, create_date, update_user, update_data, market_price, online_price,public_type, down_price,policy_name,fare from product_prices order by id desc limit ?,? 
-==> Parameters: 0(Integer), 10(Integer)
-<==      Total: 10
+SELECT count(0) FROM product_prices 
+-- Parameters: 
+select id, prices_name, product_type_name, product_type_id, platet_type_name, platet_type_id, truck_type_name, truck_type_id, truck_code, money, useful_time, unuseful_time, status, create_user, create_date, update_user, update_data, market_price, online_price,public_type, down_price,policy_name,fare from product_prices order by id desc limit 0,10 
+-- Parameters: 0(Integer), 10(Integer)
 URI_E_20220531204232308: /price/list, time: 76, 
 	|--reponse: "basic_config/price" 
 
