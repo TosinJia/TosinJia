@@ -9,8 +9,14 @@ module.exports =[
                 {text:'前端框架', link:'/softwareArchitecture/openSourceFramework/fontEnd/'},
                 {text:'RuoYi-Vue', link:'/softwareArchitecture/openSourceFramework/ruoyi/ruoyi-vue/'},
                 {text:'RuoYi-Cloud', link:'/softwareArchitecture/openSourceFramework/ruoyi/ruoyi-cloud/'},
+                
             ]
         },
+    ]},
+    {text: '工作流', items:[
+        {text:'Activiti基础', link:'/softwareArchitecture/openSourceFramework/workflow/Activiti基础'},
+        {text:'Activiti进阶', link:'/softwareArchitecture/openSourceFramework/workflow/Activiti进阶'},
+        {text:'Activiti整合', link:'/softwareArchitecture/openSourceFramework/workflow/Activiti整合'},
     ]},
     {text: '教程', 
         items:[
