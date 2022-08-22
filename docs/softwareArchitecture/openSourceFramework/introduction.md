@@ -1190,6 +1190,89 @@ if (!port) {
 - https://gitee.com/lin-xin/vue-manage-system
     - https://lin-xin.gitee.io/example/work/#/login
 
+
+## 后端
+
+
+### logback的使用和logback.xml详解
+- [官方文档](https://logback.qos.ch/documentation.html)
+- [logback的使用和logback.xml详解](https://www.cnblogs.com/warking/p/5710303.html)
+#### 三、logback的配置介绍
+##### 有效级别及级别的继承
+- Logger 可以被分配级别。级别包括：TRACE、DEBUG、INFO、WARN 和 ERROR，定义于ch.qos.logback.classic.Level类。如果 logger没有被分配级别，那么它将从有被分配级别的最近的祖先那里继承级别。root logger 默认级别是 DEBUG。
+#### 五、logback.xml常用配置详解
+#### 六、常用logger配置
+```
+<!-- show parameters for hibernate sql 专为 Hibernate 定制 -->
+<logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="TRACE" />
+<logger name="org.hibernate.type.descriptor.sql.BasicExtractor" level="DEBUG" />
+<logger name="org.hibernate.SQL" level="DEBUG" />
+<logger name="org.hibernate.engine.QueryParameters" level="DEBUG" />
+<logger name="org.hibernate.engine.query.HQLQueryPlan" level="DEBUG" />
+
+<!--myibatis log configure-->
+<logger name="com.apache.ibatis" level="TRACE"/>
+<logger name="java.sql.Connection" level="DEBUG"/>
+<logger name="java.sql.Statement" level="DEBUG"/>
+<logger name="java.sql.PreparedStatement" level="DEBUG"/>
+```
+#### Demo
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration debug="false">
+<!--定义日志文件的存储地址 勿在 LogBack 的配置中使用相对路径-->
+<property name="LOG_HOME" value="/home" />
+<!-- 控制台输出 -->
+<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+<!--格式化输出：%d表示日期，%thread表示线程名，%-5level：级别从左显示5个字符宽度%msg：日志消息，%n是换行符-->
+<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n</pattern>
+</encoder>
+</appender>
+<!-- 按照每天生成日志文件 -->
+<appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+<!--日志文件输出的文件名-->
+<FileNamePattern>${LOG_HOME}/TestWeb.log.%d{yyyy-MM-dd}.log</FileNamePattern>
+<!--日志文件保留天数-->
+<MaxHistory>30</MaxHistory>
+</rollingPolicy>
+<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+<!--格式化输出：%d表示日期，%thread表示线程名，%-5level：级别从左显示5个字符宽度%msg：日志消息，%n是换行符-->
+<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n</pattern>
+</encoder>
+<!--日志文件最大的大小-->
+<triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+<MaxFileSize>10MB</MaxFileSize>
+</triggeringPolicy>
+</appender>
+
+<!-- 日志输出级别 -->
+<root level="INFO">
+<appender-ref ref="STDOUT" />
+</root>
+</configuration>
+```
+- %logger{50} 类名大于50采用简写，全类名不加{50}
+### 日志级别控制优先级
+1. application.yml
+```
+logging:
+  level:
+    org.springframework: warn
+    org.activiti.engine.impl.persistence.entity: TRACE
+```
+2. logback.xml
+```
+	<logger name="org.springframework" level="warn" />
+    <logger name="org.activiti.engine.impl.persistence.entity" level="info" />
+```
+
+
+
+
+
+
 # System Analysis
 - [TruckSell](/work/TruckSell/SystemFunctions)
 - [TruckSell_BusinessProcess](/work/TruckSell/BusinessProcess)

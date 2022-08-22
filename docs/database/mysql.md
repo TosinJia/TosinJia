@@ -297,6 +297,15 @@ Starting MySQL.. SUCCESS!
 - [MySQL如何在linux中重新启动](https://www.php.cn/mysql-tutorials-480982.html)
 
 ### 日常操作
+
+
+#### 查询数据库中各表的数据量
+```
+select t.TABLE_NAME, t.TABLE_ROWS from information_schema.TABLES t where t.TABLE_SCHEMA ='ruoyi-vue-activiti7' and t.TABLE_NAME in (
+'act_evt_log',
+'act_ru_variable'
+) order by t.TABLE_ROWS desc;
+```
 #### 查询数据库中各表的主键、自增标识
 ```
 -- 所有表主键 mysql查询数据库中各表的主键、自增标识

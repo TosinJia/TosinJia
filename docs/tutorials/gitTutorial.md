@@ -2603,6 +2603,36 @@ nothing added to commit but untracked files present (use "git add" to track)
 \dy-pcweb>git checkout -b master-dev origin/master-dev
 Switched to a new branch 'master-dev'
 Branch 'master-dev' set up to track remote branch 'master-dev' from 'origin'.
+
+
+
+E:\iEnviroment\development\projects\ideaProjects\DyEtc>git clone https://e.coding.net/svtech/truckfinance/dy-admin-vue.git
+Cloning into 'dy-admin-vue'...
+remote: Enumerating objects: 3586, done.
+remote: Counting objects: 100% (3586/3586), done.
+remote: Compressing objects: 100% (1644/1644), done.
+remote: Total 3586 (delta 1889), reused 2493 (delta 1185), pack-reused 0R
+Receiving objects: 100% (3586/3586), 5.23 MiB | 5.12 MiB/s, done.
+Resolving deltas: 100% (1889/1889), done.
+
+E:\iEnviroment\development\projects\ideaProjects\DyEtc>cd dy-admin-vue
+
+E:\iEnviroment\development\projects\ideaProjects\DyEtc\dy-admin-vue>git branch -a
+* master
+  remotes/origin/HEAD -> origin/master
+  remotes/origin/master
+  remotes/origin/master-dev
+
+E:\iEnviroment\development\projects\ideaProjects\DyEtc\dy-admin-vue>git checkout -b master-dev remotes/origin/master-dev
+Switched to a new branch 'master-dev'
+Branch 'master-dev' set up to track remote branch 'master-dev' from 'origin'.
+
+E:\iEnviroment\development\projects\ideaProjects\DyEtc\dy-admin-vue>git branch -a
+  master
+* master-dev
+  remotes/origin/HEAD -> origin/master
+  remotes/origin/master
+  remotes/origin/master-dev
 ```
 
 ## Git Docker

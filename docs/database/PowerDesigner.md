@@ -69,6 +69,7 @@ shift+F4 | 关闭Workspace
 - Update Model from Database... 
     - 【Database Reverse Engineering Options】
         - Using script files
+            - 中文乱码，文件编码修改为gb2312
         - Using a data source
 
 - Execute SQL... 【Execute SQL Query】
