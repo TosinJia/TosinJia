@@ -14,9 +14,11 @@ module.exports =[
         },
     ]},
     {text: '工作流', items:[
+        {text:'Activiti', link:'/softwareArchitecture/openSourceFramework/workflow/'},
         {text:'Activiti基础', link:'/softwareArchitecture/openSourceFramework/workflow/Activiti基础'},
         {text:'Activiti进阶', link:'/softwareArchitecture/openSourceFramework/workflow/Activiti进阶'},
         {text:'Activiti整合', link:'/softwareArchitecture/openSourceFramework/workflow/Activiti整合'},
+        
     ]},
     {text: '教程', 
         items:[
