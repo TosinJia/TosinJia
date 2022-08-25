@@ -94,6 +94,7 @@ shift+F4 | 关闭Workspace
 
 #### 脚本
 ##### 导出Excel脚本
+- [powerdesigner辅助导入导出excel文件](https://www.cnblogs.com/chenz/articles/3456340.html)
 - [太实用了，powerDesigner导出Excel脚本](https://zhuanlan.zhihu.com/p/365065278) 
 ```
 '******************************************************************************
