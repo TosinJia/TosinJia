@@ -173,6 +173,28 @@ mysql> source /root/clgg_base_20211015-000001.sql
 ## 日常
 
 ### 日常问题
+#### MySQL不区分大小写设置
+> 修改配置后需要重启服务，如果之前的数据库删除不了，将配置调回去再删。
+```
+[root@CentOS-7 imysql]# docker exec -it imysql /bin/bash
+
+[mysqld]
+...
+
+lower_case_table_names=1
+
+```
+- sql
+```SQL
+
+show variables like "%case%";
+lower_case_file_system	OFF
+lower_case_table_names	1
+```
+
+- 参考
+	- [MySQL不区分大小写设置](https://blog.csdn.net/wangkun_j/article/details/117651603)
+
 #### mysql字符集 utf8 和utf8mb4 的区别
 - [mysql字符集 utf8 和utf8mb4 的区别](https://blog.csdn.net/qq_37054881/article/details/90023611)
 

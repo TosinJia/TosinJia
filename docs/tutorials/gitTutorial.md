@@ -73,6 +73,14 @@ git version 1.8.3.1
 
 - [【最全面】SourceTree使用教程详解（连接远程仓库，克隆，拉取，提交，推送，新建/切换/合并分支，冲突解决，提交PR）](https://www.cnblogs.com/Can-daydayup/p/13128633.html)
 
+### 合并分支
+> 注意：在合并代码之前需要将`需要合并的分支`拉取到最新状态（**避免覆盖别人的代码，或者丢失一些重要文件）!!!!!
+
+- 将dev分支合并到master分支
+
+1. dev分支拉取到最新状态
+2. 切换到master分支
+3. dev分支->右键->合并dev至当前分支
 ### Bitbucket账户
 - tosinjia@foxmail.com 
 

@@ -41,7 +41,93 @@
 - https://online.visual-paradigm.com/cn/diagrams/features/bpmn-tool/
 #### bpmn-js
 - https://github.com/bpmn-io/bpmn-js-examples/tree/master/properties-panel
+### 绘制
+- eclipse 插件
+	- 从一个元素到另外一个元素不能同时生成两条sequenceFlow，以xml方式打开修改bpmn文件，复制原有的sf，修改id，中间点x、y坐标
+#### Process
+1. Id
+1. Name
+1. Namespace
+1. Documentation
+```
+<documentation>请假流程演示</documentation>
+```
+#### General
+1. Id
+1. Name
+1. Exclusive
+#### Main config
+1. Assignee
+1. Candidate u...separated
+1. Candidate g...separated
+1. Form key
+	- General->id 和 该值 保持一致，否则获取到 activiti:formProperty	
+1. Due date(variable)
+1. Priority
+1. Category
+1. Skip expression
+```
+activiti:candidateUsers="${deptLeader}"
+activiti:candidateGroups="hr"
+```
+1. Label width(50-500)
+1. Condition
+	- ${FormProperty_3qipis2==0}
+	```
+	<conditionExpression xsi:type="tFormalExpression"><![CDATA[${FormProperty_3qipis2==0}]]></conditionExpression>
+	```
+#### Documentation
+#### Form
+1. Main config->Form key 
+	- activiti:formKey
+2. Form properties
+```
+<userTask id="usertask1" activiti:formKey="usertask1" ...
+<activiti:formProperty id="FormProperty_23u95jb--__!!radio--__!!审批意见--__!!i--__!!同意--__--不同意" type="string" />
+```
+#### listeners
+##### Task listeners
+##### Execution listeners
+```
+        <activiti:executionListener class="com.ruoyi.leave.instener.LeaveEndStateListener" event="take">
+          <activiti:field name="state">
+            <activiti:string>2</activiti:string>
+          </activiti:field>
+        </activiti:executionListener>
+```
+#### Multi instance 
+1. Sequential
+	- true为串行; false为并行；
+1. Loop cardinality `${totalNum}`
+1. Collection `countersignList`
+1. Element variable `countersign`
+1. Completion condition `${nrOfCompletedInstances/nrOfInstances >= 1}`
+```{4-7}
+    <bpmn2:userTask id="Activity_15s12mu" name="会签" activiti:assignee="${countersign}" activiti:candidateGroups="会签">
+      <bpmn2:incoming>Flow_1cjdggs</bpmn2:incoming>
+      <bpmn2:outgoing>Flow_0g1wnx9</bpmn2:outgoing>
+      <bpmn2:multiInstanceLoopCharacteristics activiti:collection="countersignList" activiti:elementVariable="countersign">
+        <bpmn2:loopCardinality xsi:type="bpmn2:tFormalExpression">${totalNum}</bpmn2:loopCardinality>
+        <bpmn2:completionCondition xsi:type="bpmn2:tFormalExpression">${nrOfCompletedInstances/nrOfInstances &gt;= 1}</bpmn2:completionCondition>
+      </bpmn2:multiInstanceLoopCharacteristics>
+    </bpmn2:userTask>
 
+
+```
+- 等效用户任务
+```
+    <userTask id="usertask1" name="会签" activiti:assignee="${countersign}">
+      <multiInstanceLoopCharacteristics isSequential="true" activiti:collection="${countersignList}" activiti:elementVariable="countersign">
+        <completionCondition>${nrOfCompletedInstances/nrOfInstances &gt;= 1}</completionCondition>
+      </multiInstanceLoopCharacteristics>
+    </userTask>	
+```
+- 注：
+	1. activiti:assignee内的变量名，为任务办理人，此处引用activiti:elementVariable内设置的变量名；
+	1. activiti:collection内的变量为此任务的任务办理人集合，只能设置为变量，不能设置为直接量（如设为用户id集合），变量只能传list\<string\>，不能传string数组；
+	1. activiti:elementVariable将activiti:collection集合的遍历并命名，命名后此变量可在会签任务其他地方引用，如此处在任务办理人处（activiti:assignee）引用；
+	1. loopCardinality为此会签任务执行多少次后自动结束；
+	1. completionCondition设置会签任务结束条件；
 ## 表
 - [Activiti7 数据库结构](https://blog.zenghr.cn/passages/2021-07-22-activiti7-table-struct.html)
 - [activiti相关表与操作说明](http://www.1json.com/activiti/activiti-tables.html)
@@ -127,7 +213,10 @@ Set FOREIGN_KEY_CHECKS = 1; -- 恢复Foreign Key检查
 - https://www.bilibili.com/video/BV1H54y167gf
 - https://blog.csdn.net/weixin_45768246/article/details/116763422
 
-
+### 书籍
+- Activiti实战
+	- https://kafeitu.me/activiti-in-action.html
+	- https://www.javaweb.shop/article/400.html
 # ruoyi-vue-activiti
 
 ## 配置

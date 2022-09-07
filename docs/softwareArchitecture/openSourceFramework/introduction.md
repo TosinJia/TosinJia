@@ -1197,6 +1197,8 @@ if (!port) {
 ### logback的使用和logback.xml详解
 - [官方文档](https://logback.qos.ch/documentation.html)
 - [logback的使用和logback.xml详解](https://www.cnblogs.com/warking/p/5710303.html)
+- [logback pattern配置及详解](https://blog.csdn.net/snail_bi/article/details/103496697)
+- [logback彩色字符编码说明](https://www.jianshu.com/p/65329ea56184)
 #### 三、logback的配置介绍
 ##### 有效级别及级别的继承
 - Logger 可以被分配级别。级别包括：TRACE、DEBUG、INFO、WARN 和 ERROR，定义于ch.qos.logback.classic.Level类。如果 logger没有被分配级别，那么它将从有被分配级别的最近的祖先那里继承级别。root logger 默认级别是 DEBUG。
@@ -1276,3 +1278,6 @@ logging:
 # System Analysis
 - [TruckSell](/work/TruckSell/SystemFunctions)
 - [TruckSell_BusinessProcess](/work/TruckSell/BusinessProcess)
+
+## ETC2022
+- [ETC2022_BusinessProcess](/work/ETC2022/ProcessAnalysis.md)
