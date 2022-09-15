@@ -131,6 +131,8 @@ activiti:candidateGroups="hr"
 ## 表
 - [Activiti7 数据库结构](https://blog.zenghr.cn/passages/2021-07-22-activiti7-table-struct.html)
 - [activiti相关表与操作说明](http://www.1json.com/activiti/activiti-tables.html)
+
+### 删除表
 ```
 CREATE DATABASE activiti DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 
@@ -208,6 +210,30 @@ DROP TABLE IF EXISTS act_ru_variable;
 Set FOREIGN_KEY_CHECKS = 1; -- 恢复Foreign Key检查
 ```
 
+### 历史任务变量
+```
+select
+	aht.TASK_DEF_KEY_,
+	aht.NAME_,
+	aht.ASSIGNEE_,
+	ahv.NAME_,
+	ahv.NAME_,
+	ahv.VAR_TYPE_,
+	ahv.TEXT_,
+	ahv.LONG_,
+	ahv.CREATE_TIME_,
+	ahv.LAST_UPDATED_TIME_ 
+from
+	act_hi_taskinst aht
+left join act_hi_varinst ahv on
+	aht.ID_ = ahv.TASK_ID_
+
+where 1=1 
+	and ahv.CREATE_TIME_=ahv.LAST_UPDATED_TIME_
+-- 	and ahv.CREATE_TIME_!=ahv.LAST_UPDATED_TIME_
+order by
+	aht.END_TIME_, ahv.LAST_UPDATED_TIME_;
+```
 
 ## 教程
 - https://www.bilibili.com/video/BV1H54y167gf
