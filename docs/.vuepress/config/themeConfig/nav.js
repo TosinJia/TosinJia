@@ -29,6 +29,7 @@ module.exports =[
             {text: 'Thymeleaf教程', link:"/tutorials/thymeleaf"},
             {text: 'Docker教程', link:"/tutorials/docker"},
             {text: '虚拟机', link:"/tutorials/virtualMachine"},
+            {text: 'JMeter', link:"/tutorials/JMeter"},
     ]},
 
     {text: '数据库', 

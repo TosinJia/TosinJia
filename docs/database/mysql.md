@@ -67,7 +67,8 @@ select current_timestamp(), now(), curdate();
 "current_timestamp()","now()","curdate()"
 "2021-11-16 11:23:39","2021-11-16 11:23:39","2021-11-16"
 ```
-
+- [MySQL :: MySQL 5.7 Reference Manual :: 12.8 String Functions and Operators](https://dev.mysql.com/doc/refman/5.7/en/string-functions.html)
+	- [function_find-in-set](https://dev.mysql.com/doc/refman/5.7/en/string-functions.html#function_find-in-set)
 ##### DATE_ADD
 - https://www.w3school.com.cn/sql/func_date_add.asp
 

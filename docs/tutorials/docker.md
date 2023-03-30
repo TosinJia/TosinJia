@@ -9,23 +9,27 @@
         - https://docs.docker.com/engine/reference/commandline/cli/
         - https://docs.docker.com/engine/reference/commandline/run/
         - [docker update](https://docs.docker.com/engine/reference/commandline/update/)
-- Docker Hub
-		- https://docs.docker.com/reference/
-
-- [Docker Hub](https://hub.docker.com/)
-	- https://hub.docker.com/\_/centos
-	- https://hub.docker.com/\_/nginx
-	- https://hub.docker.com/\_/redis
-	- https://hub.docker.com/\_/tomcat
-	- https://hub.docker.com/\_/mysql
-	- 云笔记
-    	- https://hub.docker.com/r/wiznote/wizserver
-    	- https://hub.docker.com/r/leanote/leanote
 
 - 中文参考
     - http://www.runoob.com/docker/docker-command-manual.html
 - Docker Toolbox
     - https://www.docker.com/products/docker-toolbox
+
+### Docker Hub
+- https://docs.docker.com/reference/
+
+- [Docker Hub](https://hub.docker.com/)
+	- [centos](https://hub.docker.com/\_/centos)
+	- https://hub.docker.com/\_/nginx
+	- https://hub.docker.com/\_/redis
+	- https://hub.docker.com/\_/tomcat
+	- https://hub.docker.com/\_/mysql
+    - https://hub.docker.com/_/rabbitmq
+	- 云笔记
+    	- https://hub.docker.com/r/wiznote/wizserver
+    	- https://hub.docker.com/r/leanote/leanote
+
+
 
 ## 常见问题
 ### 修改对外暴露的端口
@@ -5566,6 +5570,7 @@ dir ./
 redis持久化（开启了这个，redis就不会每次重启时自动清空了）
 appendonly yes
 
+# 指定版本 redis:latest->redis:6.2.6 -v /mydata/docker_redis/data/:/data -v /mydata/docker_redis/data:/data
 [root@Docker docker_redis]# docker run -di -p 6379:6379 -v /mydata/docker_redis/conf/redis.conf:/etc/redis/redis.conf -v /mydata/docker_redis/data/:/data --name redis02 redis:latest redis-server /etc/redis/redis.conf
 7c8be503b9f2cd7e13ed8d99788d1caad01bf8267563109f2dd998d90ff2e287
 
@@ -5598,9 +5603,307 @@ OK
 
 
 #### 5.0  MongoDB
+```
+[root@Docker ~]# docker pull mongo
+
+[root@Docker ~]# docker run -di --name mongo -p 27017:27017 mongo
+
+[root@Docker ~]# docker logs -f mongo
+
+WARNING: MongoDB 5.0+ requires a CPU with AVX support, and your current system does not appear to have that!
+  see https://jira.mongodb.org/browse/SERVER-54407
+  see also https://www.mongodb.com/community/forums/t/mongodb-5-0-cpu-intel-g4650-compatibility/116610/2
+  see also https://github.com/docker-library/mongo/issues/485#issuecomment-891991814
+
+
+
+docker run -di --name mongo -p 27017:27017 mongo:4.4.12-rc0-focal
+
+
+```
+##### mongo:4.4 
+- [docker安装mongoDB及使用](https://blog.csdn.net/packge/article/details/126539320)
+```
+1. 拉取镜像
+[root@Docker ~]# docker pull mongo:4.4
+2. 创建数据持久化目录
+[root@Docker ~]# mkdir -p /mydata/docker_mongo/data
+
+[root@Docker ~]# docker run -dit --name mongo -v /mydata/docker_mongo/data:/data/db -p 27017:27017 mongo:4.4 --auth
+
+[root@Docker ~]# docker exec -it mongo mongo admin
+MongoDB shell version v4.4.18
+connecting to: mongodb://127.0.0.1:27017/admin?compressors=disabled&gssapiServiceName=mongodb
+Implicit session: session { "id" : UUID("fb7c98e2-56b5-4e88-9c16-d5abda3965fe") }
+MongoDB server version: 4.4.18
+Welcome to the MongoDB shell.
+For interactive help, type "help".
+For more comprehensive documentation, see
+        https://docs.mongodb.com/
+Questions? Try the MongoDB Developer Community Forums
+        https://community.mongodb.com
+> db.createUser({ user:'root',pwd:'123456',roles:[ { role:'userAdminAnyDatabase', db: 'admin'},'readWriteAnyDatabase']});
+Successfully added user: {
+        "user" : "root",
+        "roles" : [
+                {
+                        "role" : "userAdminAnyDatabase",
+                        "db" : "admin"
+                },
+                "readWriteAnyDatabase"
+        ]
+}
+> db.auth('root','123456')
+1
+> db.user.insert({"name":"zhangsan","age":18})
+WriteResult({ "nInserted" : 1 })
+> db.user.find()
+{ "_id" : ObjectId("63c6b753e9de65599302057c"), "name" : "zhangsan", "age" : 18 }
+```
+
+##### MongoDB Compass
+- [使用MongoDB Compass数据库可视化管理工具操作MongoDB数据库进行增删改查，数据导入导出](https://blog.csdn.net/weixin_44009447/article/details/108583168)
+- [MongoDB Compass官网下载地址](https://www.mongodb.com/try/download/compass)
+
 #### 6.0  Elasticsearch
+
+```
+##### 拉取镜像
+[root@Docker ~]# docker pull elasticsearch:7.8.1
+##### 创建容器，为了方便演示，修改 ES 启动占用内存大小
+[root@Docker ~]# docker run -e ES_JAVA_OPTS="-Xms256m -Xmx512m" -e "discovery.type=single-node" -di --name es -p 9200:9200 -p 9300:9300 -p 5601:5601 -v /mydata/docker_es/plugins:/usr/share/elasticsearch/plugins elasticsearch:7.8.1
+
+##### 安装中文分词器
+1. 进入容器
+[root@Docker ~]# docker exec -it es /bin/bash
+2. 安装中文分词器
+[root@f6b1ff9ddcaf elasticsearch]# elasticsearch-plugin install https://github.com/medcl/elasticsearch-analysis-ik/releases/download/v7.8.1/elasticsearch-analysis-ik-7.8.1.zip
+-> Installing https://github.com/medcl/elasticsearch-analysis-ik/releases/download/v7.8.1/elasticsearch-analysis-ik-7.8.1.zip
+-> Downloading https://github.com/medcl/elasticsearch-analysis-ik/releases/download/v7.8.1/elasticsearch-analysis-ik-7.8.1.zip
+[=================================================] 100%?? 
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@     WARNING: plugin requires additional permissions     @
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+* java.net.SocketPermission * connect,resolve
+See http://docs.oracle.com/javase/8/docs/technotes/guides/security/permissions.html
+for descriptions of what these permissions allow and the associated risks.
+
+Continue with installation? [y/N]y   
+-> Installed analysis-ik
+[root@f6b1ff9ddcaf elasticsearch]# exit
+exit
+3. 重启es
+[root@Docker ~]# docker restart es
+```
+
+- 访问
+    - http://192.168.56.106:9200/
+
+
 #### 7.0  Solr
 #### 8.0  RabbitMQ
+```
+1. 拉取镜像
+[root@Docker ~]# docker pull rabbitmq
+2. 创建容器
+[root@Docker ~]# docker run -di --name rabbitmq -p 4369:4369 -p 5671:5671 -p 5672:5672 -p 15671:15671 -p 15672:15672 -p 25672:25672 rabbitmq
+69604b87dd12205539339587ecf61ed785595ebe3442c8653f0647fb8e6db09c
+
+3. 进入容器并开启管理功能
+　　访问：http://192.168.10.10:15672/ 使用 guest 登录账号密码，结果如下：
+3.1 # 进入容器
+[root@Docker ~]# docker exec -it rabbitmq /bin/bash
+3.2 # 开启 RabbitMQ 管理功能
+root@a2759454a01f:/# rabbitmq-plugins enable rabbitmq_management
+Enabling plugins on node rabbit@a2759454a01f:
+rabbitmq_management
+The following plugins have been configured:
+  rabbitmq_management
+  rabbitmq_management_agent
+  rabbitmq_prometheus
+  rabbitmq_web_dispatch
+Applying plugin configuration to rabbit@a2759454a01f...
+The following plugins have been enabled:
+  rabbitmq_management
+
+started 1 plugins.
+4. 访问 http://192.168.56.106:15672 使用 guest 登录账号密码
+```
+##### rabbitmq:3-management
+- [Docker搭建RabbitMQ](https://blog.csdn.net/chezong/article/details/128900286)
+
+```
+
+[root@Docker ~]# docker pull rabbitmq:3-management
+
+[root@Docker ~]# docker run -di \
+> -e RABBITMQ_DEFAULT_USER=rabbitmq \
+> -e RABBITMQ_DEFAULT_PASS=123456 \
+> --name rabbitmq \
+> -p 15672:15672 -p 5672:5672 \
+> rabbitmq:3-management 
+
+访问 http://192.168.56.106:15672 
+```
+
+#### GitLab
+
+- [docker下gitlab安装配置与使用](https://zhuanlan.zhihu.com/p/328795102)
+- [修改密码-Docker 搭建 Gitlab 服务器 (完整详细版) ](https://blog.csdn.net/BThinker/article/details/124097795)
+
+> 分配 10G内存
+
+##### gitlab/gitlab-ce
+```
+# 1. 从Docker镜像仓库 拉取gitlab镜像
+[root@Docker ~]# docker search  gitlab/gitlab
+
+[root@Docker ~]# docker pull gitlab/gitlab-ce
+[root@Docker ~]# mkdir -p /mydata/docker_gitlab/{config,logs,data}
+
+# 2.运行gitlab镜像
+[root@Docker ~]# 
+docker run --detach \
+--publish 443:443 -p 80:80 -p 22:22 \
+--name igitlab \
+--volume /mydata/docker_gitlab/config:/etc/gitlab:Z \
+-v /mydata/docker_gitlab/logs:/var/log/gitlab:Z \
+-v /mydata/docker_gitlab/data:/var/opt/gitlab:Z \
+gitlab/gitlab-ce
+74698ca37146e2f1c10facc3338f9fb71616ccf222d8133dd5c3c46e0977cf54
+docker: Error response from daemon: driver failed programming external connectivity on endpoint igitlab (2b72c6ff2c9d07b316c2c581aff5b2772c54d2640aa6c59f9f3616b500275700): Error starting userland proxy: listen tcp4 0.0.0.0:22: bind: address already in use.
+
+docker run --detach \
+--publish 443:443 -p 80:80 -p 22222:22 \
+--name igitlab \
+--volume /mydata/docker_gitlab/config:/etc/gitlab:Z \
+-v /mydata/docker_gitlab/logs:/var/log/gitlab:Z \
+-v /mydata/docker_gitlab/data:/var/opt/gitlab:Z \
+gitlab/gitlab-ce
+
+# 3. 配置
+
+[root@Docker ~]# vim /mydata/docker_gitlab/config/gitlab.rb 
+# 配置http协议所使用的访问地址,不加端口号默认为80
+external_url 'http://192.168.56.106'
+
+# 配置ssh协议所使用的访问地址和端口
+gitlab_rails['gitlab_ssh_host'] = 'http://192.168.56.106'
+gitlab_rails['gitlab_shell_ssh_port'] = 22222 # 此端口是run时22端口映射的222端口
+:wq #保存配置文件并退出
+
+# 每次修改gitlab 配置都需要重启
+[root@Docker ~]# docker restart igitlab
+
+# 4.邮箱服务配置
+[root@Docker ~]# vim /mydata/docker_gitlab/config/gitlab.rb
+gitlab_rails['smtp_enable'] = true
+gitlab_rails['smtp_address'] = "smtp.qq.com"
+gitlab_rails['smtp_port'] = 465
+gitlab_rails['smtp_user_name'] = "1872275509@qq.com"
+gitlab_rails['smtp_password'] = "stwhalndkillcghc"
+gitlab_rails['smtp_domain'] = "smtp.qq.com"
+gitlab_rails['smtp_authentication'] = "login"
+gitlab_rails['smtp_enable_starttls_auto'] = true
+gitlab_rails['smtp_tls'] = true
+gitlab_rails['smtp_pool'] = false
+
+gitlab_rails['gitlab_email_from'] = '1872275509@qq.com'
+
+
+[root@Docker ~]# docker logs -f --tail 10 igitlab
+...
+[2023-03-27T04:03:44+00:00] INFO: templatesymlink[Create a gitlab.yml and create a symlink to Rails root] sending run action to execute[clear the gitlab-rails cache] (delayed)
+Recipe: gitlab::gitlab-rails
+# http://192.168.56.106/
+...
+gitlab Reconfigured!
+Checking for unmigrated data on legacy storage
+
+
+# 修改密码
+## 开启 gitlab 的 bash 工具
+[root@Docker ~]# docker exec -it igitlab bash
+## 开启 gitlab-rails 工具
+root@bf4784a3e876:/# gitlab-rails console -e production
+--------------------------------------------------------------------------------
+ Ruby:         ruby 2.7.7p221 (2022-11-24 revision 168ec2b1e5) [x86_64-linux]
+ GitLab:       15.9.3 (f030ca96950) FOSS
+ GitLab Shell: 14.17.0
+ PostgreSQL:   13.8
+-----------------------------------------------------------[ booted in 312.56s ]
+Loading production environment (Rails 6.1.7.2)
+## 查询id为1的用户，id为1的用户是超级管理员
+irb(main):001:0> user = User.where(id:1).first
+## 修改密码
+irb(main):002:0> user.password='GL123456'
+## 保存
+irb(main):003:0> user.save!
+=> #<User id:1 @root>
+=> "GL123456"
+=> true
+irb(main):004:0> Notify.test_email('296999770@qq.com','test Gitlab Email','Test').deliver_now
+Delivered mail 642130388aa95_282488039142@bf4784a3e876.mail (996.2ms)
+=> #<Mail::Message:295900, Multipart: false, Headers: <Date: Mon, 27 Mar 2023 05:57:12 +0000>, <From: GitLab <1872275509@qq.com>>, <Reply-To: GitLab <noreply@192.168.56.106>>, <To: 296999770@qq.com>, <Message-ID: <642130388aa95_282488039142@bf4784a3e876.mail>>, <Subject: test Gitlab Email>, <Mime-Version: 1.0>, <Content-Type: text/html; charset=UTF-8>, <Content-Transfer-Encoding: 7bit>, <Auto-Submitted: auto-generated>, <X-Auto-Response-Suppress: All>>
+# 退出
+irb(main):005:0> exit
+```
+- [http://192.168.56.106](http://192.168.56.106/)
+
+
+##### gitlab/gitlab-ee
+```
+[root@Docker ~]# docker pull gitlab/gitlab-ee:15.10.0-ee.0
+
+[root@Docker ~]# mkdir -p /mydata/docker_gitlab-ee/{config,logs,data}
+
+[root@Docker ~]#
+docker run --detach \
+--publish 443:443 -p 80:80 -p 22222:22 \
+--name igitlab-ee \
+--volume /mydata/docker_gitlab-ee/config:/etc/gitlab:Z \
+-v /mydata/docker_gitlab-ee/logs:/var/log/gitlab:Z \
+-v /mydata/docker_gitlab-ee/data:/var/opt/gitlab:Z \
+gitlab/gitlab-ee:15.10.0-ee.0
+
+[root@Docker ~]# docker restart igitlab-ee
+[root@Docker ~]# docker exec -it igitlab-ee bash
+root@0a0aa33baafb:/# gitlab-rails console -e production
+--------------------------------------------------------------------------------
+ Ruby:         ruby 3.0.5p211 (2022-11-24 revision ba5cf0f7c5) [x86_64-linux]
+ GitLab:       15.10.0-ee (defe6e7f882) EE
+ GitLab Shell: 14.18.0
+ PostgreSQL:   13.8
+-----------------------------------------------------------[ booted in 278.06s ]
+Loading production environment (Rails 6.1.7.2)
+irb(main):001:0> user = User.where(id:1).first
+=> #<User id:1 @root>
+irb(main):002:0> user.password='GL123456'
+=> "GL123456"
+irb(main):003:0> user.save!
+=> true
+irb(main):004:0> Notify.test_email('296999770@qq.com','test Gitlab Email','Test').deliver_now
+Delivered mail 6423ad1042ff3_47748d05941@0a0aa33baafb.mail (1051.7ms)
+=> #<Mail::Message:342140, Multipart: false, Headers: <Date: Wed, 29 Mar 2023 03:14:24 +0000>, <From: GitLab <1872275509@qq.com>>, <Reply-To: GitLab <noreply@192.168.56.106>>, <To: 296999770@qq.com>, <Message-ID: <6423ad1042ff3_47748d05941@0a0aa33baafb.mail>>, <Subject: test Gitlab Email>, <Mime-Version: 1.0>, <Content-Type: text/html; charset=UTF-8>, <Content-Transfer-Encoding: 7bit>, <Auto-Submitted: auto-generated>, <X-Auto-Response-Suppress: All>>
+irb(main):005:0> exit
+```
+
+###### 默认密码 
+- 初装以后，把密码放在了一个临时文件中/etc/gitlab/initial_root_password，这个文件将在首次执行reconfigure后24小时自动删除
+```
+root@0a0aa33baafb:/# ls /etc/gitlab/initial_root_password
+/etc/gitlab/initial_root_password
+root@0a0aa33baafb:/# cat /etc/gitlab/initial_root_password
+# WARNING: This value is valid only in the following conditions
+#          1. If provided manually (either via `GITLAB_ROOT_PASSWORD` environment variable or via `gitlab_rails['initial_root_password']` setting in `gitlab.rb`, it was provided before database was seeded for the first time (usually, the first reconfigure run).
+#          2. Password hasn't been changed manually, either via UI or via command line.
+#
+#          If the password shown here doesn't work, you must reset the admin password following https://docs.gitlab.com/ee/security/reset_user_password.html#reset-your-root-password.
+
+Password: SWYCTD74Tyivh0Y+uYjA3sZ7UKFilUuXS52pBgz7MMU=
+
+# NOTE: This file will be automatically deleted in the first reconfigure run after 24 hours.
+```
 
 #### wiznote
 - https://hub.docker.com/r/wiznote/wizserver
@@ -7044,6 +7347,30 @@ d0716bbd7f63   zabbix/zabbix-server-mysql:centos-latest   "/usr/bin/tini -- /u�
     - http://192.168.217.3:8080/zabbix
         - admin/zabbix
 
+
+#### MinIO
+- [https://hub.docker.com/r/minio/minios](https://hub.docker.com/r/minio/minio)
+- [Docker安装minio（最新版）-避坑](https://blog.csdn.net/yangkuo024/article/details/120134202)
+```
+1. 拉取docker镜像
+[root@SystemFramework ~]# docker pull minio/minio
+2. 创建文件路径
+[root@SystemFramework ~]# mkdir -p /mydata/docker_minio/{data,config}
+
+3. 启动服务：注意，这里要单独设置console的端口，不然会报错，且无法访问
+[root@SystemFramework ~]# 
+docker run -d --name minio105 \
+-p 9000:9000 -p 9001:9001 \
+--restart=always \
+-e "MINIO_ACCESS_KEY=admin" -e "MINIO_SECRET_KEY=admin123" \
+-v /mydata/docker_minio/data:/data -v /mydata/docker_minio/config:/root/.minio \
+minio/minio server /data \
+--console-address ":9001"
+
+5. 浏览器访问：注意—>此处的端口，是你设置的console的端口：9999
+- http://192.168.56.107:9001
+	- admin admin123
+```
 
 
 ####  FastDFS

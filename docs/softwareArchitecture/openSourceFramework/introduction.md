@@ -212,6 +212,9 @@ Java Compiler 8
 - [文档](http://doc.ruoyi.vip/ruoyi-vue/)
 - [代码下载](https://gitee.com/y_project/RuoYi-Vue)
 
+#### ruoyi-vue-activiti
+- softwareArchitecture/openSourceFramework/workflow/#ruoyi-vue-activiti
+
 #### 搭建
 1. 解压压缩包或git clone到E:\iEnviroment\development\projects\ideaProjects\Demo\system-framework
 
@@ -1140,6 +1143,122 @@ Caused by: java.lang.ClassNotFoundException: KaptchaTextCreator
 ##### 7. 分享项目到SVN
 - IntelliJ IDEA.md 分享项目到SVN
 
+
+## XXL开源社区
+- [XXL开源社区](https://www.xuxueli.com/index.html)
+	- [项目](https://www.xuxueli.com/page/projects.html)
+
+### [XXL-JOB | 分布式任务调度平台](https://www.xuxueli.com/xxl-job/)
+- [GITEE](https://gitee.com/xuxueli0323/xxl-job)
+- [GITHUB](https://github.com/xuxueli/xxl-job/)
+
+#### 配置
+- BOOT-INF.classes.application.properties
+```
+### web
+server.port=8894
+server.servlet.context-path=/xxl-job-admin
+
+### actuator
+management.server.servlet.context-path=/actuator
+management.health.mail.enabled=false
+
+### resources
+spring.mvc.servlet.load-on-startup=0
+spring.mvc.static-path-pattern=/static/**
+spring.resources.static-locations=classpath:/static/
+
+### freemarker
+spring.freemarker.templateLoaderPath=classpath:/templates/
+spring.freemarker.suffix=.ftl
+spring.freemarker.charset=UTF-8
+spring.freemarker.request-context-attribute=request
+spring.freemarker.settings.number_format=0.##########
+
+### mybatis
+mybatis.mapper-locations=classpath:/mybatis-mapper/*Mapper.xml
+#mybatis.type-aliases-package=com.xxl.job.admin.core.model
+
+### xxl-job, datasource
+spring.datasource.url=jdbc:mysql://XXX:3306/xxl_job?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&serverTimezone=Asia/Shanghai
+spring.datasource.username=root
+spring.datasource.password=XXX
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+
+### datasource-pool
+spring.datasource.type=com.zaxxer.hikari.HikariDataSource
+spring.datasource.hikari.minimum-idle=10
+spring.datasource.hikari.maximum-pool-size=30
+spring.datasource.hikari.auto-commit=true
+spring.datasource.hikari.idle-timeout=30000
+spring.datasource.hikari.pool-name=HikariCP
+spring.datasource.hikari.max-lifetime=900000
+spring.datasource.hikari.connection-timeout=10000
+spring.datasource.hikari.connection-test-query=SELECT 1
+spring.datasource.hikari.validation-timeout=1000
+
+### xxl-job, email
+spring.mail.host=smtp.qq.com
+spring.mail.port=25
+spring.mail.username=xxx@qq.com
+spring.mail.from=xxx@qq.com
+spring.mail.password=xxx
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+spring.mail.properties.mail.smtp.starttls.required=true
+spring.mail.properties.mail.smtp.socketFactory.class=javax.net.ssl.SSLSocketFactory
+
+### xxl-job, access token
+xxl.job.accessToken=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+### xxl-job, i18n (default is zh_CN, and you can choose "zh_CN", "zh_TC" and "en")
+xxl.job.i18n=zh_CN
+
+## xxl-job, triggerpool max size
+xxl.job.triggerpool.fast.max=200
+xxl.job.triggerpool.slow.max=100
+
+### xxl-job, log retention days
+xxl.job.logretentiondays=30
+```
+
+- src/main/resources/application-prod.yml
+```
+
+xxl:
+  job:
+    admin:
+      ### 调度中心部署跟地址 [选填]：如调度中心集群部署存在多个地址则用逗号分隔。执行器将会使用该地址进行"执行器心跳注册"和"任务结果回调"；为空则关闭自动注册；
+      #测试内网地址，开发环境调试定时器 不要使用任务调度的方式
+      addresses: http://XXXX:8894/xxl-job-admin
+      ### 执行器通讯TOKEN [选填]：非空时启用；
+    accessToken: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    ### 执行器AppName [选填]：执行器心跳注册分组依据；为空则关闭自动注册
+    executor:
+      appname: client-api
+      ### 执行器注册 [选填]：优先使用该配置作为注册地址，为空时使用内嵌服务 ”IP:PORT“ 作为注册地址。从而更灵活的支持容器类型执行器动态IP和动态映射端口问题。
+      address:
+      ### 执行器IP [选填]：默认为空表示自动获取IP，多网卡时可手动设置指定IP，该IP不会绑定Host仅作为通讯实用；地址信息用于 "执行器注册" 和 "调度中心请求并触发任务"；
+      ip: XXX
+      ### 执行器端口号 [选填]：小于等于0则自动获取；默认端口为9999，单机部署多个执行器时，注意要配置不同执行器端口；
+      port: 8903
+      ### 执行器运行日志文件存储磁盘路径 [选填] ：需要对该路径拥有读写权限；为空则使用默认路径；
+      logpath: logs/xxl-job
+      ### 执行器日志文件保存天数 [选填] ： 过期日志自动清理, 限制值大于等于3时生效; 否则, 如-1, 关闭自动清理功能；
+      logretentiondays: 30
+
+```
+
+#### 修改密码
+```
+UPDATE xxl_job.xxl_job_user
+	SET password='e10adc3949ba59abbe56e057f20f883e'
+	WHERE id=1;
+```
+#### 任务
+```
+select * from xxl_job_info xji WHERE xji.executor_handler like '%updateQccCompanyInfo%';
+```
 ## Guns
 - admin/111111
 ## pig

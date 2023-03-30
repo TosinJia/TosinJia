@@ -93,6 +93,10 @@ shift+F4 | 关闭Workspace
     - Edit/Run Script... 脚本
 
 #### 脚本
+##### VBScript
+- [https://www.jb51.net/shouce/vbscript/](https://www.jb51.net/shouce/vbscript/)
+- [https://www.jb51.net/shouce/vbs/](https://www.jb51.net/shouce/vbs/)
+
 ##### 导出Excel脚本
 - [powerdesigner辅助导入导出excel文件](https://www.cnblogs.com/chenz/articles/3456340.html)
 - [太实用了，powerDesigner导出Excel脚本](https://zhuanlan.zhihu.com/p/365065278) 
@@ -334,7 +338,11 @@ Option   Explicit
                       if col.comment = "" or replace(col.comment," ", "")="" Then
                             col.name = col.code
                       else  
-                            col.name = col.comment   
+                            'col.name = col.comment
+                            '以下两个代码无效
+                            'strArr = split(col.comment, "（")
+                            'col.name = strArr(0)
+                            col.name = split(col.comment, "（")(0)
                       end if  
                       next   
                 end   if   

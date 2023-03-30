@@ -131,7 +131,7 @@ activiti:candidateGroups="hr"
 ## 表
 - [Activiti7 数据库结构](https://blog.zenghr.cn/passages/2021-07-22-activiti7-table-struct.html)
 - [activiti相关表与操作说明](http://www.1json.com/activiti/activiti-tables.html)
-
+- ruoyi-vue-activiti7-only-renamefk.pdm
 ### 删除表
 ```
 CREATE DATABASE activiti DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
@@ -244,6 +244,11 @@ order by
 	- https://kafeitu.me/activiti-in-action.html
 	- https://www.javaweb.shop/article/400.html
 # ruoyi-vue-activiti
+
+- http://ruoyi.vip/
+	- 扩展组件
+		- [RuoYi-Activiti 若依Activiti工作流版本](https://gitee.com/smell2/ruoyi-vue-activiti)
+			- https://gitee.com/tosin/ruoyi-vue-activiti
 
 ## 配置
 - yml

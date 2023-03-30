@@ -9198,6 +9198,13 @@ crontab: no changes made to crontab
 * * * * * /root/nginxauxiliary.sh
 * * * * * sleep 30; /root/nginxauxiliary.sh
 ```
+- 定时删除指定日期和天数的sql文件
+```
+[root@clggdb ~]# cat /home/db/clean_redundancy_db_back_up.sh
+find /home/db/backup -mtime +50 -name '*.sql' -exec rm -rf {} \;
+[root@clggdb ~]# crontab -l
+20 11 * * * sh /home/db/clean_redundancy_db_back_up.sh
+```
 
 ## 16 备份与恢复
 ### 2 备份命令

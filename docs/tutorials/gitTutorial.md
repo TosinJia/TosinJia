@@ -73,6 +73,23 @@ git version 1.8.3.1
 
 - [【最全面】SourceTree使用教程详解（连接远程仓库，克隆，拉取，提交，推送，新建/切换/合并分支，冲突解决，提交PR）](https://www.cnblogs.com/Can-daydayup/p/13128633.html)
 
+### 配置
+- 工具(T)
+	- 选项(O)
+#### 一般
+- SSH客户端配置
+    1. SSH秘钥：C:\Users\User\.ssh\id_rsa
+    2. SSH客户端：OpenSSH
+#### 比较
+
+##### 外部差异比对/合并
+- 外部对比工具：BeyondCompare
+- 对比命令：D:\tools\portable\Beyond Compare 4\BCompare.exe
+- 合并工具：BeyondCompare
+- 对比命令：D:\tools\portable\Beyond Compare 4\BCompare.exe
+
+
+
 ### 合并分支
 > 注意：在合并代码之前需要将`需要合并的分支`拉取到最新状态（**避免覆盖别人的代码，或者丢失一些重要文件）!!!!!
 
