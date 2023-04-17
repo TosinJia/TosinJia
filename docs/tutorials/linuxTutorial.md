@@ -1634,8 +1634,8 @@ Conflictname  Filedigests  Installtid  Obsoletename  Providename  Pubkeys       
 > rpm -ivh 包全名
 - 选项
     - -i(install) 安装
-    - -v(verbose) 显示详细信息
-    - -h(hash) 显示进度
+    - -v(verbose) 显示详细信息 显示安装信息
+    - -h(hash) 显示进度 显示安装过程
     - --nodeps 不检测依赖性
         - 安装或卸载过程中如果使用 要么安装后不能用，要么底层功能缺失
 
@@ -9755,6 +9755,69 @@ Linux version 3.10.0-327.el7.x86_64 (builder@kbuilder.dev.centos.org) (gcc versi
 Linux bd 3.10.0-327.el7.x86_64 #1 SMP Thu Nov 19 22:10:57 UTC 2015 x86_64 x86_64 x86_64 GNU/Linux
 ```
 
+### 查看配置
+- [Linux下查看系统配置](https://www.cnblogs.com/alwu007/p/6024631.html)
+#### CPU
+- 总处理器核心数量=处理器数量*每个处理器的核心数量*每个核心支持的线程数量。即：CPU(s) = Socket(s) * Core(s) * Thread(s)。
+```
+[root@ucd468y83kxg9q ~]# lscpu
+Architecture:          x86_64
+CPU op-mode(s):        32-bit, 64-bit
+Byte Order:            Little Endian
+CPU(s):                4			#总处理器核心数量
+On-line CPU(s) list:   0-3
+Thread(s) per core:    1			#每个核心支持的线程数量。1表示只支持一个线程，即不支持超线程
+Core(s) per socket:    1			#每个处理器的核心数量
+Socket(s):             4			#处理器数量
+NUMA node(s):          1
+Vendor ID:             GenuineIntel
+CPU family:            6
+Model:                 85
+Model name:            Intel Xeon Processor (Skylake, IBRS)
+Stepping:              4
+CPU MHz:               2194.842
+BogoMIPS:              4389.68
+Hypervisor vendor:     KVM			#管理程序供应商
+Virtualization type:   full
+L1d cache:             32K
+L1i cache:             32K
+L2 cache:              4096K
+L3 cache:              16384K
+NUMA node0 CPU(s):     0-3
+Flags:                 fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ss syscall nx pdpe1gb rdtscp lm constant_tsc rep_good nopl xtopology eagerfpu pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand hypervisor lahf_lm abm 3dnowprefetch invpcid_single ssbd ibrs ibpb stibp fsgsbase tsc_adjust bmi1 hle avx2 smep bmi2 erms invpcid rtm mpx avx512f avx512dq rdseed adx smap clflushopt clwb avx512cd avx512bw avx512vl xsaveopt xsavec xgetbv1 arat pku ospke spec_ctrl intel_stibp
+
+$ man lscpu
+   COLUMNS
+       CPU    The logical CPU number of a CPU as used by the Linux kernel.　　　　#逻辑CPU数量
+       CORE   The logical core number. A core can contain several CPUs.　　　　　　#逻辑核心数量
+       SOCKET The logical socket number. A socket can contain several cores.　　　#逻辑插槽（路）数量
+
+[root@ucd468y83kxg9q ~]# cat /proc/cpuinfo 
+```
+
+#### 内存
+- 查看/proc/meminfo或者使用free命令。free命令就是从meminfo中获取的信息。一般情况下，使用free就能得到我们想知道的信息：
+```
+[root@ucd468y83kxg9q ~]# free -m
+              total        used        free      shared  buff/cache   available
+Mem:           7963         169        7669           9         125        7593
+Swap:           511           0         511
+``` 
+- 可以看出，内存大小是8G。
+
+#### 硬盘
+- 所有行的Size全加起来，也能大概算出硬盘大小。
+```
+[root@ucd468y83kxg9q ~]# df -h
+Filesystem               Size  Used Avail Use% Mounted on
+devtmpfs                 3.9G     0  3.9G   0% /dev
+tmpfs                    3.9G     0  3.9G   0% /dev/shm
+tmpfs                    3.9G  9.1M  3.9G   1% /run
+tmpfs                    3.9G     0  3.9G   0% /sys/fs/cgroup
+/dev/mapper/centos-root  199G  1.4G  198G   1% /
+/dev/vda1               1014M  137M  878M  14% /boot
+tmpfs                    797M     0  797M   0% /run/user/0
+```
 
 ### 安装tomcat
 ```

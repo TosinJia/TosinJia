@@ -5864,6 +5864,7 @@ docker run --detach \
 --volume /mydata/docker_gitlab-ee/config:/etc/gitlab:Z \
 -v /mydata/docker_gitlab-ee/logs:/var/log/gitlab:Z \
 -v /mydata/docker_gitlab-ee/data:/var/opt/gitlab:Z \
+-v /etc/localtime:/etc/localtime \
 gitlab/gitlab-ee:15.10.0-ee.0
 
 [root@Docker ~]# docker restart igitlab-ee
@@ -7349,6 +7350,7 @@ d0716bbd7f63   zabbix/zabbix-server-mysql:centos-latest   "/usr/bin/tini -- /u�
 
 
 #### MinIO
+- [MinIO教程](https://note.youdao.com/s/7dlR8i3n)
 - [https://hub.docker.com/r/minio/minios](https://hub.docker.com/r/minio/minio)
 - [Docker安装minio（最新版）-避坑](https://blog.csdn.net/yangkuo024/article/details/120134202)
 ```

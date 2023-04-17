@@ -73,6 +73,8 @@ git version 1.8.3.1
 
 - [【最全面】SourceTree使用教程详解（连接远程仓库，克隆，拉取，提交，推送，新建/切换/合并分支，冲突解决，提交PR）](https://www.cnblogs.com/Can-daydayup/p/13128633.html)
 
+- [SourceTree的基本使用 Git工作流](https://www.cnblogs.com/tian-xie/p/6264104.html)
+
 ### 配置
 - 工具(T)
 	- 选项(O)
@@ -87,6 +89,18 @@ git version 1.8.3.1
 - 对比命令：D:\tools\portable\Beyond Compare 4\BCompare.exe
 - 合并工具：BeyondCompare
 - 对比命令：D:\tools\portable\Beyond Compare 4\BCompare.exe
+
+###### 外部差异对比 Ctrl+D
+
+- 文件状态
+	- 未暂存文件/已暂存文件
+		- -> 选中文件
+			1. ->右键->外部差异对比 Ctrl+D
+			2. 具体文件窗口 -> 齿轮图标 -> 外部差异对比
+- History/Search
+	- 选中某次提交
+		- -> 选中文件
+			1. 具体文件窗口 -> 齿轮图标 -> 外部差异对比
 
 
 
@@ -1538,7 +1552,7 @@ error: 分支 'dev' 没有完全合并。
   master  6bf2070 a commit
 ```
 ## GitHub的实战应用
-
+- [github 双重认证2FA](https://blog.csdn.net/aaaadong/article/details/124595036)
 ### 实战测试
 #### 新创建项目
 1. New repository: miniprogram-testdemo
@@ -2614,6 +2628,159 @@ Applying: a commit hotfix
 nothing added to commit but untracked files present (use "git add" to track)
 
 ```
+
+## Gitlab的实战应用
+
+### Gitlab仓库迁移
+- [Gitlab仓库迁移到新地址的方式](https://www.cnblogs.com/HJ-study/p/13306972.html)
+
+#### 方式二  Gitlab（整个项目）全库迁移
+> 用命令行实现Gitlab上某个项目的全库迁移，包括该项目的各个分支、提交记录以及标签。
+
+
+- 核心指令
+```
+$ git clone http://10.1.180.183/jiatongshun/dytxcms-vue.git						#把远程仓库的项目克隆到本地
+$ git branch -r																	#查看远程分支
+$ git branch																	#查看本地分支
+$ git branch -r | grep -v '\->' | while read remote; do git branch --track "${remote#origin/}" "$remote";done	#切换出全部分支
+$ git branch																	#再次查看本地分支，可以看到本地已切出全部分支
+$ git fetch --all																#获取该项目远程库的所有分支及其内容
+$ git fetch --tags																#获取该项目远程库的标签
+
+$ git remote -v
+$ git remote rename origin old-origin											#将原来的origin重命名一下
+$ git remote add origin http://192.168.56.106/ts.jia/dytxcms-vue.git			#指定需要迁移到的目标地址
+$ git push origin --all															#推送所有分支及其内容 需要输入用户名密码
+$ git push --tags																#推送标签
+```
+
+
+1. 首先登录到新地址的Gitlab页面，新建一个空项目，这时新建的项目是没有分支的。
+```
+Command line instructions
+You can also upload existing files from your computer using the instructions below.
+
+Git global setup
+git config --global user.name "贾同顺"
+git config --global user.email "jiatongshun@deewinfl.com"
+
+Create a new repository
+git clone ssh://git@http://192.168.56.106:2222/ts.jia/dytxcms-vue.git
+cd dytxcms-vue
+git switch -c main
+touch README.md
+git add README.md
+git commit -m "add README"
+git push -u origin main
+
+Push an existing folder
+cd existing_folder
+git init --initial-branch=main
+git remote add origin ssh://git@http://192.168.56.106:2222/ts.jia/dytxcms-vue.git
+git add .
+git commit -m "Initial commit"
+git push -u origin main
+
+Push an existing Git repository
+cd existing_repo
+git remote rename origin old-origin
+git remote add origin ssh://git@http://192.168.56.106:2222/ts.jia/dytxcms-vue.git
+git push -u origin --all
+git push -u origin --tags
+```
+2. 点击Git Bash Here 使用命令把旧地址的项目克隆到本地 (地址栏输入bash [D:\tools\portable\PortableGit\bin\bash.exe])
+```
+User@WIN10-0009 MINGW64 /e/iEnviroment/development/项目/企业官网/仓库迁移/方式1
+$ git clone http://10.1.180.183/jiatongshun/dytxcms-vue.git						#把远程仓库的项目克隆到本地
+Cloning into 'dytxcms-vue'...
+remote: Enumerating objects: 594, done.
+remote: Counting objects: 100% (594/594), done.
+remote: Compressing objects: 100% (331/331), done.
+remote: Total 1725 (delta 220), reused 403 (delta 122), pack-reused 1131
+Receiving objects: 100% (1725/1725), 3.56 MiB | 3.00 MiB/s, done.
+Resolving deltas: 100% (341/341), done.
+Updating files: 100% (864/864), done.
+
+User@WIN10-0009 MINGW64 /e/iEnviroment/development/项目/企业官网/仓库迁移/方式1
+$ ls																			#再次查看当前路径下文件，可以看到已经把这个项目克隆到本地
+dytxcms-vue
+
+User@WIN10-0009 MINGW64 /e/iEnviroment/development/项目/企业官网/仓库迁移/方式1
+$ cd dytxcms-vue/																#进入到项目名目录下
+
+User@WIN10-0009 MINGW64 /e/iEnviroment/development/项目/企业官网/仓库迁移/方式1/dytxcms-vue (master)
+$ ls																			#查看该项目路径下的文件
+README.md  dytx-cms   pom.xml         ruoyi-admin   ruoyi-framework  ruoyi-quartz  ruoyi-ui        sql
+bpmn       dytx-file  ruoyi-activiti  ruoyi-common  ruoyi-generator  ruoyi-system  ruoyi-workFlow
+
+User@WIN10-0009 MINGW64 /e/iEnviroment/development/项目/企业官网/仓库迁移/方式1/dytxcms-vue (master)
+$ git branch -r																	#查看远程分支
+  origin/HEAD -> origin/master
+  origin/master
+
+User@WIN10-0009 MINGW64 /e/iEnviroment/development/项目/企业官网/仓库迁移/方式1/dytxcms-vue (master)
+$ git branch																	#查看本地分支
+* master
+
+User@WIN10-0009 MINGW64 /e/iEnviroment/development/项目/企业官网/仓库迁移/方式1/dytxcms-vue (master)
+$ git branch -r | grep -v '\->' | while read remote; do git branch --track "${remote#origin/}" "$remote";done	#切换出全部分支
+fatal: A branch named 'master' already exists.
+
+User@WIN10-0009 MINGW64 /e/iEnviroment/development/项目/企业官网/仓库迁移/方式1/dytxcms-vue (master)
+$ git branch																	#再次查看本地分支，可以看到本地已切出全部分支
+* master
+
+User@WIN10-0009 MINGW64 /e/iEnviroment/development/项目/企业官网/仓库迁移/方式1/dytxcms-vue (master)
+$ git fetch --all																#获取该项目远程库的所有分支及其内容
+Fetching origin
+
+User@WIN10-0009 MINGW64 /e/iEnviroment/development/项目/企业官网/仓库迁移/方式1/dytxcms-vue (master)
+$ git fetch --tags																#获取该项目远程库的标签
+
+User@WIN10-0009 MINGW64 /e/iEnviroment/development/项目/企业官网/仓库迁移/方式1/dytxcms-vue (master)
+$ ls
+README.md  dytx-cms   pom.xml         ruoyi-admin   ruoyi-framework  ruoyi-quartz  ruoyi-ui        sql
+bpmn       dytx-file  ruoyi-activiti  ruoyi-common  ruoyi-generator  ruoyi-system  ruoyi-workFlow
+```
+3. 把本地整个项目打包压缩，移到需要的路径下面，（也可以在当前路径直接提交代码到新地址）
+4. 点击Git Bash Here 使用命令把代码提交到远程Gitlab库
+```
+User@WIN10-0009 MINGW64 /e/iEnviroment/development/项目/企业官网/仓库迁移/方式1/dytxcms-vue (master)
+$ git remote -v
+origin  http://10.1.180.183/jiatongshun/dytxcms-vue.git (fetch)
+origin  http://10.1.180.183/jiatongshun/dytxcms-vue.git (push)
+
+User@WIN10-0009 MINGW64 /e/iEnviroment/development/项目/企业官网/仓库迁移/方式1/dytxcms-vue (master)
+$ git remote rename origin old-origin											#将原来的origin重命名一下
+
+User@WIN10-0009 MINGW64 /e/iEnviroment/development/项目/企业官网/仓库迁移/方式1/dytxcms-vue (master)
+$ git remote -v
+old-origin      http://10.1.180.183/jiatongshun/dytxcms-vue.git (fetch)
+old-origin      http://10.1.180.183/jiatongshun/dytxcms-vue.git (push)
+
+User@WIN10-0009 MINGW64 /e/iEnviroment/development/项目/企业官网/仓库迁移/方式1/dytxcms-vue (master)
+$ git remote add origin http://192.168.56.106/ts.jia/dytxcms-vue.git			#指定需要迁移到的目标地址
+
+User@WIN10-0009 MINGW64 /e/iEnviroment/development/项目/企业官网/仓库迁移/方式1/dytxcms-vue (master)
+$ git push origin --all															#推送所有分支及其内容 需要输入用户名密码
+Enumerating objects: 1725, done.
+Counting objects: 100% (1725/1725), done.
+Delta compression using up to 6 threads
+Compressing objects: 100% (1104/1104), done.
+Writing objects: 100% (1725/1725), 3.56 MiB | 2.75 MiB/s, done.
+Total 1725 (delta 341), reused 1725 (delta 341), pack-reused 0
+error: unable to rewind rpc post data - try increasing http.postBuffer
+error: RPC failed; curl 65 ioctl callback returned error 2
+send-pack: unexpected disconnect while reading sideband packet
+fatal: the remote end hung up unexpectedly
+Everything up-to-date
+
+User@WIN10-0009 MINGW64 /e/iEnviroment/development/项目/企业官网/仓库迁移/方式1/dytxcms-vue (master)
+$ git push --tags																#推送标签
+Everything up-to-date
+```
+
 
 ## 综合实战
 
