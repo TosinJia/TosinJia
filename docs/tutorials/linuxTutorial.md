@@ -308,7 +308,7 @@ SCSI/SATA/USB硬盘 | /dev/sd[a-p]
 /media|媒体目录，可移动媒体设备的常用挂载点
 /mnt|挂载目录，另一个可移动媒体设备的常用挂载点
 /misc|
-/opt|可选目录，常用于存放第三方软件包和数据文件。第三方安装的软件保存位置。这个目录就是放置和安装其他软件的位置。手动安装的源代码包软件都可以安装到这个目录中。更加习惯把软件放置到/usr/local/目录当中，也就是说/usr/local/目录可以用来安装软件
+/opt|可选目录，**常用于存放第三方软件包和数据文件**。第三方安装的软件保存位置。这个目录就是放置和安装其他软件的位置。**手动安装的源代码包软件**都可以安装到这个目录中。**更加习惯**把软件放置到/usr/local/目录当中，**也就是说/usr/local/目录可以用来安装软件**
 /proc|进程目录，存放现有硬件及当前进程的相关信息
 /root|root用户的主目录
 /sbin|系统二进制目录，存放许多GNU管理员级工具
@@ -8648,6 +8648,10 @@ root      1840  0.0  0.0 103336   860 pts/0    S+   21:36   0:00 grep httpd
 # 快捷方式
 [root@localhost ~]# ll /etc/rc.local 
 lrwxrwxrwx. 1 root root 13 1月  19 11:25 /etc/rc.local -> rc.d/rc.local
+# rc.local 不执行的解决方法：没有赋予/etc/rc.d/rc.local文件可执行权限
+[root@ucd468y83kxg9q ~]# ll /etc/rc.d/rc.local 
+-rw-r--r--. 1 root root 501 Apr 18 16:31 /etc/rc.d/rc.local
+[root@ucd468y83kxg9q ~]# chmod +x /etc/rc.d/rc.local
 
 [root@localhost ~]# cat /etc/rc.local 
 #!/bin/sh
@@ -9829,7 +9833,48 @@ tmpfs                    797M     0  797M   0% /run/user/0
 Neither the JAVA_HOME nor the JRE_HOME environment variable is defined
 At least one of these environment variable is needed to run this program
 ```
-### 安装JKD
+### 安装JDK
+
+- [Java Archive | Oracle](http://www.oracle.com/technetwork/java/javase/archive-139210.html)
+    - https://www.oracle.com/java/technologies/javase/javase8-archive-downloads.html
+        - jdk-8u181-linux-x64.tar.gz
+#### CentOS安装
+```
+# 新建JDK安装路径
+[root@ucd468y83kxg9q ~]# mkdir /usr/local/java
+# 上传安装包 jdk-8u181-linux-x64.tar.gz
+[root@ucd468y83kxg9q ~]# cd /usr/local/java/
+[root@ucd468y83kxg9q java]# ll
+total 181296
+-rw-r--r-- 1 root root 185646832 Apr 17 15:34 jdk-8u181-linux-x64.tar.gz
+# 解压安装文件
+[root@ucd468y83kxg9q java]# tar -zxvf jdk-8u181-linux-x64.tar.gz
+[root@ucd468y83kxg9q java]# cd jdk1.8.0_181/
+## 解压后对jdk文件进行授权可以没有
+chmod +x /usr/local/java/jdk1.8.0_181/bin/java
+chmod +x /usr/local/java/jdk1.8.0_181/bin/javac
+chmod +x /usr/local/java/jdk1.8.0_181/jre/bin/java
+# 修改配置环境变量 /etc/profile文件末尾添加
+[root@ucd468y83kxg9q jdk1.8.0_181]# vi /etc/profile
+#set java enviroment   
+export JAVA_HOME=/usr/local/java/jdk1.8.0_181
+export JRE_HOME=${JAVA_HOME}/jre
+CLASSPATH=.:$JAVA_HOME/lib/dt.jar:$JAVA_HOME/lib/tools.jar:$JAVA_HOME/lib:$JRE_HOME/lib
+PATH=$PATH:$JAVA_HOME/bin:$JRE_HOME/bin
+export CLASSPATH PATH
+# 使配置生效
+[root@ucd468y83kxg9q jdk1.8.0_181]# source /etc/profile
+# 检查是否安装成功
+[root@ucd468y83kxg9q jdk1.8.0_181]# java -version
+java version "1.8.0_181"
+Java(TM) SE Runtime Environment (build 1.8.0_181-b13)
+Java HotSpot(TM) 64-Bit Server VM (build 25.181-b13, mixed mod
+```
+- 参考
+    - [linux 安装jdk-8u181-linux-x64](https://blog.csdn.net/weixin_42234181/article/details/87939579)
+
+
+1. centos安装记录2
 ```
 [root@DataPlatWeb-P usr]# mkdir java
 [root@DataPlatWeb-P home]# mv jdk1.8.0_161 /usr/java/
@@ -9853,7 +9898,7 @@ java version "1.8.0_161"
 Java(TM) SE Runtime Environment (build 1.8.0_161-b12)
 Java HotSpot(TM) 64-Bit Server VM (build 25.161-b12, mixed mode)
 ```
-1. Ubuntu安装JDK
+#### Ubuntu安装
 
 ```
 sudo mkdir /usr/local/java

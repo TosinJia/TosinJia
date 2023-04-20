@@ -103,6 +103,23 @@ git version 1.8.3.1
 			1. 具体文件窗口 -> 齿轮图标 -> 外部差异对比
 
 
+### Git工作流
+#### 使用Git Flow初始化此仓库
+- E:\iEnviroment\development\项目\绩效系统\DeewintxPerformanceManagement\.git\config 新增了以下内容
+```
+[gitflow "branch"]
+	master = master
+	develop = develop
+[gitflow "prefix"]
+	feature = feature/
+	bugfix = bugfix/
+	release = release/
+	hotfix = hotfix/
+	support = support/
+	versiontag = 
+[gitflow "path"]
+	hooks = E:/iEnviroment/development/项目/绩效系统/DeewintxPerformanceManagement/.git/hooks
+```
 
 ### 合并分支
 > 注意：在合并代码之前需要将`需要合并的分支`拉取到最新状态（**避免覆盖别人的代码，或者丢失一些重要文件）!!!!!
@@ -2651,8 +2668,8 @@ $ git fetch --tags																#获取该项目远程库的标签
 $ git remote -v
 $ git remote rename origin old-origin											#将原来的origin重命名一下
 $ git remote add origin http://192.168.56.106/ts.jia/dytxcms-vue.git			#指定需要迁移到的目标地址
-$ git push origin --all															#推送所有分支及其内容 需要输入用户名密码
-$ git push --tags																#推送标签
+$ git push origin --all		                                                    #推送所有分支及其内容 需要输入用户名密码 #git push -u origin --all
+$ git push --tags           					                                #推送标签 #git push -u origin --tags	
 ```
 
 

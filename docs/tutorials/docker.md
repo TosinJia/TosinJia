@@ -382,7 +382,21 @@ docker -H tcp://172.16.88.80:2376 ps
 #### 日志
     docker logs container-name/conainer-id
 ```
-[root@localhost yy-frame-java]# docker logs -f -t --since="2021-11-25" --tail=10 yy-frame-java
+[root@huoefa yy-tms]#  docker logs -f -t --since="2023-04-17" --until="2023-04-19" --tail=10 tms
+[root@huoefa yy-tms]# docker logs --help
+
+Usage:	docker logs [OPTIONS] CONTAINER
+
+Fetch the logs of a container
+
+Options:
+      --details        Show extra details provided to logs
+  -f, --follow         Follow log output
+      --since string   Show logs since timestamp (e.g. 2013-01-02T13:23:37) or relative (e.g. 42m for 42 minutes)
+      --tail string    Number of lines to show from the end of the logs (default "all")
+  -t, --timestamps     Show timestamps
+      --until string   Show logs before a timestamp (e.g. 2013-01-02T13:23:37) or relative (e.g. 42m for 42 minutes)
+
 ```
 #### 登录
     docker exec -it container-name/conainer-id bash

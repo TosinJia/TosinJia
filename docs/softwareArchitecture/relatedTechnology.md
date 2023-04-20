@@ -4,8 +4,9 @@
 - [https://javadoc.io/](https://javadoc.io/)
 
 ## JDK
-[JDK](http://www.oracle.com/technetwork/java/javase/archive-139210.html)
-
+- [Java Archive | Oracle](http://www.oracle.com/technetwork/java/javase/archive-139210.html)
+    - https://www.oracle.com/java/technologies/javase/javase8-archive-downloads.html
+        - jdk-8u181-linux-x64.tar.gz
 ## Sentinel
 - [sentinel （史上最全+入门教程）](https://www.cnblogs.com/crazymakercircle/p/14285001.html)
 ## nacos

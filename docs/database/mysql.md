@@ -159,10 +159,11 @@ mysqldump: [Warning] Using a password on the command line interface can be insec
 mysql> drop database clgg_base;
 Query OK, 120 rows affected (3.06 sec)
 
-mysql> CREATE DATABASE clgg_base DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
+# utf8 utf8_general_ci
+mysql> CREATE DATABASE clgg_base DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 Query OK, 1 row affected (0.01 sec)
 
-mysql> CREATE DATABASE IF NOT EXISTS clgg_base DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
+mysql> CREATE DATABASE IF NOT EXISTS clgg_base DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 Query OK, 1 row affected, 1 warning (0.00 sec)
 
 mysql> use clgg_base;
@@ -174,6 +175,23 @@ mysql> source /root/clgg_base_20211015-000001.sql
 ## 日常
 
 ### 日常问题
+#### timestamp与datatime
+参考
+- [MySQL 中 datetime 和 timestamp 的区别与选择](https://cloud.tencent.com/developer/article/1541699)
+- [MYSQL-datatime和timestamp的区别](https://blog.csdn.net/u014696474/article/details/70568733)
+##### 选择
+1. 如果在时间上要超过Linux时间的，或者服务器时区不一样的就建议选择 datetime。
+2. 如果是想要使用自动插入时间或者自动更新时间功能的，可以使用timestamp。
+3. 如果只是想表示年、日期、时间的还可以使用 year、 date、 time，它们分别占据 1、3、3 字节，而datetime就是它们的集合。
+
+##### 区别
+1. 对于timestamp来说，如果储存时的时区和检索时的时区不一样，那么拿出来的数据也不一样。对于datetime来说，存什么拿到的就是什么。
+2. 如果存进去的是NULL，timestamp会自动储存当前时间，而datetime会储存NULL。
+
+##### 总结
+1. TIMESTAMP和DATETIME除了存储范围和存储方式不一样，没有太大区别。当然，对于跨时区的业务，TIMESTAMP更为合适。
+2. timestamp有自动初始化和更新，当你update某条记录的时候，该列值会自动更新，这是和datatime最大的区别。
+
 #### MySQL不区分大小写设置
 > 修改配置后需要重启服务，如果之前的数据库删除不了，将配置调回去再删。
 ```
@@ -523,3 +541,398 @@ USE `ry-vue`;
 - https://github.com/a29hbGE/mysql.git
 - [MySQL 数据库使用](https://juejin.cn/column/6962445414091980814)
 - http://note.youdao.com/noteshare?id=9621ae473061a1cb975bc11580311f8c
+
+
+
+
+## MySQL安装配置
+### mysql-5.7.39 RPM包安装
+- [Linux安装配置MySQL详细步骤](http://c.biancheng.net/view/7616.html)
+#### 1. 下载地址
+- [MySQL :: Download MySQL Community Server (Archived Versions)](https://downloads.mysql.com/archives/community/)
+	1. Product Version: 5.7.39
+	2. Operating System: Red Hat Enterprise Linux / Oracle Linux
+	3. OS Version: All
+		- https://downloads.mysql.com/archives/get/p/23/file/mysql-5.7.39-1.el7.x86_64.rpm-bundle.tar
+		
+- CentOS 7 应该选用 el7 安装包。如果安装包对应的系统版本不正确，安装时会出现有关 glibc 的依赖错误。CentOS 6.5，选用 el6 的安装包。
+
+#### 2. 检测本地包
+```
+[root@2m264bunohhn7o ~]# rpm -qa | grep mariadb
+mariadb-libs-5.5.65-1.el7.x86_64
+[root@2m264bunohhn7o ~]# yum -y remove mariadb-libs-5.5.65-1.el7.x86_64
+```
+
+#### 3. 安装
+##### 3.1 下载解压安装包
+```
+# 创建用于存放第三方软件包的目录
+[root@2m264bunohhn7o ~]# mkdir -p /opt/module/mysql
+[root@2m264bunohhn7o ~]# cd /opt/module/mysql/
+
+# 下载安装包 步骤 1)：进入官方下载页面选择要下载的包。
+[root@2m264bunohhn7o mysql]# wget https://downloads.mysql.com/archives/get/p/23/file/mysql-5.7.39-1.el7.x86_64.rpm-bundle.tar
+[root@2m264bunohhn7o mysql]# tar -xvf mysql-5.7.39-1.el7.x86_64.rpm-bundle.tar 
+[root@2m264bunohhn7o mysql]# ll
+total 1086272
+-rw-r--r-- 1 root root  556165120 Jun 13  2022 mysql-5.7.39-1.el7.x86_64.rpm-bundle.tar
+-rw-r--r-- 1 7155 31415  29107248 Jun 13  2022 mysql-community-client-5.7.39-1.el7.x86_64.rpm
+-rw-r--r-- 1 7155 31415    318320 Jun 13  2022 mysql-community-common-5.7.39-1.el7.x86_64.rpm
+-rw-r--r-- 1 7155 31415   4383060 Jun 13  2022 mysql-community-devel-5.7.39-1.el7.x86_64.rpm
+-rw-r--r-- 1 7155 31415  48149356 Jun 13  2022 mysql-community-embedded-5.7.39-1.el7.x86_64.rpm
+-rw-r--r-- 1 7155 31415  23316500 Jun 13  2022 mysql-community-embedded-compat-5.7.39-1.el7.x86_64.rpm
+-rw-r--r-- 1 7155 31415 133181836 Jun 13  2022 mysql-community-embedded-devel-5.7.39-1.el7.x86_64.rpm
+-rw-r--r-- 1 7155 31415   2717964 Jun 13  2022 mysql-community-libs-5.7.39-1.el7.x86_64.rpm
+-rw-r--r-- 1 7155 31415   1264480 Jun 13  2022 mysql-community-libs-compat-5.7.39-1.el7.x86_64.rpm
+-rw-r--r-- 1 7155 31415 186717812 Jun 13  2022 mysql-community-server-5.7.39-1.el7.x86_64.rpm
+-rw-r--r-- 1 7155 31415 126996412 Jun 13  2022 mysql-community-test-5.7.39-1.el7.x86_64.rpm
+
+# 步骤 2)：下载完成后，切换到 root 用户。按照依赖关系依次安装 rpm 包，依赖关系依次为 common→libs→client→server。使用命令rpm -ivh {-file-name}进行安装操作。
+# 安装common （卸载rpm -e mysql-community-common-5.7.39-1.el7.x86_64 检测）
+[root@2m264bunohhn7o mysql]# rpm -ivh mysql-community-common-5.7.39-1.el7.x86_64.rpm
+[root@2m264bunohhn7o mysql]# rpm -ivh mysql-community-libs-5.7.39-1.el7.x86_64.rpm
+[root@2m264bunohhn7o mysql]# rpm -ivh mysql-community-client-5.7.39-1.el7.x86_64.rpm
+[root@2m264bunohhn7o mysql]# rpm -ivh mysql-community-server-5.7.39-1.el7.x86_64.rpm
+# 检测
+[root@2m264bunohhn7o mysql]# rpm -qa | grep mysql
+mysql-community-common-5.7.39-1.el7.x86_64
+mysql-community-client-5.7.39-1.el7.x86_64
+mysql-community-server-5.7.39-1.el7.x86_64
+mysql-community-libs-5.7.39-1.el7.x86_64
+```
+#### 4. 启动
+```
+[root@2m264bunohhn7o mysql]# which mysql
+/bin/mysql
+[root@2m264bunohhn7o mysql]# whereis mysql
+mysql: /usr/bin/mysql /usr/lib64/mysql /usr/share/mysql /usr/share/man/man1/mysql.1.gz
+# 步骤 3)：通过以下命令可以启动 MySQL 数据库，但是必须使用 root 权限。
+[root@2m264bunohhn7o mysql]# service mysqld start
+Redirecting to /bin/systemctl start mysqld.service
+[root@2m264bunohhn7o mysql]# mysql --version
+mysql  Ver 14.14 Distrib 5.7.39, for Linux (x86_64) using  EditLine wrapper
+# 步骤 4)：服务启动后，查找 root 初始随机密码（如果没有初始密码，直接输入用户名 root 登录即可）
+[root@2m264bunohhn7o mysql]# cat /var/log/mysqld.log | grep password
+2023-04-20T02:44:53.745467Z 1 [Note] A temporary password is generated for root@localhost: cuQA>7Iarx2X
+# 步骤 5)：安装成功后，使用以下命令登录 MySQL。
+[root@2m264bunohhn7o mysql]# mysql -uroot -p'cuQA>7Iarx2X'
+# 步骤 6)：可使用以下命令修改密码
+mysql> set password='dyyy2023.xxjsb@DYTX';
+Query OK, 0 rows affected (0.00 sec);
+mysql> SHOW VARIABLES LIKE 'validate_password%';
++--------------------------------------+--------+
+| Variable_name                        | Value  |
++--------------------------------------+--------+
+| validate_password_check_user_name    | OFF    |
+| validate_password_dictionary_file    |        |
+| validate_password_length             | 8      |
+| validate_password_mixed_case_count   | 1      |
+| validate_password_number_count       | 1      |
+| validate_password_policy             | MEDIUM |
+| validate_password_special_char_count | 1      |
++--------------------------------------+--------+
+7 rows in set (0.00 sec)
+# 步骤 7)：配置 MySQL 服务，将 /usr/share/mysql/ 或 /usr/share/ 文件夹下的某一个后缀名为 cnf 的文件拷贝到 /etc/ 文件夹下，并且改名为 my.cnf。使用 vi 编辑器来编辑 my.cnf
+[root@2m264bunohhn7o mysql]# find / -name my.cnf
+/etc/my.cnf
+[root@2m264bunohhn7o mysql]# cat /etc/my.cnf
+# 编辑并保存 my.cnf 文件后，必须重新启动 MySQL 服务，这样 my.cnf 中的配置才会起作用
+```
+- 192.168.150.58:3306 
+	- root dyyy2023.xxjsb@DYTX
+
+#### 5. 开启远程访问权限
+- [MySQL 异常: "Host 'xxx' is not allowed to connect to this MySQL server"](https://blog.csdn.net/mazaiting/article/details/106661158)
+- [mysql撤销授权不生效_MySql授权和撤销权限操作](https://blog.csdn.net/weixin_31832223/article/details/113971079)
+
+##### 第一种（改表法）
+```
+[root@2m264bunohhn7o mysql]# mysql -uroot -p'dyyy2023.xxjsb@DYTX'
+# 使用数据库mysql
+mysql> use mysql;
+# 查看主机和用户
+mysql> select host,user from user;
++-----------+---------------+
+| host      | user          |
++-----------+---------------+
+| localhost | mysql.session |
+| localhost | mysql.sys     |
+| localhost | root          |
++-----------+---------------+
+3 rows in set (0.00 sec)
+mysql> update user set host = '%' where user = 'root';
+mysql> select host,user from user;
++-----------+---------------+
+| host      | user          |
++-----------+---------------+
+| %         | root          |
+| localhost | mysql.session |
+| localhost | mysql.sys     |
++-----------+---------------+
+3 rows in set (0.00 sec)
+```
+##### 第二种（授权法）
+1. 你想root使用mypassword从任何主机连接到mysql服务器的话
+```
+mysql> GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED BY 'dyyy2023.xxjsb@DYTX' WITH GRANT OPTION;
+Query OK, 0 rows affected, 1 warning (0.00 sec)
+
+mysql> select host,user from user;
++-----------+---------------+
+| host      | user          |
++-----------+---------------+
+| %         | root          |
+| localhost | mysql.session |
+| localhost | mysql.sys     |
+| localhost | root          |
++-----------+---------------+
+4 rows in set (0.00 sec)
+
+# 撤销授权（无效）
+mysql> revoke ALL PRIVILEGES ON *.* from 'root'@'%';
+Query OK, 0 rows affected (0.00 sec)
+# 删除mysql的user表中的数据，将没权限访问:(彻底的收权方法:)
+mysql> delete from user where user='root' and host='%';
+Query OK, 1 row affected (0.00 sec)
+
+mysql> select host,user from user;
++-----------+---------------+
+| host      | user          |
++-----------+---------------+
+| localhost | mysql.session |
+| localhost | mysql.sys     |
+| localhost | root          |
++-----------+---------------+
+3 rows in set (0.00 sec)
+
+mysql> flush privileges;
+Query OK, 0 rows affected (0.00 sec)
+```
+2. 允许用户root从ip为192.168.150.20的主机连接到mysql服务器，并使用'dyyy2023.xxjsb@DYTX'作为密码
+```
+mysql> GRANT ALL PRIVILEGES ON *.* TO 'root'@'192.168.150.20' IDENTIFIED BY 'dyyy2023.xxjsb@DYTX' WITH GRANT OPTION;
+mysql> GRANT ALL PRIVILEGES ON *.* TO 'root'@'192.168.150.57' IDENTIFIED BY 'dyyy2023.xxjsb@DYTX' WITH GRANT OPTION;
+mysql> select host,user from user;
++----------------+---------------+
+| host           | user          |
++----------------+---------------+
+| 192.168.150.20 | root          |
+| 192.168.150.57 | root          |
+```
+
+#### 6.开机自启
+```
+[root@2m264bunohhn7o mysql]# vi /etc/rc.local
+# 添加mysqld开机自启
+service mysqld start
+```
+
+#### 其他
+##### Linux平台MySQL的安装目录
+
+文件夹 | 文件夹内容
+---|---
+/usr/bin | 客户端和脚本（mysqladmin、mysqldump 等命令）
+/usr/sbin | mysqld 服务器
+/var/lib/mysql | 日志文件、socket 文件和数据库
+/usr/share/info | 信息格式的手册
+/usr/share/man | UNIX 帮助页
+/usr/include/mysql | 头文件
+/usr/lib/mysql | 库
+/usr/share/mysql | 错误消息、字符集、安装文件和配置文件等
+/etc/rc.d/init.d/ | 启动脚本文件的 mysql 目录，可以用来启动和停止 MySQL 服务 
+
+##### 命令登录 MySQL
+- Commands end with; or\g：说明 mysql 命令行下的命令是以分号（;）或“\g”来结束的，遇到这个结束符就开始执行命令。
+- Your MySQL connection id is 1：id 表示 MySQL 数据库的连接次数，这里为 1，说明是首次登录。
+- Server version: 5.7.39 Server: Server version 后面说明数据库的版本，这个版本为 5.7.39； version: 5. 7.29-log MySQL Community Server（GPL）：Server version 后面说明数据库的版本，这个版本为 5.7.29。Community 表示该版本是社区版。
+- Type 'help;' or '\h' for help：表示输入”help;“或者”\h“可以看到帮助信息。
+- Type '\c' to clear the current input statement：表示遇到”\c“就清除前面的命令。
+
+```
+[root@2m264bunohhn7o mysql]# mysql -uroot -p'cuQA>7Iarx2X'
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Welcome to the MySQL monitor.  Commands end with ; or \g.
+Your MySQL connection id is 1
+Server version: 5.7.39
+
+Copyright (c) 2000, 2022, Oracle and/or its affiliates.
+
+Oracle is a registered trademark of Oracle Corporation and/or its
+affiliates. Other names may be trademarks of their respective
+owners.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+mysql> 
+
+```
+##### 异常处理
+- [安装mysql 5.7.19 rpm包报错：/usr/bin/perl is needed by mysql-community-server-5.7.19-1.el7.x86_64](https://blog.csdn.net/u010886217/article/details/89416159)
+```
+[root@2m264bunohhn7o mysql]# rpm -ivh mysql-community-server-5.7.39-1.el7.x86_64.rpm 
+warning: mysql-community-server-5.7.39-1.el7.x86_64.rpm: Header V4 RSA/SHA256 Signature, key ID 3a79bd29: NOKEY
+error: Failed dependencies:
+	/usr/bin/perl is needed by mysql-community-server-5.7.39-1.el7.x86_64
+	perl(Getopt::Long) is needed by mysql-community-server-5.7.39-1.el7.x86_64
+	perl(strict) is needed by mysql-community-server-5.7.39-1.el7.x86_64
+# 缺少nperl.x86_64依赖，使用yum安装即可。
+[root@2m264bunohhn7o mysql]# yum search perl | grep perl.x86_64
+perl.x86_64 : Practical Extraction and Report Language
+[root@2m264bunohhn7o mysql]# yum -y install perl.x86_64
+```
+
+### mysql-5.7.28 RPM包安装
+#### 1. 官网下载地址
+- https://dev.mysql.com/downloads/mysql/5.7.html#downloads
+	- https://dev.mysql.com/get/Downloads/MySQL-5.7/mysql-5.7.28-1.el7.x86_64.rpm-bundle.tar
+	- [Archives](https://downloads.mysql.com/archives/community/)
+#### 2. 检测本地包
+1.检测本地是否有mysql已存在的包
+```
+[root@bd-00-00 software]# rpm -qa | grep mysql
+# 必须 载原有系统mysql的内部库
+[root@bd-00-00 software]# yum remove mysql-libs 
+```
+2. 检测本地是否有mariadb已存在的包（可选）
+```
+[root@bd-00-00 software]# rpm -qa | grep mariadb
+mariadb-libs-5.5.60-1.el7_5.x86_64
+# rpm -e --nodeps mariadb-libs-5.5.60-1.el7_5.x86_64
+[root@bd-00-00 software]# yum -y remove mariadb-libs-5.5.60-1.el7_5.x86_64
+```
+#### 3. 安装
+##### 1. 上传安装包到指定目录
+```
+[root@bd-00-00 software]# ll
+total 595272
+-rw-r--r-- 1 root root 609556480 Nov  8 22:51 mysql-5.7.28-1.el7.x86_64.rpm-bundle.tar
+```
+##### 2. 解压安装包
+```
+[root@bd-00-00 software]# mkdir -p /opt/module/mysql
+[root@bd-00-00 software]# tar -xvf mysql-5.7.28-1.el7.x86_64.rpm-bundle.tar -C /opt/module/mysql
+```
+##### 3. 安装
+1. 必须
+```
+[root@bd-00-00 software]# cd /opt/module/mysql/
+[root@bd-00-00 mysql]# rpm -ivh mysql-community-common-5.7.28-1.el7.x86_64.rpm 
+[root@bd-00-00 mysql]# rpm -ivh mysql-community-libs-5.7.28-1.el7.x86_64.rpm 
+[root@bd-00-00 mysql]# rpm -ivh mysql-community-client-5.7.28-1.el7.x86_64.rpm 
+[root@bd-00-00 mysql]# rpm -ivh mysql-community-server-5.7.28-1.el7.x86_64.rpm 
+warning: mysql-community-server-5.7.28-1.el7.x86_64.rpm: Header V3 DSA/SHA1 Signature, key ID 5072e1f5: NOKEY
+error: Failed dependencies:
+        net-tools is needed by mysql-community-server-5.7.28-1.el7.x86_64
+# 安装依赖
+# # yum install -y perl
+[root@bd-00-00 mysql]# yum -y install net-tools
+```
+2. 可选
+```
+[root@bd-00-00 mysql]# rpm -ivh mysql-community-libs-compat-5.7.28-1.el7.x86_64.rpm 
+[root@bd-00-00 mysql]# rpm -ivh mysql-community-devel-5.7.28-1.el7.x86_64.rpm 
+```
+#### 4. 启动
+```
+[root@bd-00-00 ~]# whereis mysql
+mysql: /usr/bin/mysql /usr/lib64/mysql /usr/include/mysql /usr/share/mysql /usr/share/man/man1/mysql.1.gz
+[root@bd-00-00 ~]# which mysql
+/usr/bin/mysql
+```
+##### 1 查看mysql服务是否启动
+```
+[root@bd-00-00 mysql]# service mysqld status
+Redirecting to /bin/systemctl status mysqld.service
+```
+##### 2 启动mysql服务 
+```
+[root@bd-00-00 mysql]# service mysqld start
+Redirecting to /bin/systemctl start mysqld.service
+```
+##### 3 查看默认生成的密码
+```
+[root@bd-00-00 mysql]# cat /var/log/mysqld.log | grep password
+2019-11-09T10:51:45.963490Z 1 [Note] A temporary password is generated for root@localhost: w1>e5jiRwah,
+```
+##### 4 登录
+```
+[root@bd-00-00 mysql]# mysql -uroot -p'w1>e5jiRwah,'
+```
+##### 5 修改密码
+```
+mysql> alter user 'root'@'localhost' identified by'000000';
+ERROR 1819 (HY000): Your password does not satisfy the current policy requirements
+```
+###### 1 修改密码规则
+
+级别 | 描述
+---|---
+0 or LOW | 长度
+1 or MEDIUM | 长度、大小写、数字、特殊字符
+2 or STRONG | 长度、大小写、数字、特殊字符、词典
+
+- 注 以下修改是临时修改
+```
+# 1.密码强度检查等级，0/LOW、1/MEDIUM、2/STRONG
+mysql> set global validate_password_policy=0;
+# 2.密码至少要包含的小写字母个数和大写字母个数
+mysql> set global validate_password_mixed_case_count=0;
+# 3.密码至少要包含的数字个数 
+mysql> set global validate_password_number_count=3;
+# 4. 密码至少要包含的特殊字符数
+mysql> set global validate_password_special_char_count=0;
+# 5.密码最小长度，参数默认为8
+# 它有最小值的限制，最小值为：validate_password_number_count + 密码至少要包含的数字个数validate_password_special_char_count +特殊字符(2 * validate_password_mixed_case_count)至少要包含的小写字母个数和大写字母个数
+mysql> set global validate_password_length=3;
+```
+
+###### 2 修改密码
+```
+mysql> alter user 'root'@'localhost' identified by'000000';
+
+（跳过）GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' IDENTIFIED BY '000000' WITH GRANT OPTION;
+```
+
+####### 1 查询当前user表内root的登录权限
+```
+mysql> select host,user from mysql.user; 
++-----------+---------------+
+| host      | user          |
++-----------+---------------+
+| localhost | mysql.session |
+| localhost | mysql.sys     |
+| localhost | root          |
++-----------+---------------+
+3 rows in set (0.00 sec)
+```
+####### 2 修改host为所有%
+```
+mysql> update mysql.user set host='%' where user='root';
+```
+####### 3 刷新缓存
+```
+mysql> flush privileges;
+```
+#### 5. 远程访问
+- 关闭防火墙
+
+#### 6. 补充操作
+```
+mysql> help;
+# 修改root本地密码
+mysql> alter user 'root'@'localhost'identified by 'TosinJia_1';
+# 远程访问
+mysql> create user 'root'@'%' identified by 'TosinJia_1';
+# 授权 所有库 所有权限
+mysql> grant all on *.* to 'root'@'%';
+
+#创建数据库
+mysql> create database hive;
+#创建用户
+mysql> create user 'hiveowner'@'%' identified by 'TosinJia_1';
+#给用户授权
+mysql> grant all on hive.* TO 'hiveowner'@'%';
+mysql> grant all on hive.* TO 'hiveowner'@'localhost' identified by 'TosinJia_1';
+```
