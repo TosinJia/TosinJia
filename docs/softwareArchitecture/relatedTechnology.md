@@ -266,3 +266,90 @@ public class XmlUtils {
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 ```
+## 优雅停止 Java 服务
+
+
+```
+# 1. 找出 Java 服务的进程 ID，可以使用 JDK 自带的jps命令或者 Linux 平台的ps(process status) 命令
+[root@ucd468y83kxg9q dyyy]# jps
+58966 jar
+59357 Jps
+[root@ucd468y83kxg9q dyyy]# jps -l
+59378 sun.tools.jps.Jps
+58966 txj-datamanage-admin.jar
+[root@ucd468y83kxg9q dyyy]# ps -ef | grep java
+root      58966      1  7 09:15 pts/0    00:00:32 java -jar txj-datamanage-admin.jar
+root      59474  58571  0 09:22 pts/0    00:00:00 grep --color=auto java
+# 2. 向 Java 进程发送信号，告知其停止服务
+[root@ucd468y83kxg9q dyyy]# kill 58966
+```
+
+- 优雅停止 Java 服务
+    1. 直接使用kill -9 PID，其实这个是很粗暴的而且极其危险的动作。因为它不管程序现在有没有未处理完的事情，直接强制终止进程，这对于一些比较敏感的服务，例如金融交易等业务是致命的
+    1. 使用kill PID命令停止服务，发现钩子函数被正常执行了。当我们执行 kill pid 命令时，JVM 接收到关闭指令，会发布一些关闭事件，监听事件的监听器就可以在关闭服务前做相应的处理；也会触发注册的所有 Shutdown Hook，从而实现优雅停止服务。优雅停止服务还可以有多余的时间让服务执行关闭线程池等操作，实现了在停止服务前执行完线程池的任务，释放资源等操作。
+    1. 比较合理的处理方式是应该先用默认信号（15) SIGTERM 尝试停止服务，如果多次尝试未停止成功，再考虑使用强制信号（9) SIGKILL 终止服务
+
+```
+[root@ucd468y83kxg9q dyyy]# cat shutdown-admin.sh 
+#!/bin/bash
+
+# 主类
+APP_MAINCLASS="txj-datamanage-admin.jar"
+
+# 进程ID
+psid=0
+
+# 记录尝试次数
+num=0
+
+# 获取进程ID，如果进程不存在则返回0，
+# 当然你也可以在启动进程的时候将进程ID写到一个文件中，
+# 然后使用时读取这个文件即可获取到进程ID
+getpid() {
+   javaps=`jps -l | grep $APP_MAINCLASS`
+   if [ -n "$javaps" ]; then
+      psid=`echo $javaps | awk '{print $1}'`
+   else
+      psid=0
+   fi
+}
+
+stop() {
+   getpid
+   num=`expr $num + 1`  
+   if [ $psid -ne 0 ]; then
+    # 重试次数小于3次则继续尝试停止服务
+    if [ "$num" -le 3 ];then
+      echo "attempt to kill... num:$num"
+      kill $psid
+      sleep 1
+    else
+      # 重试次数大于3次，则强制停止
+      echo "force kill..."
+      kill -9 $psid      
+    fi
+    # 检查上述命令执行是否成功
+    if [ $? -eq 0 ]; then
+       echo "Shutdown success..."
+    else
+       echo "Shutdown failed..."
+    fi
+ 
+    # 重新获取进程ID，如果还存在则重试停止
+    getpid
+    if [ $psid -ne 0 ]; then
+       stop
+    fi
+   else
+      echo "App is not running"
+   fi
+}
+
+stop
+[root@ucd468y83kxg9q dyyy]# sh shutdown-admin.sh 
+attempt to kill... num:1
+Shutdown success...
+```
+
+- 参考
+    - [Linux 环境如何使用 kill 命令优雅停止 Java 服务](https://blog.csdn.net/chenlixiao007/article/details/119394664)

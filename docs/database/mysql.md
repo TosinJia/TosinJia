@@ -727,6 +727,47 @@ mysql> select host,user from user;
 # 添加mysqld开机自启
 service mysqld start
 ```
+#### 7.配置调整
+```
+[root@2m264bunohhn7o ~]# find / -name my.cnf
+/etc/my.cnf
+[root@2m264bunohhn7o ~]# vi /etc/my.cnf
+# 移除默认的ONLY_FULL_GROUP_BY
+sql_mode='STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION'
+# 大小写不敏感
+lower_case_table_names=1
+[root@2m264bunohhn7o ~]# service mysqld restart
+Redirecting to /bin/systemctl restart mysqld.service
+```
+- 验证
+```
+[root@2m264bunohhn7o ~]# mysql -uroot -p'dyyy2023.xxjsb@DYTX'
+mysql> show global variables like '%lower_case%';
++------------------------+-------+
+| Variable_name          | Value |
++------------------------+-------+
+| lower_case_file_system | OFF   |
+| lower_case_table_names | 1     |
++------------------------+-------+
+2 rows in set (0.01 sec)
+
+# 调整前
+mysql> select @@global.sql_mode;
++-------------------------------------------------------------------------------------------------------------------------------------------+
+| @@global.sql_mode                                                                                                                         |
++-------------------------------------------------------------------------------------------------------------------------------------------+
+| ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION |
++-------------------------------------------------------------------------------------------------------------------------------------------+
+1 row in set (0.00 sec)
+# 调整后
+mysql> select @@global.sql_mode;
++------------------------------------------------------------------------------------------------------------------------+
+| @@global.sql_mode                                                                                                      |
++------------------------------------------------------------------------------------------------------------------------+
+| STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION |
++------------------------------------------------------------------------------------------------------------------------+
+1 row in set (0.00 sec)
+```
 
 #### 其他
 ##### Linux平台MySQL的安装目录

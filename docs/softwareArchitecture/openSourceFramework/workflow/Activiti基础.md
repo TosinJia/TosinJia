@@ -1,4 +1,4 @@
-# Activiti7
+# Activiti基础
 
 # 一、工作流介绍
 
@@ -50,7 +50,7 @@ Activiti是一个工作流引擎， activiti可以将业务系统中复杂的业
 
 ![img](../../../images/workflow/assets/clip_image002-1573894539698.jpg)
 
-经历的版本:
+经历的版本: https://github.com/Activiti/Activiti
 
 ![img](../../../images/workflow/assets/clip_image002-1573894569746.jpg)
 
@@ -850,7 +850,7 @@ TaskService taskService = processEngine.getTaskService();
 | RuntimeService | activiti的流程运行管理类 |
 | TaskService    | activiti的任务管理类     |
 | HistoryService | activiti的历史管理类     |
-| ManagerService     | activiti的引擎管理类         |
+| managementService     | activiti的引擎管理类         |
 
  简单介绍：
 
@@ -956,6 +956,73 @@ BPMN2.0的**基本符合**主要包含：
 
 ## 5.2 流程设计器使用
 
+### Eclipse插件使用
+
+#### Palette（画板）
+
+在Eclipse中安装插件即可使用，画板中包括以下结点：
+
+Connection—连接
+
+Event---事件
+
+Task---任务
+
+Gateway---网关
+
+Container—容器
+
+Boundary event—边界事件
+
+Intermediate event- -中间事件
+
+流程图设计完毕保存生成.bpmn文件
+
+#### 新建流程(Eclipse工具)
+
+首先选中存放图形的目录，点击菜单：New  -> Other... -> Activiti Diagram，如图：
+
+![20230426160039](../../../images/workflow/assets/20230426160039.png)
+
+弹出如下图所示框，输入evection 表示 出差审批流程：
+
+![20230426160412](../../../images/workflow/assets/20230426160412.png)
+
+起完名字evection后（默认扩展名为bpmn），就可以看到流程设计页面，如图所示：
+
+![20230426160522](../../../images/workflow/assets/20230426160522.png)
+
+
+
+左侧区域是绘图区，右侧区域是palette画板区域
+
+鼠标先点击画板的元素即可在左侧绘图
+
+### 绘制流程
+
+使用滑板来绘制流程，通过从右侧把图标拖拽到左侧的画板，最终效果如下：
+
+![20230426161503](../../../images/workflow/assets/20230426161503.png)
+
+### 指定流程定义Key
+
+流程定义key即流程定义的标识，通过properties视图查看流程的key
+
+![20230426161730](../../../images/workflow/assets/20230426161730.png)
+
+### 指定任务负责人
+
+在properties视图指定每个任务结点的负责人，如：填写出差申请的负责人为 zhangsan
+
+![20230426161845](../../../images/workflow/assets/20230426161845.png)
+
+经理审批负责人为 jerry
+
+总经理审批负责人为 jack
+
+财务审批负责人为 rose
+
+
 ### Activiti-Designer使用
 
 #### Palette（画板）
@@ -1017,13 +1084,7 @@ Intermediate event- -中间事件
 ![1575121491752](../../../images/workflow/assets/1575121491752.png)
 
 经理审批负责人为 jerry
-
-
-
 总经理审批负责人为 jack
-
-
-
 财务审批负责人为 rose
 
 # 六、流程操作
