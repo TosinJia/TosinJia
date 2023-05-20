@@ -73,7 +73,7 @@ git version 1.8.3.1
 
 - [【最全面】SourceTree使用教程详解（连接远程仓库，克隆，拉取，提交，推送，新建/切换/合并分支，冲突解决，提交PR）](https://www.cnblogs.com/Can-daydayup/p/13128633.html)
 
-- [SourceTree的基本使用 Git工作流](https://www.cnblogs.com/tian-xie/p/6264104.html)
+
 
 ### 配置
 - 工具(T)
@@ -104,6 +104,7 @@ git version 1.8.3.1
 
 
 ### Git工作流
+- [SourceTree的基本使用 Git工作流](https://www.cnblogs.com/tian-xie/p/6264104.html)
 #### 使用Git Flow初始化此仓库
 - E:\iEnviroment\development\项目\绩效系统\DeewintxPerformanceManagement\.git\config 新增了以下内容
 ```
@@ -120,6 +121,88 @@ git version 1.8.3.1
 [gitflow "path"]
 	hooks = E:/iEnviroment/development/项目/绩效系统/DeewintxPerformanceManagement/.git/hooks
 ```
+
+#### 2. 分支共有5种类型
+1) master，最终发布版本，整个项目中有且只有一个
+2) develop，项目的开发分支，原则上项目中有且只有一个
+3) feature，功能分支，用于开发一个新的功能  
+    - F_add_feature_1
+    - feature/F_add_feature_202304
+4) release，预发布版本，介于develop和master之间的一个版本，主要用于测试 
+    - R_v1.0
+    - release/V3.1.6-DY
+5) hotfix，修复补丁，用于修复master上的bug，直接作用于master
+#### 1.获取项目代码
+1. 点击克隆/新建
+
+2. 在弹出框中输入项目地址，http或者ssh地址都可以
+    - 如果箭头指向的仓库类型表明“这不是一个标准的Git仓库”，可能是有以下原因
+        - 1) 项目地址获取错误
+        - 2) 没有项目访问权限
+
+3. 点击“克隆”，等待项目克隆完成，完成后，左侧只有一个分支master
+    - 克隆完成后，得到的是发布后的master源码，如果想要获取最新的正在开发中的源码，需要对项目流进行初始化，点击“Git工作流”
+    - 直接点“确定”，获取develop分支源码
+
+> 开发任务都是在develop分支上完成的
+
+#### 建立新的功能
+> 当开发中需要增加一个新的功能时，可新建feature分支，用于增加新功能，并且不影响开发中的develop源码，当新功能增加完成后，完成feature分支，将新功能合并到develop中，更新develop上的代码
+
+
+
+1) 新建feature。首先当前开发分支指向develop，点击“Git工作流”
+    1. 选择“建立新的分支”
+    1. 在预览中可看到，feature分支是从develop分出的，输入功能名称，点击确定，项目结构中增加feature分支，并且当前开发分支指向新建的feature分支
+
+2) 在feature/F_add_feature_202304分支下进行开发任务，并提交
+
+3) 完成feature开发后，将feature中的源码合并到develop分支。将当前分支指向F_add_feature分支，点击“Git工作流”，选择“完成功能”
+    - 预览中，表明feature分支将合并到develop，点击确定，进行提交合并，合并成功后
+
+#### 建立新的发布版本
+> 当开发到一定阶段，可以发布测试版本时，可以从develop分支，建立release分支，进入预发布测试阶段。
+
+1. 点击“Git工作流”，选择“建立新的发布版本”
+    - 预览中可以看到，release是从develop分出的，输入发布版本名‘V3.1.6-DY’，点击确定
+    - V3.1.6-DY为阶段性发布版本，主要用于发布前进行测试，后续的开发工作仍旧在develop上进行，如果在测试过程中发现问题，直接在release上进行修改，修改完成后进行提交
+
+2. 对release分支V3.1.6-DY进行修改后或者无需修改，测试完成，可以进行正式发布，在当前分支指向V3.1.6-DY分支下，点击“Git工作流”，选择“完成发布版本”
+    - 在预览中可以看到，R_v1.0向develop和master分别合并，点击确定，完成正式发布。
+    - 完成合并后，默认指向develop为当前分支，master增加多个版本更新，将master分支推送到origin，完成线上发布    
+
+
+##### 标签操作
+```
+User@WIN10-0009 MINGW64 /e/iEnviroment/development/项目/绩效系统/DeewintxPerformanceManagement (develop)
+$ git tag
+V3.1.6-DY
+
+User@WIN10-0009 MINGW64 /e/iEnviroment/development/项目/绩效系统/DeewintxPerformanceManagement (develop)
+$ git show V3.1.6-DY
+tag V3.1.6-DY
+Tagger: jiatongshun <jiatongshun@dewinfl.com>
+Date:   Thu May 4 09:56:23 2023 +0800
+
+
+commit c87e6ec36d1ec02c286399f6aeb01acf709ce7a0 (tag: V3.1.6-DY, origin/master, origin/HEAD, master)
+Merge: 98164be 6021b54
+Author: jiatongshun <jiatongshun@dewinfl.com>
+Date:   Thu May 4 09:56:22 2023 +0800
+
+    Merge branch 'release/V3.1.6-DY'
+```
+
+#### 建立新的修复补丁
+> 正式版本发布后，develop可继续进行后续开发，当正式版本出现问题时，需要进行问题的修改，可以在master分支建立修改补丁hotfix。
+
+1. 将当前分支切换到master，点击“Git工作流”，选择“建立新的修复补丁”
+    - 预览中hotfix分支是从master拉去出来的，输入修复补丁名，点确定
+
+2. 在该分支下进行master的问题修改，修改完成后进行提交。当所有补丁问题修改完成后，点击“Git工作流”，选择“完成修复补丁”
+    - 预览中，H_fix_*向master和develop分别合并，点击确定，完成分支合并。
+
+3. 合并完成后，默认当前分支为develop，master分支有版本需要更新，当前分支切换为master，进行推送，完成补丁修复。
 
 ### 合并分支
 > 注意：在合并代码之前需要将`需要合并的分支`拉取到最新状态（**避免覆盖别人的代码，或者丢失一些重要文件）!!!!!

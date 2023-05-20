@@ -178,7 +178,6 @@ from
 	where
 		table_schema = 'activiti' ) as a;
 
-
 Set FOREIGN_KEY_CHECKS = 0; -- 关闭Foreign Key检查​
 
 DROP TABLE IF EXISTS act_evt_log;	
@@ -207,6 +206,35 @@ DROP TABLE IF EXISTS act_ru_task;
 DROP TABLE IF EXISTS act_ru_timer_job;	
 DROP TABLE IF EXISTS act_ru_variable; 
 
+Set FOREIGN_KEY_CHECKS = 1; -- 恢复Foreign Key检查
+
+-- 清空数据 会生成日志，序号 id 会延续之前的编号继续编号
+Set FOREIGN_KEY_CHECKS = 0; -- 关闭Foreign Key检查​
+delete from act_evt_log;	
+delete from act_ge_bytearray;	
+-- delete from act_ge_property;	-- 自动创建时会插入数据
+delete from act_hi_actinst;	
+delete from act_hi_attachment;	
+delete from act_hi_comment;	
+delete from act_hi_detail;	
+delete from act_hi_identitylink;	
+delete from act_hi_procinst;	
+delete from act_hi_taskinst;	
+delete from act_hi_varinst;	
+delete from act_procdef_info;	
+delete from act_re_deployment;	
+delete from act_re_model;	
+delete from act_re_procdef;	
+delete from act_ru_deadletter_job;	
+delete from act_ru_event_subscr;	
+delete from act_ru_execution;	
+delete from act_ru_identitylink;	
+delete from act_ru_integration;	
+delete from act_ru_job;	
+delete from act_ru_suspended_job;	
+delete from act_ru_task;	
+delete from act_ru_timer_job;	
+delete from act_ru_variable; 
 Set FOREIGN_KEY_CHECKS = 1; -- 恢复Foreign Key检查
 ```
 

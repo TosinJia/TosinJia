@@ -135,6 +135,35 @@ Bye
 [root@etc ~]# mysql -h127.0.0.1 -uroot -p123456 < clgg_base20210929.sql 
 mysql: [Warning] Using a password on the command line interface can be insecure.
 ```
+
+
+##### linux定时备份
+```
+[root@clggdb ~]# crontab -l
+0 0 * * * sh /home/db/db_back_up.sh
+* * * * * /bin/bash /home/dbspc_redhat_centos_x64/spc1/startspc.sh
+20 11 * * * sh /home/db/clean_redundancy_db_back_up.sh
+
+[root@clggdb ~]# cat /home/db/db_back_up.sh
+#!/bin/bash
+#在使用之前，请提前创建以下各个目录
+#获取当前时间
+date_now=$(date "+%Y%m%d-%H%M%S")
+backUpFolder=/home/db/backup
+db_name="clgg_base"
+#定义备份文件名
+fileName="${db_name}_${date_now}.sql"
+#定义备份文件目录
+backUpFileName="${backUpFolder}/${fileName}"
+echo "starting backup mysql ${db_name} at ${date_now}."
+mysqldump  --lock-all-tables --flush-logs ${db_name} > ${backUpFileName}
+echo "backup process finished!"
+
+# 清除指定日期和天数的sql文件
+[root@clggdb ~]# cat /home/db/clean_redundancy_db_back_up.sh
+find /home/db/backup -mtime +50 -name '*.sql' -exec rm -rf {} \;
+```
+
 #### 非整库
 1. 备份
 ```

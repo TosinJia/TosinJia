@@ -1,3 +1,4 @@
+[[TOC]]
 # Activiti进阶
 
 ## 一、流程实例
@@ -410,6 +411,37 @@ DelegateTask对象的内容如下：
 
 使用监听器分配方式，按照监听事件去执行监听类的 notify 方法，方法如果不能正常执行也会影响
 任务的执行。 
+
+### Form
+1. Main config
+	- Form key: deptLeaderVerify
+1. Form 
+
+    Id | Name | Type | Expression | Variable | Default | Pattern | Required | Readable | Writeable | Form values
+    ---|---|---|---|---|---|---|---|---|---|---
+    `FormProperty_3qipis2--__!!radio--__!!审批意见--__!!i--__!!同意--__--不同意` | | string | | | | | false | true | true | 
+    `FormProperty_0lffpcm--__!!textarea--__!!批注--__!!f__!!null` | | string | | | | | false | true | true | 
+
+    - Id说明
+        - `FormProperty_0ueitp2--__!!类型--__!!名称--__!!是否参数--__!!默认值`
+        - 分割符 `--__!!`
+
+
+### Listeners
+#### 1. Execution listeners
+- Listener configuration
+	- Event: take
+	- Type: Java class 
+        - com.ruoyi.leave.instener.LeaveEndStateListener
+	- Fields
+        Field name | String value | Expression
+        ---|---|---
+        state | 1 | 
+
+
+Listener implementation | type | Event | Fields
+---|---|---|---
+com.ruoyi.leave.instener.LeaveEndStateListener | class | take | state:1
 
 ### 2.2、查询任务
 
@@ -1324,7 +1356,11 @@ org.activiti.engine.ActivitiException: No outgoing sequence flow of the exclusiv
 
 ```
 
+##### 样例
+- Main config
+	- Condition: ${ FormProperty_dl74vnh != 0 }
 
+> 分支条件为空时，如果这个分支首先创建，有可能会一直走这个分支
 
 #### 5.1.2  流程定义
 
