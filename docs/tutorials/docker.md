@@ -4944,6 +4944,31 @@ Successfully tagged mycentos:7
 REPOSITORY    TAG       IMAGE ID       CREATED          SIZE
 mycentos      7         12a919baf682   58 seconds ago   523MB
 ```
+##### java服务
+```
+[root@etcwebtest2 dytxcms-admin]# cat dockerfile 
+# 基础镜像
+FROM  openjdk:8-jre
+# author
+MAINTAINER dytxcms
+
+# 挂载目录
+VOLUME /home/dytxcms
+# 创建目录
+RUN mkdir -p /home/dytxcms
+# 指定路径
+WORKDIR /home/dytxcms
+# 复制jar文件到路径
+COPY ./jar/dytxcms-admin.jar /home/dytxcms/dytxcms-admin.jar
+# 时区设置 容器内时间和java控制台时间同时修改为指定时区
+ENV TZ="Asia/Shanghai"
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo '$TZ' > /etc/timezone
+# 启动系统服务
+ENTRYPOINT ["java","-jar","dytxcms-admin.jar"]
+
+[root@etcwebtest2 dytxcms-admin]# docker build -f dockerfile -t dytxcms-admin:1 .     
+[root@etcwebtest2 dytxcms-admin]# docker run -di --name dytxcms-admin1 -v /home/dytxcms/docker/dytxcms-admin/jar:/home/dytxcms -p 8080:8080 dytxcms-admin:1 
+```
 
 #### 4.0  镜像构建历史
 

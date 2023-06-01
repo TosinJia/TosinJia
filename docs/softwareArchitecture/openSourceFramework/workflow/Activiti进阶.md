@@ -421,6 +421,7 @@ DelegateTask对象的内容如下：
     ---|---|---|---|---|---|---|---|---|---|---
     `FormProperty_3qipis2--__!!radio--__!!审批意见--__!!i--__!!同意--__--不同意` | | string | | | | | false | true | true | 
     `FormProperty_0lffpcm--__!!textarea--__!!批注--__!!f__!!null` | | string | | | | | false | true | true | 
+    `FormProperty_0lffpcm--__!!textarea--__!!批注--__!!f--__!!null` | | string | | | | | false | true | true | 
 
     - Id说明
         - `FormProperty_0ueitp2--__!!类型--__!!名称--__!!是否参数--__!!默认值`
