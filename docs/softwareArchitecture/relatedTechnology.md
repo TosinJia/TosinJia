@@ -353,3 +353,32 @@ Shutdown success...
 
 - 参考
     - [Linux 环境如何使用 kill 命令优雅停止 Java 服务](https://blog.csdn.net/chenlixiao007/article/details/119394664)
+
+
+## 富文本
+
+### 官方参考
+- [UEditor文档](http://fex.baidu.com/ueditor/)
+	- [UEditor Github 地址](https://github.com/fex-team/ueditor)
+		- https://github.com/TosinJia/ueditor
+	- [使用grunt打包源代码](http://fex.baidu.com/ueditor/#dev-bale_width_grunt)
+	- [自定义请求参数](http://fex.baidu.com/ueditor/#dev-serverparam)
+- [vue-ueditor-wrap](https://hc199421.gitee.io/vue-ueditor-wrap/#/home)
+	- https://github.com/HaoChuan9421/vue-ueditor-wrap
+- https://open-doc.modstart.com/ueditor-plus/
+	- [ueditor-plus](https://gitee.com/modstart-lib/ueditor-plus)
+		- https://gitee.com/tosin/ueditor-plus
+
+### 过程参考
+- [vue使用百度富文本（UEditor）](https://juejin.cn/post/7023720946842206245)
+- [集成ueditor实现富文本编辑器增强](https://doc.ruoyi.vip/ruoyi/document/cjjc.html#%E9%9B%86%E6%88%90ueditor%E5%AE%9E%E7%8E%B0%E5%AF%8C%E6%96%87%E6%9C%AC%E7%BC%96%E8%BE%91%E5%99%A8%E5%A2%9E%E5%BC%BA)
+- [Vue集成百度的Ueditor 前端+后台](https://blog.csdn.net/qq_38571601/article/details/126040490)
+
+### 本地联调
+- E:\iEnviroment\development\projects\ideaProjects\VueDemo\UEditor
+    - http://127.0.0.1:5501/
+    - http://127.0.0.1:5505/
+
+
+
+

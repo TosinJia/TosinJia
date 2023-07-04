@@ -215,6 +215,15 @@ Date:   Thu May 4 09:56:22 2023 +0800
 ### Bitbucket账户
 - tosinjia@foxmail.com 
 
+### 常见问题
+#### sourceTree突然无法启动
+
+1. 找到sourceTree存放的目录 C:\Users\User\AppData\Local\SourceTree;
+2. 返回上一级，找到Atlassian文件夹 C:\Users\User\AppData\Local\Atlassian；
+3. 删除最新的一条记录 SourceTree.exe_Url_fotyszqgwqyxzebijh5xxsugc3ahm5h5 修改为 SourceTree.exe_Url_fotyszqgwqyxzebijh5xxsugc3ahm5h5.bak；
+
+- [sourceTree突然无法启动，解决方案](https://blog.csdn.net/weixin_44490021/article/details/131232966)
+
 ## TortoiseGit
 - https://tortoisegit.org/
 	- https://tortoisegit.org/download/
@@ -2730,6 +2739,65 @@ nothing added to commit but untracked files present (use "git add" to track)
 ```
 
 ## Gitlab的实战应用
+
+### git删除远程已经提交记录
+- [git删除远程已经提交记录](https://zhuanlan.zhihu.com/p/602293643)
+	- [删除git上的远程提交记录](https://blog.csdn.net/csdnwr/article/details/118416762)
+- [git push 报错 pre-receive hook declined](https://blog.csdn.net/zhanglexianggo/article/details/115792658)
+	- GitLab
+        -  设置->仓库->受保护分支
+            - 取消保护 / （开启）允许强制推送
+            - 分支 允许合并 允许推送和合并 允许强制推送 保护
+
+```
+User@WIN10-0009 MINGW64 /e/iEnviroment/development/项目/企业官网/老版企业官网/deewintx_website (main)
+$ git log
+commit 788df89099c83d749358e2df1fd1b227230aed9d (HEAD -> main, origin/main)
+Author: jiatongshun <jiatongshun@dewinfl.com>
+Date:   Mon Jun 12 13:52:32 2023 +0800
+
+    优化配置
+
+commit 9fe82f3ddb3fd6e0aab349f133900c08157b071e
+Author: jiatongshun <jiatongshun@dewinfl.com>
+Date:   Mon Jun 12 11:21:10 2023 +0800
+
+    老版企业官网代码归档
+
+User@WIN10-0009 MINGW64 /e/iEnviroment/development/项目/企业官网/老版企业官网/deewintx_website (main)
+# 重设本地提交到指定提交记录
+$ git reset --hard 9fe82f3ddb3fd6e0aab349f133900c08157b071e
+HEAD is now at 9fe82f3 老版企业官网代码归档
+
+User@WIN10-0009 MINGW64 /e/iEnviroment/development/项目/企业官网/老版企业官网/deewintx_website (main)
+# 然后执行清理。注意此动作不会留下版本记录，要特别慎重。
+$ git clean -f -d
+Removing src/main/resources/static/images/api/detail-sprites/
+
+User@WIN10-0009 MINGW64 /e/iEnviroment/development/项目/企业官网/老版企业官网/deewintx_website (main)
+$ git push -f
+Total 0 (delta 0), reused 0 (delta 0), pack-reused 0
+remote: GitLab: You are not allowed to force push code to a protected branch on this project.
+To http://192.168.151.48/ts.jia/deewintx_website.git
+ ! [remote rejected] main -> main (pre-receive hook declined)
+error: failed to push some refs to 'http://192.168.151.48/ts.jia/deewintx_website.git'
+
+User@WIN10-0009 MINGW64 /e/iEnviroment/development/项目/企业官网/老版企业官网/deewintx_website (main)
+# 最后推送到远程库中
+$ git push -f
+Total 0 (delta 0), reused 0 (delta 0), pack-reused 0
+To http://192.168.151.48/ts.jia/deewintx_website.git
+ + 788df89...9fe82f3 main -> main (forced update)
+
+User@WIN10-0009 MINGW64 /e/iEnviroment/development/项目/企业官网/老版企业官网/deewintx_website (main)
+$ git log
+commit 9fe82f3ddb3fd6e0aab349f133900c08157b071e (HEAD -> main, origin/main)
+Author: jiatongshun <jiatongshun@dewinfl.com>
+Date:   Mon Jun 12 11:21:10 2023 +0800
+
+    老版企业官网代码归档
+```
+
 
 ### Gitlab仓库迁移
 - [Gitlab仓库迁移到新地址的方式](https://www.cnblogs.com/HJ-study/p/13306972.html)
